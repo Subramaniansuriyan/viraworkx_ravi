@@ -1,10 +1,19 @@
+// Load environment variables FIRST before any other imports
+import { JWT_SECRET, PORT } from './config/env.js'
+
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import path from 'path'
-import dotenv from 'dotenv'
+import { ApolloServer } from '@apollo/server'
+import { expressMiddleware } from '@apollo/server/express4'
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer'
+import http from 'http'
+import jwt from 'jsonwebtoken'
 import prisma from './config/database.js'
+import { typeDefs } from './graphql/schema/index.js'
+import { resolvers } from './graphql/resolvers/index.js'
 
 // Route imports
 import authRoutes from './routes/auth.routes.js'
@@ -20,10 +29,7 @@ import analyticsRoutes from './routes/analytics.routes.js'
 
 import { authenticateToken, AuthRequest } from './middleware/auth.js'
 
-dotenv.config({ path: '../../.env' })
-
 const app = express()
-const PORT = process.env.PORT || 4000
 
 // Middleware
 app.use(helmet())
@@ -188,24 +194,95 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   res.status(500).json({ error: 'Internal Server Error' })
 })
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down...')
-  await prisma.$disconnect()
-  process.exit(0)
+// Create HTTP server for Apollo
+const httpServer = http.createServer(app)
+
+// GraphQL Context interface
+interface GraphQLContext {
+  user?: {
+    userId: string
+    email: string
+    userType: string
+  }
+}
+
+// Initialize Apollo Server
+const apolloServer = new ApolloServer<GraphQLContext>({
+  typeDefs,
+  resolvers,
+  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+  introspection: true, // Enable introspection for development
 })
 
-app.listen(PORT, () => {
-  console.log(`🚀 API running at http://localhost:${PORT}`)
-  console.log(`📚 Health: http://localhost:${PORT}/health`)
-  console.log(`🔐 Auth endpoints ready`)
-  console.log(`📋 Assessment/iMocha endpoints ready`)
-  console.log(`👥 Candidate endpoints ready`)
-  console.log(`💼 Job endpoints ready`)
-  console.log(`📝 Application endpoints ready`)
-  console.log(`📅 Interview endpoints ready`)
-  console.log(`🏢 Client endpoints ready`)
-  console.log(`🔔 Notification endpoints ready`)
-  console.log(`🤖 AI endpoints ready`)
-  console.log(`📊 Analytics endpoints ready`)
+// Start server function
+async function startServer() {
+  // Start Apollo Server
+  await apolloServer.start()
+
+  // Apply GraphQL middleware
+  app.use(
+    '/graphql',
+    cors<cors.CorsRequest>({
+      origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+      credentials: true
+    }),
+    express.json(),
+    expressMiddleware(apolloServer, {
+      context: async ({ req }): Promise<GraphQLContext> => {
+        // Extract JWT token from Authorization header
+        const authHeader = req.headers.authorization
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return {}
+        }
+
+        const token = authHeader.slice(7)
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as any
+
+          return {
+            user: {
+              userId: decoded.userId,
+              email: decoded.email,
+              userType: decoded.userType
+            }
+          }
+        } catch {
+          // Invalid token - return empty context (unauthenticated)
+          return {}
+        }
+      }
+    })
+  )
+
+  // Graceful shutdown
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down...')
+    await apolloServer.stop()
+    await prisma.$disconnect()
+    process.exit(0)
+  })
+
+  // Start HTTP server
+  httpServer.listen(PORT, () => {
+    console.log(`🚀 API running at http://localhost:${PORT}`)
+    console.log(`📚 Health: http://localhost:${PORT}/health`)
+    console.log(`🔐 Auth endpoints ready`)
+    console.log(`📋 Assessment/iMocha endpoints ready`)
+    console.log(`👥 Candidate endpoints ready`)
+    console.log(`💼 Job endpoints ready`)
+    console.log(`📝 Application endpoints ready`)
+    console.log(`📅 Interview endpoints ready`)
+    console.log(`🏢 Client endpoints ready`)
+    console.log(`🔔 Notification endpoints ready`)
+    console.log(`🤖 AI endpoints ready`)
+    console.log(`📊 Analytics endpoints ready`)
+    console.log(`📈 GraphQL: http://localhost:${PORT}/graphql`)
+  })
+}
+
+// Start the server
+startServer().catch((err) => {
+  console.error('Failed to start server:', err)
+  process.exit(1)
 })

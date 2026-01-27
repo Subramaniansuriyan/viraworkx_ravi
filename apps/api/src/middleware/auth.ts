@@ -11,7 +11,7 @@ export interface AuthRequest extends Request {
   user?: JwtPayload
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'viraworkx-dev-secret'
+const JWT_SECRET = process.env.JWT_SECRET || 'viraworkx-dev-secret-change-in-production'
 
 export function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization']

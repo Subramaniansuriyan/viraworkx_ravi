@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from '../config/database.js'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'viraworkx-dev-secret'
+const JWT_SECRET = process.env.JWT_SECRET || 'viraworkx-dev-secret-change-in-production'
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d'
 
