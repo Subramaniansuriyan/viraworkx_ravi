@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from 'axios'
 import crypto from 'crypto'
 import prisma from '../config/database.js'
 import { imochaConfig, getBadgeLevel, BadgeLevel } from '../config/imocha.js'
+import { socketService } from './socket.service.js'
 
 // Types
 export interface IMochaTest {
@@ -345,6 +346,17 @@ class IMochaService {
 
     // Update candidate profile score
     await this.updateCandidateProfileScore(assessment.candidateId)
+
+    // Send real-time notification
+    if (assessment.application?.jobId) {
+      socketService.notifyAssessmentCompleted(
+        assessment.id,
+        assessment.candidateId,
+        score || 85,
+        maxScore || 100,
+        assessment.application.jobId
+      )
+    }
 
     console.log(`Assessment completed: ${assessment.id}, Score: ${score || 85}/${maxScore || 100}`)
   }

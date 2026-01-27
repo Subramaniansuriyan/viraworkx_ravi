@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '../config/database.js'
 import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
 import { emailService } from '../services/email.service.js'
+import { socketService } from '../services/socket.service.js'
 
 const router = Router()
 
@@ -234,6 +235,17 @@ router.post('/:id/advance', authenticateToken, requireRole('client', 'admin'), a
       }
     }
 
+    // Send real-time notification
+    const candidateUserId = updated.candidate?.user?.id || updated.candidate?.userId
+    if (candidateUserId) {
+      socketService.notifyApplicationUpdated(
+        updated.id,
+        stage,
+        application.stage,
+        candidateUserId
+      )
+    }
+
     res.json({ application: updated })
   } catch (error) {
     console.error('Error advancing application:', error)
@@ -278,6 +290,12 @@ router.post('/:id/reject', authenticateToken, requireRole('client', 'admin'), as
         status: 'Application Update',
         message: 'Thank you for your interest. After careful consideration, we have decided to move forward with other candidates. We encourage you to apply for future positions that match your skills.'
       }).catch(err => console.error('Failed to send rejection email:', err))
+    }
+
+    // Send real-time rejection notification
+    const candidateUserId = application.candidate?.userId
+    if (candidateUserId) {
+      socketService.notifyApplicationRejected(application.id, candidateUserId, reason)
     }
 
     res.json({ application })

@@ -2,6 +2,7 @@ import { Router, Response } from 'express'
 import { z } from 'zod'
 import prisma from '../config/database.js'
 import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
+import { socketService } from '../services/socket.service.js'
 
 const router = Router()
 
@@ -212,6 +213,17 @@ router.post('/', authenticateToken, requireRole('client', 'admin'), async (req: 
       data: { stage: 'interview', stageUpdatedAt: new Date() }
     })
 
+    // Send real-time notification
+    const candidateUserId = application.candidate?.userId
+    if (candidateUserId) {
+      socketService.notifyInterviewScheduled(
+        interview.id,
+        input.applicationId,
+        interview.scheduledAt.toISOString(),
+        candidateUserId
+      )
+    }
+
     res.status(201).json({ interview })
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -240,9 +252,30 @@ router.put('/:id', authenticateToken, requireRole('client', 'admin'), async (req
       include: {
         application: {
           include: { candidate: { include: { user: { select: { email: true } } } } }
+        },
+        participants: {
+          include: { user: true }
         }
       }
     })
+
+    // Send real-time notification to all participants
+    if (input.status) {
+      const participantUserIds = interview.participants
+        .filter(p => p.userId)
+        .map(p => p.userId!)
+
+      const candidateUserId = interview.application?.candidate?.userId
+      if (candidateUserId) {
+        participantUserIds.push(candidateUserId)
+      }
+
+      socketService.notifyInterviewUpdated(
+        interview.id,
+        input.status,
+        [...new Set(participantUserIds)] // dedupe
+      )
+    }
 
     res.json({ interview })
   } catch (error) {

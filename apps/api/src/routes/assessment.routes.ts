@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '../config/database.js'
 import { imochaService, IMochaWebhookPayload } from '../services/imocha.service.js'
 import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
+import { socketService } from '../services/socket.service.js'
 
 const router = Router()
 
@@ -121,6 +122,17 @@ router.post('/invite', authenticateToken, async (req: AuthRequest, res: Response
           expiresAt: mockAssessment.expiresAt?.toISOString(),
         }
       }
+    }
+
+    // Send real-time notification
+    const candidateUserId = candidate.userId
+    if (candidateUserId && input.applicationId) {
+      socketService.notifyAssessmentInvited(
+        result.assessment.id,
+        input.applicationId,
+        input.testId,
+        candidateUserId
+      )
     }
 
     res.status(201).json({

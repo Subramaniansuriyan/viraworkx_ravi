@@ -14,6 +14,7 @@ import jwt from 'jsonwebtoken'
 import prisma from './config/database.js'
 import { typeDefs } from './graphql/schema/index.js'
 import { resolvers } from './graphql/resolvers/index.js'
+import { socketService } from './services/socket.service.js'
 
 // Route imports
 import authRoutes from './routes/auth.routes.js'
@@ -194,8 +195,11 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   res.status(500).json({ error: 'Internal Server Error' })
 })
 
-// Create HTTP server for Apollo
+// Create HTTP server for Apollo and Socket.io
 const httpServer = http.createServer(app)
+
+// Initialize Socket.io
+socketService.initialize(httpServer)
 
 // GraphQL Context interface
 interface GraphQLContext {
@@ -278,6 +282,7 @@ async function startServer() {
     console.log(`🤖 AI endpoints ready`)
     console.log(`📊 Analytics endpoints ready`)
     console.log(`📈 GraphQL: http://localhost:${PORT}/graphql`)
+    console.log(`🔌 WebSocket: ws://localhost:${PORT} (Socket.io)`)
   })
 }
 
