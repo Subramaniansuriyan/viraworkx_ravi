@@ -14,6 +14,7 @@ import JobDetail from './pages/jobs/JobDetail'
 import ClientJobs from './pages/client/Jobs'
 import ClientJobForm from './pages/client/JobForm'
 import ClientPipeline from './pages/client/Pipeline'
+import AIMonitor from './pages/client/AIMonitor'
 
 // Components
 import ProtectedRoute from './components/shared/ProtectedRoute'
@@ -123,6 +124,14 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['client', 'admin']}>
             <ClientPipeline />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/client/ai-monitor"
+        element={
+          <ProtectedRoute allowedTypes={['client', 'admin']}>
+            <AIMonitor />
           </ProtectedRoute>
         }
       />
