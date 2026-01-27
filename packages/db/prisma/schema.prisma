@@ -14,94 +14,296 @@ model User {
   userType      String    @map("user_type")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
+
   candidate     Candidate?
+  clientUsers   ClientUser[]
+  notifications Notification[]
+  interviewParticipants InterviewParticipant[]
+  interviewFeedback InterviewFeedback[]
+  aiActionsApproved AiAction[] @relation("ApprovedBy")
+
   @@map("users")
 }
 
 model Candidate {
-  id              String   @id @default(uuid())
-  userId          String   @unique @map("user_id")
-  firstName       String   @map("first_name")
-  lastName        String   @map("last_name")
-  headline        String?
-  location        String?
-  experienceYears Int?     @map("experience_years")
-  skills          String[]
-  resumeUrl       String?  @map("resume_url")
-  profileScore    Int      @default(0) @map("profile_score")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  user            User     @relation(fields: [userId], references: [id])
-  applications    Application[]
-  assessments     Assessment[]
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  firstName         String   @map("first_name")
+  lastName          String   @map("last_name")
+  headline          String?
+  summary           String?
+  location          String?
+  experienceYears   Int?     @map("experience_years")
+  currentCompany    String?  @map("current_company")
+  currentTitle      String?  @map("current_title")
+  expectedSalaryMin Int?     @map("expected_salary_min")
+  expectedSalaryMax Int?     @map("expected_salary_max")
+  salaryCurrency    String?  @default("USD") @map("salary_currency")
+  noticePeriodDays  Int?     @map("notice_period_days")
+  skills            String[]
+  resumeUrl         String?  @map("resume_url")
+  videoProfileUrl   String?  @map("video_profile_url")
+  linkedinUrl       String?  @map("linkedin_url")
+  githubUrl         String?  @map("github_url")
+  portfolioUrl      String?  @map("portfolio_url")
+  profileScore      Int      @default(0) @map("profile_score")
+  preferredRoles    String[] @map("preferred_roles")
+  preferredLocations String[] @map("preferred_locations")
+  workAuthorization String?  @map("work_authorization")
+  willingToRelocate Boolean? @default(false) @map("willing_to_relocate")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user              User     @relation(fields: [userId], references: [id])
+  applications      Application[]
+  assessments       Assessment[]
+  skillBadges       SkillBadge[]
+
   @@map("candidates")
 }
 
 model Client {
-  id          String   @id @default(uuid())
-  companyName String   @map("company_name")
-  industry    String?
-  planTier    String   @default("startup") @map("plan_tier")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  jobs        Job[]
+  id                   String   @id @default(uuid())
+  companyName          String   @map("company_name")
+  companyWebsite       String?  @map("company_website")
+  companyLogoUrl       String?  @map("company_logo_url")
+  industry             String?
+  companySize          String?  @map("company_size")
+  headquartersLocation String?  @map("headquarters_location")
+  description          String?
+  planTier             String   @default("startup") @map("plan_tier")
+  settingsJson         Json?    @map("settings_json")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  jobs                 Job[]
+  clientUsers          ClientUser[]
+
   @@map("clients")
 }
 
+model ClientUser {
+  id          String   @id @default(uuid())
+  clientId    String   @map("client_id")
+  userId      String   @map("user_id")
+  role        String   @default("member")
+  permissions Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  client      Client   @relation(fields: [clientId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([clientId, userId])
+  @@map("client_users")
+}
+
 model Job {
-  id             String   @id @default(uuid())
-  clientId       String   @map("client_id")
-  title          String
-  description    String?
-  salaryMin      Int?     @map("salary_min")
-  salaryMax      Int?     @map("salary_max")
-  location       String?
-  remotePolicy   String?  @map("remote_policy")
-  skillsRequired String[] @map("skills_required")
-  status         String   @default("draft")
-  imochaTestId   String?  @map("imocha_test_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-  client         Client   @relation(fields: [clientId], references: [id])
-  applications   Application[]
+  id               String    @id @default(uuid())
+  clientId         String    @map("client_id")
+  createdById      String?   @map("created_by_id")
+  title            String
+  description      String?
+  requirements     String?
+  responsibilities String?
+  department       String?
+  employmentType   String?   @map("employment_type")
+  experienceMin    Int?      @map("experience_min")
+  experienceMax    Int?      @map("experience_max")
+  salaryMin        Int?      @map("salary_min")
+  salaryMax        Int?      @map("salary_max")
+  salaryCurrency   String?   @default("USD") @map("salary_currency")
+  location         String?
+  remotePolicy     String?   @map("remote_policy")
+  skillsRequired   String[]  @map("skills_required")
+  skillsPreferred  String[]  @map("skills_preferred")
+  benefits         String[]
+  status           String    @default("draft")
+  visibility       String?   @default("public")
+  imochaTestId     String?   @map("imocha_test_id")
+  imochaTestConfig Json?     @map("imocha_test_config")
+  aiScreeningConfig Json?    @map("ai_screening_config")
+  postedAt         DateTime? @map("posted_at")
+  closedAt         DateTime? @map("closed_at")
+  closesAt         DateTime? @map("closes_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  client           Client    @relation(fields: [clientId], references: [id])
+  applications     Application[]
+
   @@map("jobs")
 }
 
 model Application {
-  id          String   @id @default(uuid())
-  candidateId String   @map("candidate_id")
-  jobId       String   @map("job_id")
-  stage       String   @default("new")
-  matchScore  Int?     @map("match_score")
-  aiSummary   String?  @map("ai_summary")
-  appliedAt   DateTime @default(now()) @map("applied_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  candidate   Candidate @relation(fields: [candidateId], references: [id])
-  job         Job       @relation(fields: [jobId], references: [id])
-  interviews  Interview[]
+  id              String    @id @default(uuid())
+  candidateId     String    @map("candidate_id")
+  jobId           String    @map("job_id")
+  stage           String    @default("new")
+  matchScore      Int?      @map("match_score")
+  matchDetails    Json?     @map("match_details")
+  aiSummary       String?   @map("ai_summary")
+  coverLetter     String?   @map("cover_letter")
+  source          String?
+  referrerId      String?   @map("referrer_id")
+  notes           String?
+  rejectionReason String?   @map("rejection_reason")
+  appliedAt       DateTime  @default(now()) @map("applied_at")
+  stageUpdatedAt  DateTime  @default(now()) @map("stage_updated_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  candidate       Candidate @relation(fields: [candidateId], references: [id])
+  job             Job       @relation(fields: [jobId], references: [id])
+  interviews      Interview[]
+  assessments     Assessment[]
+
   @@unique([candidateId, jobId])
   @@map("applications")
 }
 
 model Assessment {
-  id           String    @id @default(uuid())
-  candidateId  String    @map("candidate_id")
-  imochaTestId String    @map("imocha_test_id")
-  status       String    @default("pending")
-  score        Int?
-  completedAt  DateTime? @map("completed_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  candidate    Candidate @relation(fields: [candidateId], references: [id])
+  id                  String    @id @default(uuid())
+  candidateId         String    @map("candidate_id")
+  applicationId       String?   @map("application_id")
+  imochaTestId        String    @map("imocha_test_id")
+  imochaInvitationId  String?   @map("imocha_invitation_id")
+  imochaAttemptId     String?   @map("imocha_attempt_id")
+  testName            String?   @map("test_name")
+  status              String    @default("pending")
+  score               Int?
+  maxScore            Int?      @map("max_score")
+  percentile          Int?
+  skillScores         Json?     @map("skill_scores")
+  reportUrl           String?   @map("report_url")
+  proctoringFlags     Json?     @map("proctoring_flags")
+  invitedAt           DateTime? @map("invited_at")
+  startedAt           DateTime? @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  expiresAt           DateTime? @map("expires_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  candidate           Candidate    @relation(fields: [candidateId], references: [id])
+  application         Application? @relation(fields: [applicationId], references: [id])
+  skillBadges         SkillBadge[]
+
   @@map("assessments")
 }
 
+model SkillBadge {
+  id            String     @id @default(uuid())
+  candidateId   String     @map("candidate_id")
+  assessmentId  String?    @map("assessment_id")
+  skillName     String     @map("skill_name")
+  badgeLevel    String     @map("badge_level")
+  score         Int?
+  percentile    Int?
+  verifiedAt    DateTime   @default(now()) @map("verified_at")
+  expiresAt     DateTime?  @map("expires_at")
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  candidate     Candidate  @relation(fields: [candidateId], references: [id])
+  assessment    Assessment? @relation(fields: [assessmentId], references: [id])
+
+  @@unique([candidateId, skillName])
+  @@map("skill_badges")
+}
+
 model Interview {
-  id            String   @id @default(uuid())
-  applicationId String   @map("application_id")
-  scheduledAt   DateTime @map("scheduled_at")
-  status        String   @default("scheduled")
-  meetingUrl    String?  @map("meeting_url")
-  createdAt     DateTime @default(now()) @map("created_at")
-  application   Application @relation(fields: [applicationId], references: [id])
+  id              String    @id @default(uuid())
+  applicationId   String    @map("application_id")
+  interviewType   String?   @map("interview_type")
+  title           String?
+  description     String?
+  scheduledAt     DateTime  @map("scheduled_at")
+  durationMinutes Int?      @default(60) @map("duration_minutes")
+  timezone        String?   @default("UTC")
+  meetingUrl      String?   @map("meeting_url")
+  meetingProvider String?   @map("meeting_provider")
+  location        String?
+  status          String    @default("scheduled")
+  recordingUrl    String?   @map("recording_url")
+  transcript      String?
+  aiSummary       String?   @map("ai_summary")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  application     Application @relation(fields: [applicationId], references: [id])
+  participants    InterviewParticipant[]
+  feedback        InterviewFeedback[]
+
   @@map("interviews")
+}
+
+model InterviewParticipant {
+  id              String    @id @default(uuid())
+  interviewId     String    @map("interview_id")
+  userId          String?   @map("user_id")
+  participantType String    @map("participant_type")
+  responseStatus  String    @default("pending") @map("response_status")
+  attended        Boolean?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  user            User?     @relation(fields: [userId], references: [id])
+
+  @@map("interview_participants")
+}
+
+model InterviewFeedback {
+  id             String    @id @default(uuid())
+  interviewId    String    @map("interview_id")
+  interviewerId  String    @map("interviewer_id")
+  overallRating  Int       @map("overall_rating")
+  recommendation String
+  strengths      String?
+  concerns       String?
+  notes          String?
+  scorecard      Json?
+  submittedAt    DateTime  @default(now()) @map("submitted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  interview      Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewer    User      @relation(fields: [interviewerId], references: [id])
+
+  @@map("interview_feedback")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  message   String?
+  data      Json?
+  channel   String    @default("in_app")
+  read      Boolean   @default(false)
+  readAt    DateTime? @map("read_at")
+  sentAt    DateTime? @map("sent_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model AiAction {
+  id              String    @id @default(uuid())
+  agentType       String    @map("agent_type")
+  actionType      String    @map("action_type")
+  entityType      String?   @map("entity_type")
+  entityId        String?   @map("entity_id")
+  inputPayload    Json?     @map("input_payload")
+  outputPayload   Json?     @map("output_payload")
+  status          String    @default("pending")
+  errorMessage    String?   @map("error_message")
+  requiresApproval Boolean  @default(false) @map("requires_approval")
+  approvedBy      String?   @map("approved_by")
+  approvedAt      DateTime? @map("approved_at")
+  executedAt      DateTime? @map("executed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  approver        User?     @relation("ApprovedBy", fields: [approvedBy], references: [id])
+
+  @@map("ai_actions")
 }
