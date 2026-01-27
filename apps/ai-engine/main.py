@@ -52,6 +52,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:3002",
+        "http://localhost:3003",
         "http://localhost:4000",
         "http://localhost:5173",
         "https://www.viraworkx.ai"
@@ -484,17 +485,23 @@ async def approve_action(action_id: str, request: ApprovalRequest):
             await session.commit()
             await session.refresh(action)
 
-            # Notify Node.js API about the approval/rejection
-            from agents.base_agent import BaseAgent
-            base = BaseAgent.__new__(BaseAgent)
-            base.agent_type = "hitl"
-            await base.notify_node_api("ai/action-reviewed", {
-                "actionId": action_id,
-                "approved": request.approved,
-                "reviewerId": request.reviewer_id,
-                "entityType": action.entity_type,
-                "entityId": action.entity_id
-            })
+            # Notify Node.js API about the approval/rejection (best effort)
+            try:
+                import httpx
+                async with httpx.AsyncClient() as client:
+                    await client.post(
+                        f"{settings.node_api_url}/api/v1/ai/action-reviewed",
+                        json={
+                            "actionId": action_id,
+                            "approved": request.approved,
+                            "reviewerId": request.reviewer_id,
+                            "entityType": action.entity_type,
+                            "entityId": action.entity_id
+                        },
+                        timeout=5.0
+                    )
+            except Exception as notify_error:
+                logger.warning(f"Failed to notify Node.js API: {notify_error}")
 
             return {
                 "success": True,
