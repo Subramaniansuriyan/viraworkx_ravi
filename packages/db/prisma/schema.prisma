@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  userType      String    @map("user_type")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  candidate     Candidate?
+  @@map("users")
+}
+
+model Candidate {
+  id              String   @id @default(uuid())
+  userId          String   @unique @map("user_id")
+  firstName       String   @map("first_name")
+  lastName        String   @map("last_name")
+  headline        String?
+  location        String?
+  experienceYears Int?     @map("experience_years")
+  skills          String[]
+  resumeUrl       String?  @map("resume_url")
+  profileScore    Int      @default(0) @map("profile_score")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id])
+  applications    Application[]
+  assessments     Assessment[]
+  @@map("candidates")
+}
+
+model Client {
+  id          String   @id @default(uuid())
+  companyName String   @map("company_name")
+  industry    String?
+  planTier    String   @default("startup") @map("plan_tier")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  jobs        Job[]
+  @@map("clients")
+}
+
+model Job {
+  id             String   @id @default(uuid())
+  clientId       String   @map("client_id")
+  title          String
+  description    String?
+  salaryMin      Int?     @map("salary_min")
+  salaryMax      Int?     @map("salary_max")
+  location       String?
+  remotePolicy   String?  @map("remote_policy")
+  skillsRequired String[] @map("skills_required")
+  status         String   @default("draft")
+  imochaTestId   String?  @map("imocha_test_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  client         Client   @relation(fields: [clientId], references: [id])
+  applications   Application[]
+  @@map("jobs")
+}
+
+model Application {
+  id          String   @id @default(uuid())
+  candidateId String   @map("candidate_id")
+  jobId       String   @map("job_id")
+  stage       String   @default("new")
+  matchScore  Int?     @map("match_score")
+  aiSummary   String?  @map("ai_summary")
+  appliedAt   DateTime @default(now()) @map("applied_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  job         Job       @relation(fields: [jobId], references: [id])
+  interviews  Interview[]
+  @@unique([candidateId, jobId])
+  @@map("applications")
+}
+
+model Assessment {
+  id           String    @id @default(uuid())
+  candidateId  String    @map("candidate_id")
+  imochaTestId String    @map("imocha_test_id")
+  status       String    @default("pending")
+  score        Int?
+  completedAt  DateTime? @map("completed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  candidate    Candidate @relation(fields: [candidateId], references: [id])
+  @@map("assessments")
+}
+
+model Interview {
+  id            String   @id @default(uuid())
+  applicationId String   @map("application_id")
+  scheduledAt   DateTime @map("scheduled_at")
+  status        String   @default("scheduled")
+  meetingUrl    String?  @map("meeting_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  application   Application @relation(fields: [applicationId], references: [id])
+  @@map("interviews")
+}
