@@ -3,7 +3,7 @@ import { useAuthStore } from './stores/authStore'
 
 // Pages
 import Landing from './pages/Landing'
-import Dashboard from './pages/client/Dashboard'
+import ClientDashboard from './pages/client/Dashboard'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import CandidateProfile from './pages/candidate/Profile'
@@ -15,9 +15,25 @@ import ClientJobs from './pages/client/Jobs'
 import ClientJobForm from './pages/client/JobForm'
 import ClientPipeline from './pages/client/Pipeline'
 import AIMonitor from './pages/client/AIMonitor'
+import AdminDashboard from './pages/admin/Dashboard'
 
 // Components
 import ProtectedRoute from './components/shared/ProtectedRoute'
+
+// Smart dashboard redirect based on user type
+function DashboardRedirect() {
+  const { user } = useAuthStore()
+
+  if (user?.userType === 'candidate') {
+    return <CandidateDashboard />
+  } else if (user?.userType === 'client') {
+    return <ClientDashboard />
+  } else if (user?.userType === 'admin') {
+    return <AdminDashboard /> // ViraWorkx admin sees HITL dashboard
+  }
+
+  return <Navigate to="/login" replace />
+}
 
 export default function App() {
   const { isAuthenticated } = useAuthStore()
@@ -44,32 +60,32 @@ export default function App() {
       <Route path="/jobs" element={<JobList />} />
       <Route path="/jobs/:id" element={<JobDetail />} />
 
-      {/* Protected dashboard */}
+      {/* Protected dashboard - redirects based on user type */}
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <DashboardRedirect />
           </ProtectedRoute>
         }
       />
 
       {/* Client portal routes */}
       <Route
-        path="/client/*"
+        path="/client/dashboard"
         element={
           <ProtectedRoute allowedTypes={['client', 'admin']}>
-            <Dashboard />
+            <ClientDashboard />
           </ProtectedRoute>
         }
       />
 
       {/* Candidate portal routes */}
       <Route
-        path="/candidate/*"
+        path="/candidate/dashboard"
         element={
           <ProtectedRoute allowedTypes={['candidate']}>
-            <Dashboard />
+            <CandidateDashboard />
           </ProtectedRoute>
         }
       />
@@ -127,10 +143,19 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      {/* Admin routes - ViraWorkx Internal Team Only */}
       <Route
-        path="/client/ai-monitor"
+        path="/admin/dashboard"
         element={
-          <ProtectedRoute allowedTypes={['client', 'admin']}>
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/ai-monitor"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
             <AIMonitor />
           </ProtectedRoute>
         }
