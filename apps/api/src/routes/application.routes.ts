@@ -2,6 +2,7 @@ import { Router, Response } from 'express'
 import { z } from 'zod'
 import prisma from '../config/database.js'
 import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
+import { emailService } from '../services/email.service.js'
 
 const router = Router()
 
@@ -188,12 +189,50 @@ router.post('/:id/advance', authenticateToken, requireRole('client', 'admin'), a
         updatedAt: new Date()
       },
       include: {
-        job: { select: { title: true } },
+        job: {
+          select: { title: true },
+          include: { client: { select: { companyName: true } } }
+        },
         candidate: {
           include: { user: { select: { email: true } } }
         }
       }
     })
+
+    // Send email notification for important stage changes
+    const candidateEmail = updated.candidate?.user?.email
+    const candidateName = `${updated.candidate?.firstName} ${updated.candidate?.lastName}`
+    const jobTitle = updated.job?.title || 'Position'
+    const companyName = (updated.job as any)?.client?.companyName || 'Company'
+
+    if (candidateEmail) {
+      if (stage === 'offer') {
+        // Offer extended
+        emailService.sendOfferExtended(candidateEmail, {
+          candidateName,
+          jobTitle,
+          companyName
+        }).catch(err => console.error('Failed to send offer email:', err))
+      } else if (stage === 'shortlisted') {
+        // Shortlisted notification
+        emailService.sendApplicationStatusUpdate(candidateEmail, {
+          candidateName,
+          jobTitle,
+          companyName,
+          status: 'Shortlisted',
+          message: 'Congratulations! You have been shortlisted for the next round.'
+        }).catch(err => console.error('Failed to send status email:', err))
+      } else if (stage === 'interview') {
+        // Interview stage notification
+        emailService.sendApplicationStatusUpdate(candidateEmail, {
+          candidateName,
+          jobTitle,
+          companyName,
+          status: 'Interview Stage',
+          message: 'You have moved to the interview stage. We will contact you soon with scheduling details.'
+        }).catch(err => console.error('Failed to send status email:', err))
+      }
+    }
 
     res.json({ application: updated })
   } catch (error) {
@@ -218,8 +257,28 @@ router.post('/:id/reject', authenticateToken, requireRole('client', 'admin'), as
         notes,
         stageUpdatedAt: new Date(),
         updatedAt: new Date()
+      },
+      include: {
+        job: {
+          include: { client: { select: { companyName: true } } }
+        },
+        candidate: {
+          include: { user: { select: { email: true } } }
+        }
       }
     })
+
+    // Send rejection email
+    const candidateEmail = application.candidate?.user?.email
+    if (candidateEmail) {
+      emailService.sendApplicationStatusUpdate(candidateEmail, {
+        candidateName: `${application.candidate?.firstName} ${application.candidate?.lastName}`,
+        jobTitle: application.job?.title || 'Position',
+        companyName: (application.job as any)?.client?.companyName || 'Company',
+        status: 'Application Update',
+        message: 'Thank you for your interest. After careful consideration, we have decided to move forward with other candidates. We encourage you to apply for future positions that match your skills.'
+      }).catch(err => console.error('Failed to send rejection email:', err))
+    }
 
     res.json({ application })
   } catch (error) {

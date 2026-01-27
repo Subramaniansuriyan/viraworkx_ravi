@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import { z } from 'zod'
 import { authService } from '../services/auth.service.js'
 import { authenticateToken, AuthRequest } from '../middleware/auth.js'
+import { emailService } from '../services/email.service.js'
 
 const router = Router()
 
@@ -35,6 +36,16 @@ router.post('/register', async (req: Request, res: Response) => {
   try {
     const input = registerSchema.parse(req.body)
     const result = await authService.register(input)
+
+    // Send welcome email (non-blocking)
+    const userName = input.userType === 'candidate'
+      ? `${input.firstName} ${input.lastName}`
+      : input.companyName || 'there'
+
+    emailService.sendWelcome(input.email, {
+      userName,
+      userType: input.userType
+    }).catch(err => console.error('Failed to send welcome email:', err))
 
     res.status(201).json({
       message: 'Registration successful',
