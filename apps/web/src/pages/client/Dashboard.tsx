@@ -39,14 +39,14 @@ export default function ClientDashboard() {
   const recentAIActions = [
     { id: 1, action: 'Screened 34 new applications for React role', agent: 'Screening Agent', time: '1 hour ago' },
     { id: 2, action: 'Scheduled interview with Priya Sharma', agent: 'Scheduling Agent', time: '2 hours ago' },
-    { id: 3, action: 'Sent assessment reminder to 12 candidates', agent: 'Communication Agent', time: '3 hours ago' },
+    { id: 3, action: 'Sent follow-up emails to 12 shortlisted candidates', agent: 'Communication Agent', time: '3 hours ago' },
   ]
 
   // Mock top candidates
   const topCandidates = [
     { id: 1, name: 'Priya Sharma', role: 'Senior React Developer', matchScore: 96, status: 'Interview Scheduled', avatar: 'PS' },
     { id: 2, name: 'Ananya Gupta', role: 'ML Engineer', matchScore: 94, status: 'Offer Extended', avatar: 'AG' },
-    { id: 3, name: 'Arjun Patel', role: 'Full Stack Engineer', matchScore: 91, status: 'Assessment Pending', avatar: 'AP' },
+    { id: 3, name: 'Arjun Patel', role: 'Full Stack Engineer', matchScore: 91, status: 'Under Review', avatar: 'AP' },
   ]
 
   return (

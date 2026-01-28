@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { jobApi, assessmentApi } from '../../services/api'
+import { jobApi } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import {
   ArrowLeft,
@@ -34,8 +34,6 @@ interface JobFormData {
   remotePolicy: RemotePolicy
   skillsRequired: string[]
   skillsPreferred: string[]
-  benefits: string[]
-  imochaTestId: string
 }
 
 const initialFormData: JobFormData = {
@@ -54,8 +52,6 @@ const initialFormData: JobFormData = {
   remotePolicy: 'remote',
   skillsRequired: [],
   skillsPreferred: [],
-  benefits: [],
-  imochaTestId: '',
 }
 
 export default function JobForm() {
@@ -68,7 +64,6 @@ export default function JobForm() {
   const [formData, setFormData] = useState<JobFormData>(initialFormData)
   const [newSkill, setNewSkill] = useState('')
   const [newPreferredSkill, setNewPreferredSkill] = useState('')
-  const [newBenefit, setNewBenefit] = useState('')
 
   // Fetch existing job data if editing
   const { data: jobData, isLoading: jobLoading } = useQuery({
@@ -76,14 +71,6 @@ export default function JobForm() {
     queryFn: () => jobApi.getById(id!),
     enabled: isEditing,
   })
-
-  // Fetch iMocha tests
-  const { data: testsData } = useQuery({
-    queryKey: ['imocha-tests'],
-    queryFn: assessmentApi.getTests,
-  })
-
-  const tests = testsData?.data?.tests || []
 
   // Create mutation
   const createMutation = useMutation({
@@ -124,8 +111,6 @@ export default function JobForm() {
         remotePolicy: (job.remotePolicy || 'remote') as RemotePolicy,
         skillsRequired: job.skillsRequired || [],
         skillsPreferred: job.skillsPreferred || [],
-        benefits: job.benefits || [],
-        imochaTestId: job.imochaTestId || '',
       })
     }
   }, [jobData])
@@ -145,8 +130,6 @@ export default function JobForm() {
       remotePolicy: formData.remotePolicy,
       skillsRequired: formData.skillsRequired,
       skillsPreferred: formData.skillsPreferred,
-      benefits: formData.benefits,
-      imochaTestId: formData.imochaTestId || undefined,
       experienceMin: formData.experienceMin === '' ? undefined : Number(formData.experienceMin),
       experienceMax: formData.experienceMax === '' ? undefined : Number(formData.experienceMax),
       salaryMin: formData.salaryMin === '' ? undefined : Number(formData.salaryMin),
@@ -185,19 +168,6 @@ export default function JobForm() {
         skillsPreferred: formData.skillsPreferred.filter((_, i) => i !== index)
       })
     }
-  }
-
-  const addBenefit = () => {
-    if (!newBenefit.trim()) return
-    setFormData({ ...formData, benefits: [...formData.benefits, newBenefit.trim()] })
-    setNewBenefit('')
-  }
-
-  const removeBenefit = (index: number) => {
-    setFormData({
-      ...formData,
-      benefits: formData.benefits.filter((_, i) => i !== index)
-    })
   }
 
   const getUserInitials = () => {
@@ -559,68 +529,6 @@ export default function JobForm() {
                   </span>
                 ))}
               </div>
-            </div>
-          </div>
-
-          {/* Benefits */}
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Benefits</h2>
-
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={newBenefit}
-                onChange={(e) => setNewBenefit(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addBenefit())}
-                placeholder="Add a benefit..."
-                className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-              <button
-                type="button"
-                onClick={addBenefit}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-2">
-              {formData.benefits.map((benefit, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-lg"
-                >
-                  <span className="text-gray-700">{benefit}</span>
-                  <button type="button" onClick={() => removeBenefit(i)}>
-                    <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Assessment */}
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Assessment (iMocha)</h2>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Required Assessment Test
-              </label>
-              <select
-                value={formData.imochaTestId}
-                onChange={(e) => setFormData({ ...formData, imochaTestId: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="">No assessment required</option>
-                {tests.map((test: any) => (
-                  <option key={test.id} value={test.id}>
-                    {test.name} ({test.duration} min)
-                  </option>
-                ))}
-              </select>
-              <p className="text-sm text-gray-500 mt-1">
-                Select an iMocha test to automatically assess candidates
-              </p>
             </div>
           </div>
 

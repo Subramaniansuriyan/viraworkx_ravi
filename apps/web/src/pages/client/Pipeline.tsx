@@ -411,7 +411,7 @@ export default function Pipeline() {
               {/* Skill Badges */}
               {selectedCandidate.candidate?.skillBadges?.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="font-semibold text-gray-900 mb-3">Verified Skills (iMocha)</h4>
+                  <h4 className="font-semibold text-gray-900 mb-3">Verified Skills</h4>
                   <div className="space-y-2">
                     {selectedCandidate.candidate.skillBadges.map((badge: any, i: number) => (
                       <div
