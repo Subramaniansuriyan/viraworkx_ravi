@@ -103,6 +103,30 @@ export const candidateApi = {
     })
   },
 
+  uploadPanCard: (file: File) => {
+    const formData = new FormData()
+    formData.append('document', file)
+    return api.post<{ panCardUrl: string }>('/me/pan-card', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+
+  uploadAadhaarFront: (file: File) => {
+    const formData = new FormData()
+    formData.append('document', file)
+    return api.post<{ aadhaarFrontUrl: string }>('/me/aadhaar-front', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+
+  uploadAadhaarBack: (file: File) => {
+    const formData = new FormData()
+    formData.append('document', file)
+    return api.post<{ aadhaarBackUrl: string }>('/me/aadhaar-back', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+
   getSkillBadges: (candidateId: string) =>
     api.get<{ badges: SkillBadge[] }>(`/assessments/candidate/${candidateId}/badges`),
 

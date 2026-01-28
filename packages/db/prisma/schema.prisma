@@ -51,6 +51,11 @@ model Candidate {
   preferredLocations String[] @map("preferred_locations")
   workAuthorization String?  @map("work_authorization")
   willingToRelocate Boolean? @default(false) @map("willing_to_relocate")
+  panNumber         String?  @map("pan_number")
+  aadhaarNumber     String?  @map("aadhaar_number")
+  panCardUrl        String?  @map("pan_card_url")
+  aadhaarFrontUrl   String?  @map("aadhaar_front_url")
+  aadhaarBackUrl    String?  @map("aadhaar_back_url")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 

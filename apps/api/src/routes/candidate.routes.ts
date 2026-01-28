@@ -11,7 +11,10 @@ const router = Router()
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), 'uploads', file.fieldname === 'resume' ? 'resumes' : 'videos')
+    let subDir = 'resumes'
+    if (file.fieldname === 'video') subDir = 'videos'
+    else if (file.fieldname === 'document') subDir = 'documents'
+    const uploadDir = path.join(process.cwd(), 'uploads', subDir)
     fs.mkdirSync(uploadDir, { recursive: true })
     cb(null, uploadDir)
   },
@@ -24,7 +27,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB for resumes
+    fileSize: 10 * 1024 * 1024, // 10MB
   },
   fileFilter: (req, file, cb) => {
     if (file.fieldname === 'resume') {
@@ -42,6 +45,14 @@ const upload = multer({
         cb(null, true)
       } else {
         cb(new Error('Only MP4, WebM, and MOV videos are allowed'))
+      }
+    } else if (file.fieldname === 'document') {
+      const allowed = ['.jpg', '.jpeg', '.png', '.pdf']
+      const ext = path.extname(file.originalname).toLowerCase()
+      if (allowed.includes(ext)) {
+        cb(null, true)
+      } else {
+        cb(new Error('Only JPG, PNG, and PDF files are allowed'))
       }
     } else {
       cb(null, true)
@@ -71,6 +82,8 @@ const updateProfileSchema = z.object({
   preferredLocations: z.array(z.string()).optional(),
   workAuthorization: z.string().optional(),
   willingToRelocate: z.boolean().optional(),
+  panNumber: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Invalid PAN format (e.g., ABCDE1234F)').optional().nullable(),
+  aadhaarNumber: z.string().regex(/^\d{12}$/, 'Aadhaar must be 12 digits').optional().nullable(),
 })
 
 /**
@@ -326,6 +339,102 @@ router.post('/me/video', authenticateToken, upload.single('video'), async (req: 
   } catch (error) {
     console.error('Error uploading video:', error)
     res.status(500).json({ error: 'Failed to upload video' })
+  }
+})
+
+/**
+ * POST /api/v1/me/pan-card
+ * Upload PAN card document
+ */
+router.post('/me/pan-card', authenticateToken, upload.single('document'), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user || req.user.userType !== 'candidate') {
+      return res.status(403).json({ error: 'Only candidates can upload documents' })
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' })
+    }
+
+    const panCardUrl = `/uploads/documents/${req.file.filename}`
+
+    const candidate = await prisma.candidate.update({
+      where: { userId: req.user.userId },
+      data: { panCardUrl }
+    })
+
+    res.json({
+      message: 'PAN card uploaded successfully',
+      panCardUrl,
+      candidateId: candidate.id
+    })
+  } catch (error) {
+    console.error('Error uploading PAN card:', error)
+    res.status(500).json({ error: 'Failed to upload PAN card' })
+  }
+})
+
+/**
+ * POST /api/v1/me/aadhaar-front
+ * Upload Aadhaar card front
+ */
+router.post('/me/aadhaar-front', authenticateToken, upload.single('document'), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user || req.user.userType !== 'candidate') {
+      return res.status(403).json({ error: 'Only candidates can upload documents' })
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' })
+    }
+
+    const aadhaarFrontUrl = `/uploads/documents/${req.file.filename}`
+
+    const candidate = await prisma.candidate.update({
+      where: { userId: req.user.userId },
+      data: { aadhaarFrontUrl }
+    })
+
+    res.json({
+      message: 'Aadhaar front uploaded successfully',
+      aadhaarFrontUrl,
+      candidateId: candidate.id
+    })
+  } catch (error) {
+    console.error('Error uploading Aadhaar front:', error)
+    res.status(500).json({ error: 'Failed to upload Aadhaar front' })
+  }
+})
+
+/**
+ * POST /api/v1/me/aadhaar-back
+ * Upload Aadhaar card back
+ */
+router.post('/me/aadhaar-back', authenticateToken, upload.single('document'), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user || req.user.userType !== 'candidate') {
+      return res.status(403).json({ error: 'Only candidates can upload documents' })
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' })
+    }
+
+    const aadhaarBackUrl = `/uploads/documents/${req.file.filename}`
+
+    const candidate = await prisma.candidate.update({
+      where: { userId: req.user.userId },
+      data: { aadhaarBackUrl }
+    })
+
+    res.json({
+      message: 'Aadhaar back uploaded successfully',
+      aadhaarBackUrl,
+      candidateId: candidate.id
+    })
+  } catch (error) {
+    console.error('Error uploading Aadhaar back:', error)
+    res.status(500).json({ error: 'Failed to upload Aadhaar back' })
   }
 })
 

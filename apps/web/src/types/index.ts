@@ -37,6 +37,11 @@ export interface Candidate {
   preferredLocations?: string[]
   workAuthorization?: string
   willingToRelocate?: boolean
+  panNumber?: string
+  aadhaarNumber?: string
+  panCardUrl?: string
+  aadhaarFrontUrl?: string
+  aadhaarBackUrl?: string
   createdAt: string
   updatedAt: string
 }

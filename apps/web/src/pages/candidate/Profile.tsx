@@ -53,8 +53,15 @@ export default function CandidateProfile() {
     portfolioUrl: '',
     expectedSalaryMin: 0,
     expectedSalaryMax: 0,
+    panNumber: '',
+    aadhaarNumber: '',
   })
+  const [panError, setPanError] = useState('')
+  const [aadhaarError, setAadhaarError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const panCardInputRef = useRef<HTMLInputElement>(null)
+  const aadhaarFrontInputRef = useRef<HTMLInputElement>(null)
+  const aadhaarBackInputRef = useRef<HTMLInputElement>(null)
 
   // Fetch profile data
   useEffect(() => {
@@ -159,16 +166,66 @@ export default function CandidateProfile() {
         portfolioUrl: profile.portfolioUrl || '',
         expectedSalaryMin: profile.expectedSalaryMin || 0,
         expectedSalaryMax: profile.expectedSalaryMax || 0,
+        panNumber: profile.panNumber || '',
+        aadhaarNumber: profile.aadhaarNumber || '',
       })
+      setPanError('')
+      setAadhaarError('')
       setShowEditModal(true)
     }
   }
 
   // Save edit form
   const handleSaveEdit = async () => {
-    const success = await saveProfile(editForm)
+    // Validate PAN format
+    if (editForm.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(editForm.panNumber)) {
+      setPanError('Invalid PAN format (e.g., ABCDE1234F)')
+      return
+    }
+    setPanError('')
+
+    // Validate Aadhaar format
+    if (editForm.aadhaarNumber && !/^\d{12}$/.test(editForm.aadhaarNumber)) {
+      setAadhaarError('Aadhaar must be exactly 12 digits')
+      return
+    }
+    setAadhaarError('')
+
+    const dataToSave: any = { ...editForm }
+    if (!dataToSave.panNumber) dataToSave.panNumber = null
+    if (!dataToSave.aadhaarNumber) dataToSave.aadhaarNumber = null
+
+    const success = await saveProfile(dataToSave)
     if (success) {
       setShowEditModal(false)
+    }
+  }
+
+  // Handle document uploads
+  const handleDocumentUpload = async (
+    type: 'panCard' | 'aadhaarFront' | 'aadhaarBack',
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0]
+    if (!file || !profile) return
+
+    try {
+      setSaving(true)
+      if (type === 'panCard') {
+        const response = await candidateApi.uploadPanCard(file)
+        setProfile({ ...profile, panCardUrl: response.data.panCardUrl })
+      } else if (type === 'aadhaarFront') {
+        const response = await candidateApi.uploadAadhaarFront(file)
+        setProfile({ ...profile, aadhaarFrontUrl: response.data.aadhaarFrontUrl })
+      } else {
+        const response = await candidateApi.uploadAadhaarBack(file)
+        setProfile({ ...profile, aadhaarBackUrl: response.data.aadhaarBackUrl })
+      }
+    } catch (err: any) {
+      console.error(`Failed to upload ${type}:`, err)
+      setError(err.response?.data?.error || `Failed to upload document`)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -523,6 +580,76 @@ export default function CandidateProfile() {
                         onChange={handleResumeUpload}
                         className="hidden"
                       />
+                    </div>
+
+                    {/* Identity Documents Status */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Identity Documents</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                              profile.panNumber ? 'bg-green-100' : 'bg-gray-200'
+                            }`}>
+                              <FileText className={`w-5 h-5 ${profile.panNumber ? 'text-green-600' : 'text-gray-400'}`} />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">PAN Card</p>
+                              <p className="text-xs text-gray-500">
+                                {profile.panNumber
+                                  ? `${profile.panNumber.substring(0, 3)}****${profile.panNumber.substring(8)}`
+                                  : 'Not provided'}
+                                {profile.panCardUrl ? ' - Document uploaded' : ''}
+                              </p>
+                            </div>
+                          </div>
+                          {profile.panNumber ? (
+                            <Check className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <button
+                              onClick={openEditModal}
+                              className="text-sm text-primary font-medium hover:text-primary-700"
+                            >
+                              Add
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                              profile.aadhaarNumber ? 'bg-green-100' : 'bg-gray-200'
+                            }`}>
+                              <Shield className={`w-5 h-5 ${profile.aadhaarNumber ? 'text-green-600' : 'text-gray-400'}`} />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">Aadhaar Card</p>
+                              <p className="text-xs text-gray-500">
+                                {profile.aadhaarNumber
+                                  ? `****${profile.aadhaarNumber.substring(8)}`
+                                  : 'Not provided'}
+                                {profile.aadhaarFrontUrl && profile.aadhaarBackUrl
+                                  ? ' - Both sides uploaded'
+                                  : profile.aadhaarFrontUrl
+                                  ? ' - Front uploaded'
+                                  : profile.aadhaarBackUrl
+                                  ? ' - Back uploaded'
+                                  : ''}
+                              </p>
+                            </div>
+                          </div>
+                          {profile.aadhaarNumber ? (
+                            <Check className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <button
+                              onClick={openEditModal}
+                              className="text-sm text-primary font-medium hover:text-primary-700"
+                            >
+                              Add
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -949,6 +1076,152 @@ export default function CandidateProfile() {
                     onChange={(e) => setEditForm({ ...editForm, portfolioUrl: e.target.value })}
                     placeholder="https://yourportfolio.com"
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Identity Documents */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-900">Identity Documents</h3>
+
+                {/* PAN Card Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">PAN Card Number</label>
+                  <input
+                    type="text"
+                    value={editForm.panNumber}
+                    onChange={(e) => {
+                      setEditForm({ ...editForm, panNumber: e.target.value.toUpperCase() })
+                      setPanError('')
+                    }}
+                    placeholder="e.g., ABCDE1234F"
+                    maxLength={10}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                      panError ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                  />
+                  {panError && <p className="text-red-500 text-xs mt-1">{panError}</p>}
+                </div>
+
+                {/* PAN Card Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">PAN Card Document</label>
+                  {profile?.panCardUrl ? (
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-sm text-green-700">PAN card uploaded</span>
+                      </div>
+                      <button
+                        onClick={() => panCardInputRef.current?.click()}
+                        className="text-sm text-primary hover:text-primary-700 font-medium"
+                      >
+                        Replace
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => panCardInputRef.current?.click()}
+                      className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                      <p className="text-sm text-gray-500">Upload PAN card (JPG, PNG, or PDF)</p>
+                    </div>
+                  )}
+                  <input
+                    ref={panCardInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    onChange={(e) => handleDocumentUpload('panCard', e)}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Aadhaar Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Aadhaar Card Number</label>
+                  <input
+                    type="text"
+                    value={editForm.aadhaarNumber}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '')
+                      setEditForm({ ...editForm, aadhaarNumber: val })
+                      setAadhaarError('')
+                    }}
+                    placeholder="12-digit Aadhaar number"
+                    maxLength={12}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                      aadhaarError ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                  />
+                  {aadhaarError && <p className="text-red-500 text-xs mt-1">{aadhaarError}</p>}
+                </div>
+
+                {/* Aadhaar Front Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Aadhaar Card (Front)</label>
+                  {profile?.aadhaarFrontUrl ? (
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-sm text-green-700">Aadhaar front uploaded</span>
+                      </div>
+                      <button
+                        onClick={() => aadhaarFrontInputRef.current?.click()}
+                        className="text-sm text-primary hover:text-primary-700 font-medium"
+                      >
+                        Replace
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => aadhaarFrontInputRef.current?.click()}
+                      className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                      <p className="text-sm text-gray-500">Upload Aadhaar front (JPG, PNG, or PDF)</p>
+                    </div>
+                  )}
+                  <input
+                    ref={aadhaarFrontInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    onChange={(e) => handleDocumentUpload('aadhaarFront', e)}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Aadhaar Back Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Aadhaar Card (Back)</label>
+                  {profile?.aadhaarBackUrl ? (
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-sm text-green-700">Aadhaar back uploaded</span>
+                      </div>
+                      <button
+                        onClick={() => aadhaarBackInputRef.current?.click()}
+                        className="text-sm text-primary hover:text-primary-700 font-medium"
+                      >
+                        Replace
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => aadhaarBackInputRef.current?.click()}
+                      className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                      <p className="text-sm text-gray-500">Upload Aadhaar back (JPG, PNG, or PDF)</p>
+                    </div>
+                  )}
+                  <input
+                    ref={aadhaarBackInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    onChange={(e) => handleDocumentUpload('aadhaarBack', e)}
+                    className="hidden"
                   />
                 </div>
               </div>
