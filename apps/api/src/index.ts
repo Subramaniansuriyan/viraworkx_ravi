@@ -15,6 +15,9 @@ import prisma from './config/database.js'
 import { typeDefs } from './graphql/schema/index.js'
 import { resolvers } from './graphql/resolvers/index.js'
 import { socketService } from './services/socket.service.js'
+import { initializeWorkers, closeWorkers, scheduleRecurringJobs, getQueueStats } from './jobs/index.js'
+import { closeAllQueues } from './jobs/queues.js'
+import { closeRedisConnection } from './config/redis.js'
 
 // Route imports
 import authRoutes from './routes/auth.routes.js'
@@ -46,6 +49,20 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }))
+
+// Job queue stats (for monitoring)
+app.get('/api/v1/jobs/stats', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    if (req.user?.userType !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' })
+    }
+    const stats = await getQueueStats()
+    res.json({ stats, timestamp: new Date().toISOString() })
+  } catch (error) {
+    console.error('Error fetching queue stats:', error)
+    res.status(500).json({ error: 'Failed to fetch queue stats' })
+  }
+})
 
 // Auth routes (public)
 app.use('/api/v1/auth', authRoutes)
@@ -220,6 +237,11 @@ const apolloServer = new ApolloServer<GraphQLContext>({
 
 // Start server function
 async function startServer() {
+  // Initialize job workers
+  initializeWorkers()
+  await scheduleRecurringJobs()
+  console.log('📋 Background job workers initialized')
+
   // Start Apollo Server
   await apolloServer.start()
 
@@ -262,8 +284,12 @@ async function startServer() {
   // Graceful shutdown
   process.on('SIGTERM', async () => {
     console.log('SIGTERM received, shutting down...')
+    await closeWorkers()
+    await closeAllQueues()
+    await closeRedisConnection()
     await apolloServer.stop()
     await prisma.$disconnect()
+    console.log('Graceful shutdown complete')
     process.exit(0)
   })
 
@@ -283,6 +309,7 @@ async function startServer() {
     console.log(`📊 Analytics endpoints ready`)
     console.log(`📈 GraphQL: http://localhost:${PORT}/graphql`)
     console.log(`🔌 WebSocket: ws://localhost:${PORT} (Socket.io)`)
+    console.log(`⚙️  Job queues: http://localhost:${PORT}/api/v1/jobs/stats`)
   })
 }
 

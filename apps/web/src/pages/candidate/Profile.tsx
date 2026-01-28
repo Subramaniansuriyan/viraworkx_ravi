@@ -38,6 +38,22 @@ export default function CandidateProfile() {
   const [activeTab, setActiveTab] = useState<'overview' | 'assessments' | 'applications'>('overview')
   const [editingSection, setEditingSection] = useState<string | null>(null)
   const [newSkill, setNewSkill] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({
+    firstName: '',
+    lastName: '',
+    headline: '',
+    location: '',
+    experienceYears: 0,
+    currentCompany: '',
+    currentTitle: '',
+    linkedinUrl: '',
+    githubUrl: '',
+    portfolioUrl: '',
+    expectedSalaryMin: 0,
+    expectedSalaryMax: 0,
+  })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Fetch profile data
@@ -92,37 +108,84 @@ export default function CandidateProfile() {
 
   const profileCompletion = calculateProfileCompletion()
 
+  // Save profile to backend
+  const saveProfile = async (data: Partial<CandidateProfile>) => {
+    try {
+      setSaving(true)
+      const response = await candidateApi.updateProfile(data)
+      setProfile(response.data.profile)
+      return true
+    } catch (err: any) {
+      console.error('Failed to save profile:', err)
+      setError(err.response?.data?.error || 'Failed to save changes')
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // Handle skill add
-  const handleAddSkill = () => {
+  const handleAddSkill = async () => {
     if (newSkill.trim() && profile) {
       const updatedSkills = [...(profile.skills || []), newSkill.trim()]
-      setProfile({ ...profile, skills: updatedSkills })
-      setNewSkill('')
-      // TODO: Save to backend
+      const success = await saveProfile({ skills: updatedSkills })
+      if (success) {
+        setNewSkill('')
+      }
     }
   }
 
   // Handle skill remove
-  const handleRemoveSkill = (skillToRemove: string) => {
+  const handleRemoveSkill = async (skillToRemove: string) => {
     if (profile) {
       const updatedSkills = profile.skills.filter(s => s !== skillToRemove)
-      setProfile({ ...profile, skills: updatedSkills })
-      // TODO: Save to backend
+      await saveProfile({ skills: updatedSkills })
+    }
+  }
+
+  // Open edit modal with current profile data
+  const openEditModal = () => {
+    if (profile) {
+      setEditForm({
+        firstName: profile.firstName || '',
+        lastName: profile.lastName || '',
+        headline: profile.headline || '',
+        location: profile.location || '',
+        experienceYears: profile.experienceYears || 0,
+        currentCompany: profile.currentCompany || '',
+        currentTitle: profile.currentTitle || '',
+        linkedinUrl: profile.linkedinUrl || '',
+        githubUrl: profile.githubUrl || '',
+        portfolioUrl: profile.portfolioUrl || '',
+        expectedSalaryMin: profile.expectedSalaryMin || 0,
+        expectedSalaryMax: profile.expectedSalaryMax || 0,
+      })
+      setShowEditModal(true)
+    }
+  }
+
+  // Save edit form
+  const handleSaveEdit = async () => {
+    const success = await saveProfile(editForm)
+    if (success) {
+      setShowEditModal(false)
     }
   }
 
   // Handle resume upload
   const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || !profile) return
 
     try {
-      // In a real app, this would upload to the server
-      console.log('Uploading resume:', file.name)
-      // const response = await candidateApi.uploadResume(file)
-      // setProfile({ ...profile!, resumeUrl: response.data.resumeUrl })
-    } catch (err) {
+      setSaving(true)
+      const response = await candidateApi.uploadResume(file)
+      setProfile({ ...profile, resumeUrl: response.data.resumeUrl })
+    } catch (err: any) {
       console.error('Failed to upload resume:', err)
+      setError(err.response?.data?.error || 'Failed to upload resume')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -242,7 +305,10 @@ export default function CandidateProfile() {
                     </div>
                   </div>
 
-                  <button className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2">
+                  <button
+                    onClick={openEditModal}
+                    className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
+                  >
                     <Edit2 className="w-4 h-4" /> Edit Profile
                   </button>
                 </div>
@@ -270,7 +336,10 @@ export default function CandidateProfile() {
                 </a>
               )}
               {!profile.linkedinUrl && !profile.githubUrl && (
-                <button className="px-3 py-1.5 rounded-lg border border-dashed border-gray-300 text-gray-500 text-sm hover:border-primary hover:text-primary transition-colors flex items-center gap-1">
+                <button
+                  onClick={openEditModal}
+                  className="px-3 py-1.5 rounded-lg border border-dashed border-gray-300 text-gray-500 text-sm hover:border-primary hover:text-primary transition-colors flex items-center gap-1"
+                >
                   <Plus className="w-4 h-4" /> Add links
                 </button>
               )}
@@ -634,7 +703,10 @@ export default function CandidateProfile() {
               </div>
 
               {profileCompletion.percentage < 100 && (
-                <button className="w-full mt-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors">
+                <button
+                  onClick={openEditModal}
+                  className="w-full mt-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                >
                   Complete Profile
                 </button>
               )}
@@ -732,6 +804,192 @@ export default function CandidateProfile() {
           </div>
         </div>
       </main>
+
+      {/* Edit Profile Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowEditModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Basic Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                  <input
+                    type="text"
+                    value={editForm.firstName}
+                    onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    value={editForm.lastName}
+                    onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Professional Headline</label>
+                <input
+                  type="text"
+                  value={editForm.headline}
+                  onChange={(e) => setEditForm({ ...editForm, headline: e.target.value })}
+                  placeholder="e.g., Senior Full Stack Developer | React | Node.js"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                  <input
+                    type="text"
+                    value={editForm.location}
+                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                    placeholder="e.g., Bangalore, India"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+                  <input
+                    type="number"
+                    value={editForm.experienceYears}
+                    onChange={(e) => setEditForm({ ...editForm, experienceYears: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Company</label>
+                  <input
+                    type="text"
+                    value={editForm.currentCompany}
+                    onChange={(e) => setEditForm({ ...editForm, currentCompany: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Title</label>
+                  <input
+                    type="text"
+                    value={editForm.currentTitle}
+                    onChange={(e) => setEditForm({ ...editForm, currentTitle: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Salary Expectations */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Expected Salary (USD/year)</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="number"
+                    value={editForm.expectedSalaryMin}
+                    onChange={(e) => setEditForm({ ...editForm, expectedSalaryMin: parseInt(e.target.value) || 0 })}
+                    placeholder="Min"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                  <input
+                    type="number"
+                    value={editForm.expectedSalaryMax}
+                    onChange={(e) => setEditForm({ ...editForm, expectedSalaryMax: parseInt(e.target.value) || 0 })}
+                    placeholder="Max"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Social Links */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-900">Social Links</h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
+                  <input
+                    type="url"
+                    value={editForm.linkedinUrl}
+                    onChange={(e) => setEditForm({ ...editForm, linkedinUrl: e.target.value })}
+                    placeholder="https://linkedin.com/in/yourprofile"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">GitHub URL</label>
+                  <input
+                    type="url"
+                    value={editForm.githubUrl}
+                    onChange={(e) => setEditForm({ ...editForm, githubUrl: e.target.value })}
+                    placeholder="https://github.com/yourusername"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Portfolio URL</label>
+                  <input
+                    type="url"
+                    value={editForm.portfolioUrl}
+                    onChange={(e) => setEditForm({ ...editForm, portfolioUrl: e.target.value })}
+                    placeholder="https://yourportfolio.com"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={saving}
+                className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Saving indicator */}
+      {saving && !showEditModal && (
+        <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg border border-gray-200 px-4 py-3 flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-gray-600">Saving changes...</span>
+        </div>
+      )}
     </div>
   )
 }

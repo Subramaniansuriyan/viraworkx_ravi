@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Users, Briefcase, Clock, Bot, Bell, Zap, LogOut, Search,
   TrendingUp, Building2, CheckCircle, XCircle, AlertTriangle,
-  Activity, Shield, Eye
+  Activity, Shield, Eye, ClipboardCheck
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 
@@ -116,6 +116,15 @@ export default function AdminDashboard() {
                     {stats.pending_approvals}
                   </span>
                 )}
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/admin/test-allocation"
+                className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg"
+              >
+                <ClipboardCheck className="w-5 h-5 mr-3" />
+                Test Allocation
               </Link>
             </li>
             <li>

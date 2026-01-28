@@ -421,4 +421,228 @@ router.get('/candidate/:candidateId/badges', authenticateToken, async (req: Auth
   }
 })
 
+// ============ ADMIN: Human-in-the-Loop Test Allocation ============
+
+/**
+ * GET /api/v1/assessments/admin/pending-allocation
+ * Get candidates with match scores pending test allocation (Admin only)
+ */
+router.get('/admin/pending-allocation', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    // Get applications that have been screened (have match score) but don't have assessments yet
+    const pendingApplications = await prisma.application.findMany({
+      where: {
+        matchScore: { not: null },
+        stage: { in: ['screening', 'new'] },
+        assessments: {
+          none: {} // No assessments assigned yet
+        }
+      },
+      include: {
+        candidate: {
+          include: {
+            user: { select: { email: true } },
+            skillBadges: {
+              where: { expiresAt: { gt: new Date() } },
+              take: 5
+            }
+          }
+        },
+        job: {
+          include: {
+            client: { select: { companyName: true, companyLogoUrl: true } }
+          }
+        }
+      },
+      orderBy: [
+        { matchScore: 'desc' },
+        { appliedAt: 'desc' }
+      ]
+    })
+
+    // Format response
+    const candidates = pendingApplications.map(app => ({
+      applicationId: app.id,
+      candidateId: app.candidateId,
+      jobId: app.jobId,
+      candidate: {
+        id: app.candidate.id,
+        firstName: app.candidate.firstName,
+        lastName: app.candidate.lastName,
+        email: app.candidate.user.email,
+        headline: app.candidate.headline,
+        location: app.candidate.location,
+        experienceYears: app.candidate.experienceYears,
+        skills: app.candidate.skills,
+        profileScore: app.candidate.profileScore,
+        badges: app.candidate.skillBadges.map(b => ({
+          skillName: b.skillName,
+          level: b.badgeLevel,
+          percentile: b.percentile
+        }))
+      },
+      job: {
+        id: app.job.id,
+        title: app.job.title,
+        company: app.job.client.companyName,
+        companyLogo: app.job.client.companyLogoUrl,
+        skillsRequired: app.job.skillsRequired,
+        recommendedTestId: app.job.imochaTestId
+      },
+      matchScore: app.matchScore,
+      aiSummary: app.aiSummary,
+      appliedAt: app.appliedAt,
+      stage: app.stage
+    }))
+
+    res.json({
+      candidates,
+      total: candidates.length
+    })
+  } catch (error) {
+    console.error('Error fetching pending allocations:', error)
+    res.status(500).json({ error: 'Failed to fetch pending allocations' })
+  }
+})
+
+/**
+ * POST /api/v1/assessments/admin/allocate
+ * Admin allocates a test to a matched candidate (Human-in-the-Loop)
+ */
+router.post('/admin/allocate', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { applicationId, testId, expiresInDays = 7, notes } = req.body
+
+    if (!applicationId || !testId) {
+      return res.status(400).json({ error: 'Application ID and Test ID are required' })
+    }
+
+    // Get application with candidate details
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        candidate: {
+          include: { user: { select: { email: true } } }
+        },
+        job: {
+          include: { client: { select: { companyName: true } } }
+        }
+      }
+    })
+
+    if (!application) {
+      return res.status(404).json({ error: 'Application not found' })
+    }
+
+    // Check if assessment already exists
+    const existingAssessment = await prisma.assessment.findFirst({
+      where: {
+        applicationId,
+        status: { in: ['pending', 'invited', 'started'] }
+      }
+    })
+
+    if (existingAssessment) {
+      return res.status(409).json({
+        error: 'Assessment already allocated for this application',
+        assessmentId: existingAssessment.id
+      })
+    }
+
+    // Calculate expiration
+    const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
+
+    // Create assessment invitation via iMocha service
+    const result = await imochaService.inviteCandidate({
+      testId,
+      candidateId: application.candidateId,
+      candidateEmail: application.candidate.user.email,
+      candidateName: `${application.candidate.firstName} ${application.candidate.lastName}`,
+      applicationId,
+      expiresAt
+    })
+
+    // Log admin action
+    await prisma.aiAction.create({
+      data: {
+        agentType: 'admin',
+        actionType: 'allocate_assessment',
+        entityType: 'application',
+        entityId: applicationId,
+        inputPayload: {
+          testId,
+          candidateId: application.candidateId,
+          candidateName: `${application.candidate.firstName} ${application.candidate.lastName}`,
+          jobTitle: application.job.title,
+          matchScore: application.matchScore,
+          notes
+        },
+        outputPayload: {
+          assessmentId: result.assessment.id,
+          invitationId: result.invitation.invitationId
+        },
+        status: 'completed',
+        approvedBy: req.user!.userId,
+        approvedAt: new Date(),
+        executedAt: new Date()
+      }
+    })
+
+    // Send notification to candidate
+    socketService.sendNotification(application.candidate.userId, {
+      id: `assessment-${result.assessment.id}`,
+      type: 'assessment_invite',
+      title: 'Assessment Invitation',
+      message: `You've been invited to complete an assessment for ${application.job.title} at ${application.job.client.companyName}`
+    })
+
+    res.json({
+      message: 'Assessment allocated successfully',
+      assessment: result.assessment,
+      invitation: result.invitation
+    })
+  } catch (error) {
+    console.error('Error allocating assessment:', error)
+    res.status(500).json({ error: 'Failed to allocate assessment' })
+  }
+})
+
+/**
+ * GET /api/v1/assessments/admin/allocation-history
+ * Get history of admin test allocations
+ */
+router.get('/admin/allocation-history', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const allocations = await prisma.aiAction.findMany({
+      where: {
+        agentType: 'admin',
+        actionType: 'allocate_assessment'
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        approver: { select: { email: true } }
+      }
+    })
+
+    res.json({
+      allocations: allocations.map(a => ({
+        id: a.id,
+        applicationId: a.entityId,
+        testId: (a.inputPayload as any)?.testId,
+        candidateName: (a.inputPayload as any)?.candidateName,
+        jobTitle: (a.inputPayload as any)?.jobTitle,
+        matchScore: (a.inputPayload as any)?.matchScore,
+        notes: (a.inputPayload as any)?.notes,
+        allocatedBy: a.approver?.email,
+        allocatedAt: a.approvedAt,
+        assessmentId: (a.outputPayload as any)?.assessmentId
+      }))
+    })
+  } catch (error) {
+    console.error('Error fetching allocation history:', error)
+    res.status(500).json({ error: 'Failed to fetch allocation history' })
+  }
+})
+
 export default router

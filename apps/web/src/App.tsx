@@ -16,6 +16,11 @@ import ClientJobForm from './pages/client/JobForm'
 import ClientPipeline from './pages/client/Pipeline'
 import AIMonitor from './pages/client/AIMonitor'
 import AdminDashboard from './pages/admin/Dashboard'
+import TestAllocation from './pages/admin/TestAllocation'
+import AdminClients from './pages/admin/Clients'
+import AdminCandidates from './pages/admin/Candidates'
+import AuditLog from './pages/admin/AuditLog'
+import AdminSettings from './pages/admin/Settings'
 
 // Components
 import ProtectedRoute from './components/shared/ProtectedRoute'
@@ -157,6 +162,46 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['admin']}>
             <AIMonitor />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/test-allocation"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <TestAllocation />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/clients"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminClients />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/candidates"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminCandidates />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/audit-log"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AuditLog />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/settings"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminSettings />
           </ProtectedRoute>
         }
       />

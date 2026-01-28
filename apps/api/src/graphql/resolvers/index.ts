@@ -530,8 +530,9 @@ export const resolvers = {
         where: { id },
         include: {
           candidate: true,
-          job: true,
-          application: true
+          application: {
+            include: { job: true }
+          }
         }
       })
     },
@@ -588,7 +589,7 @@ export const resolvers = {
       const where: any = {}
       if (status) where.status = status
 
-      return prisma.aIAction.findMany({
+      return prisma.aiAction.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         take: limit
@@ -850,7 +851,6 @@ export const resolvers = {
         data: {
           applicationId,
           candidateId: application.candidateId,
-          jobId: application.jobId,
           imochaTestId: testId,
           status: 'invited',
           invitedAt: new Date(),
@@ -912,7 +912,7 @@ export const resolvers = {
       })
 
       // Log AI action
-      await prisma.aIAction.create({
+      await prisma.aiAction.create({
         data: {
           agentType: 'screening',
           actionType: 'candidate_screening',
@@ -934,11 +934,11 @@ export const resolvers = {
     approveAIAction: async (_: any, { id }: any, context: Context) => {
       const user = requireRole(context, 'admin')
 
-      return prisma.aIAction.update({
+      return prisma.aiAction.update({
         where: { id },
         data: {
           status: 'completed',
-          approvedById: user.userId,
+          approvedBy: user.userId,
           approvedAt: new Date()
         }
       })
@@ -947,7 +947,7 @@ export const resolvers = {
     rejectAIAction: async (_: any, { id, reason }: any, context: Context) => {
       requireRole(context, 'admin')
 
-      return prisma.aIAction.update({
+      return prisma.aiAction.update({
         where: { id },
         data: {
           status: 'cancelled',

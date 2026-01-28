@@ -16,6 +16,7 @@
     "db:push": "prisma db push --schema=packages/db/prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema=packages/db/prisma/schema.prisma",
     "db:studio": "prisma studio --schema=packages/db/prisma/schema.prisma",
+    "db:seed": "cd packages/db && npx tsx prisma/seed.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",

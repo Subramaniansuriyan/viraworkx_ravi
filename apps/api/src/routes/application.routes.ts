@@ -195,7 +195,7 @@ router.post('/:id/advance', authenticateToken, requireRole('client', 'admin'), a
           include: { client: { select: { companyName: true } } }
         },
         candidate: {
-          include: { user: { select: { email: true } } }
+          include: { user: { select: { id: true, email: true } } }
         }
       }
     })

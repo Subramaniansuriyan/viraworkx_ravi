@@ -1,7 +1,7 @@
-import axios, { AxiosInstance } from 'axios'
+import axios, { AxiosInstance, AxiosError } from 'axios'
 import crypto from 'crypto'
 import prisma from '../config/database.js'
-import { imochaConfig, getBadgeLevel, BadgeLevel } from '../config/imocha.js'
+import { imochaConfig, getBadgeLevel, BadgeLevel, isIMochaConfigured } from '../config/imocha.js'
 import { socketService } from './socket.service.js'
 
 // Types
@@ -68,8 +68,11 @@ export interface IMochaWebhookPayload {
 
 class IMochaService {
   private client: AxiosInstance
+  private isConfigured: boolean
 
   constructor() {
+    this.isConfigured = isIMochaConfigured()
+
     this.client = axios.create({
       baseURL: imochaConfig.baseUrl,
       headers: {
@@ -77,8 +80,47 @@ class IMochaService {
         'X-Tenant-Id': imochaConfig.tenantId,
         'Content-Type': 'application/json',
       },
-      timeout: 30000,
+      timeout: imochaConfig.timeout,
     })
+
+    // Add retry interceptor
+    this.client.interceptors.response.use(
+      (response) => response,
+      async (error: AxiosError) => {
+        const config = error.config as any
+        if (!config || config.__retryCount >= imochaConfig.retries) {
+          return Promise.reject(error)
+        }
+
+        config.__retryCount = config.__retryCount || 0
+
+        // Only retry on network errors or 5xx errors
+        if (!error.response || error.response.status >= 500) {
+          config.__retryCount += 1
+          await this.delay(imochaConfig.retryDelay * config.__retryCount)
+          return this.client(config)
+        }
+
+        return Promise.reject(error)
+      }
+    )
+
+    if (!this.isConfigured) {
+      console.warn('iMocha API not configured - using mock mode')
+    } else {
+      console.log('iMocha API configured and ready')
+    }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  /**
+   * Check if iMocha is configured for live API calls
+   */
+  isLive(): boolean {
+    return this.isConfigured
   }
 
   /**
@@ -142,6 +184,11 @@ class IMochaService {
   }): Promise<{ assessment: any; invitation: IMochaInvitation }> {
     const expiresAt = params.expiresAt || new Date(Date.now() + imochaConfig.defaultExpiration)
 
+    // If not configured, use mock mode
+    if (!this.isConfigured) {
+      return this.createMockInvitation(params, expiresAt)
+    }
+
     try {
       // Call iMocha API to create invitation
       const response = await this.client.post('/invitations', {
@@ -192,11 +239,86 @@ class IMochaService {
         })
       }
 
+      console.log(`iMocha invitation sent: ${invitation.invitationId}`)
       return { assessment, invitation }
     } catch (error) {
+      const axiosError = error as AxiosError
+      if (axiosError.response) {
+        console.error('iMocha API error:', axiosError.response.status, axiosError.response.data)
+        // Handle specific error codes
+        if (axiosError.response.status === 401) {
+          throw new Error('iMocha authentication failed - check API credentials')
+        }
+        if (axiosError.response.status === 404) {
+          throw new Error('Test not found in iMocha')
+        }
+        if (axiosError.response.status === 429) {
+          throw new Error('iMocha rate limit exceeded - please try again later')
+        }
+      }
       console.error('Failed to create iMocha invitation:', error)
       throw new Error('Failed to send assessment invitation')
     }
+  }
+
+  /**
+   * Create mock invitation for development/testing
+   */
+  private async createMockInvitation(
+    params: {
+      testId: string
+      candidateId: string
+      candidateEmail: string
+      candidateName: string
+      applicationId?: string
+    },
+    expiresAt: Date
+  ): Promise<{ assessment: any; invitation: IMochaInvitation }> {
+    const invitationId = `mock-inv-${Date.now()}`
+
+    const invitation: IMochaInvitation = {
+      invitationId,
+      testId: params.testId,
+      testUrl: `https://assessment.imocha.io/test/${invitationId}`,
+      expiresAt: expiresAt.toISOString(),
+    }
+
+    // Get mock test name
+    const testNames: Record<string, string> = {
+      'react-senior': 'React.js Senior Developer',
+      'python-backend': 'Python Backend Developer',
+      'nodejs-fullstack': 'Node.js Full Stack',
+      'devops-aws': 'DevOps & AWS',
+      'ml-python': 'Machine Learning with Python',
+    }
+
+    const assessment = await prisma.assessment.create({
+      data: {
+        candidateId: params.candidateId,
+        applicationId: params.applicationId,
+        imochaTestId: params.testId,
+        imochaInvitationId: invitationId,
+        testName: testNames[params.testId] || 'Assessment',
+        status: 'invited',
+        invitedAt: new Date(),
+        expiresAt,
+      },
+      include: {
+        candidate: {
+          include: { user: { select: { email: true } } }
+        }
+      }
+    })
+
+    if (params.applicationId) {
+      await prisma.application.update({
+        where: { id: params.applicationId },
+        data: { stage: 'assessment' }
+      })
+    }
+
+    console.log(`Mock iMocha invitation created: ${invitationId}`)
+    return { assessment, invitation }
   }
 
   /**

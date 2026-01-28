@@ -90,7 +90,7 @@ export const candidateApi = {
   uploadResume: (file: File) => {
     const formData = new FormData()
     formData.append('resume', file)
-    return api.post<{ resumeUrl: string; parsedData?: any }>('/me/resume', formData, {
+    return api.post<{ resumeUrl: string; parsedData?: any }>('/candidates/me/resume', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
