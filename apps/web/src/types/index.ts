@@ -77,7 +77,7 @@ export interface Job {
   requirements?: string
   responsibilities?: string
   department?: string
-  employmentType?: 'full_time' | 'part_time' | 'contract' | 'internship'
+  employmentType?: 'freelancer' | 'contractor'
   experienceMin?: number
   experienceMax?: number
   salaryMin?: number
@@ -138,6 +138,7 @@ export interface Assessment {
   percentile?: number
   skillScores?: SkillScore[]
   reportUrl?: string
+  tier?: string
   proctoringFlags?: ProctoringFlags
   invitedAt?: string
   startedAt?: string
@@ -209,6 +210,112 @@ export type InterviewStatus =
   | 'cancelled'
   | 'no_show'
   | 'rescheduled'
+
+// Contract types
+export interface ContractTemplate {
+  id: string
+  name: string
+  description?: string
+  content: string
+  templateType: string
+  planTier?: string
+  version: number
+  isActive: boolean
+  createdBy?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type ContractStatus =
+  | 'draft'
+  | 'pending_review'
+  | 'pending_signatures'
+  | 'active'
+  | 'expired'
+  | 'terminated'
+
+export interface ContractTerms {
+  salary?: number
+  startDate?: string
+  duration?: string
+  [key: string]: any
+}
+
+export interface ContractSignature {
+  id: string
+  contractId: string
+  userId: string
+  signerRole: 'client' | 'candidate'
+  signedName?: string
+  signedAt?: string
+  ipAddress?: string
+  user?: { id: string; email: string }
+  createdAt: string
+}
+
+export interface Contract {
+  id: string
+  templateId: string
+  applicationId: string
+  clientId: string
+  candidateId: string
+  title: string
+  content: string
+  version: number
+  status: ContractStatus
+  terms?: ContractTerms
+  expiresAt?: string
+  activatedAt?: string
+  terminatedAt?: string
+  createdAt: string
+  updatedAt: string
+  template?: ContractTemplate
+  signatures: ContractSignature[]
+  application?: {
+    candidate?: { firstName: string; lastName: string }
+    job?: { title: string; client?: { companyName: string } }
+  }
+}
+
+// Subscription types
+export type SubscriptionStatus =
+  | 'incomplete'
+  | 'active'
+  | 'past_due'
+  | 'canceled'
+  | 'trialing'
+
+export interface Subscription {
+  id: string
+  clientId: string
+  stripeCustomerId?: string
+  stripeSubscriptionId?: string
+  stripePriceId?: string
+  planTier: 'startup' | 'growth' | 'enterprise'
+  status: SubscriptionStatus
+  currentPeriodStart?: string
+  currentPeriodEnd?: string
+  cancelAtPeriodEnd: boolean
+  trialEnd?: string
+  createdAt: string
+  updatedAt: string
+  payments?: PaymentInvoice[]
+}
+
+export interface PaymentInvoice {
+  id: string
+  subscriptionId: string
+  stripeInvoiceId?: string
+  amount: number
+  currency: string
+  status: 'pending' | 'paid' | 'failed' | 'refunded'
+  invoiceUrl?: string
+  invoicePdf?: string
+  periodStart?: string
+  periodEnd?: string
+  paidAt?: string
+  createdAt: string
+}
 
 // API Response types
 export interface ApiResponse<T> {

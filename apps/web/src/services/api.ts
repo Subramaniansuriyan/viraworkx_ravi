@@ -1,5 +1,8 @@
 import axios from 'axios'
-import type { CandidateProfile, Assessment, SkillBadge, IMochaTest, Job, Application, Client as ClientType } from '../types'
+import type {
+  CandidateProfile, Assessment, SkillBadge, IMochaTest, Job, Application,
+  Client as ClientType, ContractTemplate, Contract, Subscription, PaymentInvoice,
+} from '../types'
 
 const api = axios.create({
   baseURL: '/api/v1',
@@ -324,6 +327,51 @@ export interface AssessmentReport {
     faceNotDetected: boolean
     copyPasteDetected: boolean
   }
+}
+
+// Contract API
+export const contractApi = {
+  // Templates (admin)
+  getTemplates: () =>
+    api.get<{ templates: ContractTemplate[] }>('/contracts/templates'),
+  getTemplateById: (id: string) =>
+    api.get<{ template: ContractTemplate }>(`/contracts/templates/${id}`),
+  createTemplate: (data: Partial<ContractTemplate>) =>
+    api.post<{ template: ContractTemplate }>('/contracts/templates', data),
+  updateTemplate: (id: string, data: Partial<ContractTemplate>) =>
+    api.put<{ template: ContractTemplate }>(`/contracts/templates/${id}`, data),
+
+  // Contracts
+  getAll: () =>
+    api.get<{ contracts: Contract[] }>('/contracts'),
+  getById: (id: string) =>
+    api.get<{ contract: Contract }>(`/contracts/${id}`),
+  generate: (data: { applicationId: string; templateId: string; terms?: any }) =>
+    api.post<{ contract: Contract }>('/contracts/generate', data),
+  update: (id: string, data: Partial<Contract>) =>
+    api.put<{ contract: Contract }>(`/contracts/${id}`, data),
+  sendForSignatures: (id: string) =>
+    api.post<{ contract: Contract }>(`/contracts/${id}/send-for-signatures`),
+  sign: (id: string, signedName: string) =>
+    api.post<{ contract: Contract }>(`/contracts/${id}/sign`, { signedName }),
+  terminate: (id: string) =>
+    api.post<{ contract: Contract }>(`/contracts/${id}/terminate`),
+}
+
+// Payment API
+export const paymentApi = {
+  getSubscription: () =>
+    api.get<{ subscription: Subscription | null; planPricing: Record<string, { amount: number; label: string }> }>('/payments/subscription'),
+  createCheckout: (planTier: string, returnUrl?: string) =>
+    api.post<{ url: string }>('/payments/checkout', { planTier, returnUrl }),
+  openBillingPortal: (returnUrl?: string) =>
+    api.post<{ url: string }>('/payments/billing-portal', { returnUrl }),
+  changePlan: (newTier: string) =>
+    api.post<{ success: boolean; planTier: string }>('/payments/change-plan', { newTier }),
+  cancelSubscription: (atPeriodEnd?: boolean) =>
+    api.post<{ success: boolean }>('/payments/cancel', { atPeriodEnd }),
+  getInvoices: () =>
+    api.get<{ invoices: PaymentInvoice[] }>('/payments/invoices'),
 }
 
 export default api

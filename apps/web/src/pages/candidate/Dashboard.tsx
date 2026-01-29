@@ -123,6 +123,15 @@ export default function CandidateDashboard() {
                 Assessments
               </Link>
             </li>
+            <li>
+              <Link
+                to="/candidate/contracts"
+                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg"
+              >
+                <FileText className="w-5 h-5 mr-3" />
+                Contracts
+              </Link>
+            </li>
           </ul>
         </nav>
 

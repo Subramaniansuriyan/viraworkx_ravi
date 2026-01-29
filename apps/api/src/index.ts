@@ -30,18 +30,25 @@ import clientRoutes from './routes/client.routes.js'
 import notificationRoutes from './routes/notification.routes.js'
 import aiRoutes from './routes/ai.routes.js'
 import analyticsRoutes from './routes/analytics.routes.js'
+import contractRoutes from './routes/contract.routes.js'
+import paymentRoutes from './routes/payment.routes.js'
 
 import { authenticateToken, AuthRequest } from './middleware/auth.js'
+import { requireActiveSubscription } from './middleware/subscription.js'
 
 const app = express()
 
 // Middleware
 app.use(helmet())
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:5000', 'http://localhost:5173'],
   credentials: true
 }))
 app.use(morgan('dev'))
+
+// Stripe webhook needs raw body - must be before express.json()
+app.use('/api/v1/payments/webhook', express.raw({ type: 'application/json' }))
+
 app.use(express.json())
 
 // Serve static files (uploads)
@@ -88,11 +95,17 @@ app.use('/api/v1/clients', clientRoutes)
 // Notification routes
 app.use('/api/v1/notifications', notificationRoutes)
 
-// AI routes
-app.use('/api/v1/ai', aiRoutes)
+// AI routes (require active subscription for client users)
+app.use('/api/v1/ai', authenticateToken, requireActiveSubscription, aiRoutes)
 
 // Analytics routes
 app.use('/api/v1/analytics', analyticsRoutes)
+
+// Contract routes
+app.use('/api/v1/contracts', contractRoutes)
+
+// Payment routes
+app.use('/api/v1/payments', paymentRoutes)
 
 // Me routes (convenience endpoints for current user)
 app.get('/api/v1/me/profile', authenticateToken, async (req: AuthRequest, res) => {
@@ -249,7 +262,7 @@ async function startServer() {
   app.use(
     '/graphql',
     cors<cors.CorsRequest>({
-      origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+      origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:5000', 'http://localhost:5173'],
       credentials: true
     }),
     express.json(),

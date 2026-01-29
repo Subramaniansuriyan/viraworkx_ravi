@@ -9,6 +9,7 @@ export const QUEUE_NAMES = {
   NOTIFICATIONS: 'notifications',
   ANALYTICS: 'analytics',
   RESUME_PARSING: 'resume-parsing',
+  PAYMENT: 'payment',
 } as const
 
 export type QueueName = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES]
@@ -122,4 +123,9 @@ export interface ResumeParsingJobData {
   candidateId: string
   resumeUrl: string
   applicationId?: string
+}
+
+export interface PaymentJobData {
+  type: 'payment_reminder' | 'contract_expiring'
+  data?: Record<string, any>
 }

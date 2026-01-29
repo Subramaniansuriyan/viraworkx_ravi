@@ -21,6 +21,7 @@ model User {
   interviewParticipants InterviewParticipant[]
   interviewFeedback InterviewFeedback[]
   aiActionsApproved AiAction[] @relation("ApprovedBy")
+  contractSignatures ContractSignature[]
 
   @@map("users")
 }
@@ -83,6 +84,8 @@ model Client {
 
   jobs                 Job[]
   clientUsers          ClientUser[]
+  subscription         Subscription?
+  contracts            Contract[]
 
   @@map("clients")
 }
@@ -161,6 +164,7 @@ model Application {
   job             Job       @relation(fields: [jobId], references: [id])
   interviews      Interview[]
   assessments     Assessment[]
+  contracts       Contract[]
 
   @@unique([candidateId, jobId])
   @@map("applications")
@@ -180,6 +184,7 @@ model Assessment {
   percentile          Int?
   skillScores         Json?     @map("skill_scores")
   reportUrl           String?   @map("report_url")
+  tier                String?
   proctoringFlags     Json?     @map("proctoring_flags")
   invitedAt           DateTime? @map("invited_at")
   startedAt           DateTime? @map("started_at")
@@ -316,4 +321,106 @@ model AiAction {
   approver         User?     @relation("ApprovedBy", fields: [approvedBy], references: [id])
 
   @@map("ai_actions")
+}
+
+model ContractTemplate {
+  id           String    @id @default(uuid())
+  name         String
+  description  String?
+  content      String
+  templateType String    @map("template_type") // freelancer, contractor, nda
+  planTier     String?   @map("plan_tier")
+  version      Int       @default(1)
+  isActive     Boolean   @default(true) @map("is_active")
+  createdBy    String?   @map("created_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  contracts    Contract[]
+
+  @@map("contract_templates")
+}
+
+model Contract {
+  id            String    @id @default(uuid())
+  templateId    String    @map("template_id")
+  applicationId String    @map("application_id")
+  clientId      String    @map("client_id")
+  candidateId   String    @map("candidate_id")
+  title         String
+  content       String
+  version       Int       @default(1)
+  status        String    @default("draft") // draft, pending_review, pending_signatures, active, expired, terminated
+  terms         Json?
+  expiresAt     DateTime? @map("expires_at")
+  activatedAt   DateTime? @map("activated_at")
+  terminatedAt  DateTime? @map("terminated_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  template      ContractTemplate @relation(fields: [templateId], references: [id])
+  application   Application      @relation(fields: [applicationId], references: [id])
+  client        Client           @relation(fields: [clientId], references: [id])
+  signatures    ContractSignature[]
+
+  @@map("contracts")
+}
+
+model ContractSignature {
+  id         String    @id @default(uuid())
+  contractId String    @map("contract_id")
+  userId     String    @map("user_id")
+  signerRole String    @map("signer_role") // client, candidate
+  signedName String?   @map("signed_name")
+  signedAt   DateTime? @map("signed_at")
+  ipAddress  String?   @map("ip_address")
+  userAgent  String?   @map("user_agent")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  contract   Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@unique([contractId, signerRole])
+  @@map("contract_signatures")
+}
+
+model Subscription {
+  id                    String    @id @default(uuid())
+  clientId              String    @unique @map("client_id")
+  stripeCustomerId      String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId  String?   @unique @map("stripe_subscription_id")
+  stripePriceId         String?   @map("stripe_price_id")
+  planTier              String    @default("startup") @map("plan_tier") // startup, growth, enterprise
+  status                String    @default("incomplete") // incomplete, active, past_due, canceled, trialing
+  currentPeriodStart    DateTime? @map("current_period_start")
+  currentPeriodEnd      DateTime? @map("current_period_end")
+  cancelAtPeriodEnd     Boolean   @default(false) @map("cancel_at_period_end")
+  trialEnd              DateTime? @map("trial_end")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  client                Client    @relation(fields: [clientId], references: [id])
+  payments              Payment[]
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                    String    @id @default(uuid())
+  subscriptionId        String    @map("subscription_id")
+  stripeInvoiceId       String?   @unique @map("stripe_invoice_id")
+  stripePaymentIntentId String?   @map("stripe_payment_intent_id")
+  amount                Int       // in cents
+  currency              String    @default("usd")
+  status                String    @default("pending") // pending, paid, failed, refunded
+  invoiceUrl            String?   @map("invoice_url")
+  invoicePdf            String?   @map("invoice_pdf")
+  periodStart           DateTime? @map("period_start")
+  periodEnd             DateTime? @map("period_end")
+  paidAt                DateTime? @map("paid_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  subscription          Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@map("payments")
 }

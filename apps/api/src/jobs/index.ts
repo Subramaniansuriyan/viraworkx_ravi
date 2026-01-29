@@ -9,11 +9,13 @@ import {
   NotificationJobData,
   AnalyticsJobData,
   ResumeParsingJobData,
+  PaymentJobData,
 } from './queues.js'
 import { processEmailJob } from './processors/email.processor.js'
 import { processAssessmentJob } from './processors/assessment.processor.js'
 import { processAIScreeningJob } from './processors/ai-screening.processor.js'
 import { processNotificationJob } from './processors/notification.processor.js'
+import { processPaymentJob } from './processors/payment.processor.js'
 
 // Store workers for cleanup
 const workers: Worker[] = []
@@ -75,6 +77,18 @@ export function initializeWorkers(): void {
   )
   setupWorkerEvents(notificationWorker, 'Notification')
   workers.push(notificationWorker)
+
+  // Payment worker
+  const paymentWorker = new Worker(
+    QUEUE_NAMES.PAYMENT,
+    async (job: Job<PaymentJobData>) => processPaymentJob(job),
+    {
+      connection: redisConnection,
+      concurrency: 2,
+    }
+  )
+  setupWorkerEvents(paymentWorker, 'Payment')
+  workers.push(paymentWorker)
 
   console.log(`Initialized ${workers.length} job workers`)
 }
@@ -146,6 +160,20 @@ export async function addAIScreeningJob(data: AIScreeningJobData): Promise<strin
 }
 
 /**
+ * Add payment job to queue
+ */
+export async function addPaymentJob(
+  data: PaymentJobData,
+  options?: { delay?: number }
+): Promise<string> {
+  const queue = getQueue(QUEUE_NAMES.PAYMENT)
+  const job = await queue.add(data.type, data, {
+    delay: options?.delay,
+  })
+  return job.id!
+}
+
+/**
  * Add notification job to queue
  */
 export async function addNotificationJob(
@@ -174,6 +202,31 @@ export async function scheduleRecurringJobs(): Promise<void> {
         pattern: '0 * * * *', // Every hour
       },
       jobId: 'recurring-check-expired',
+    }
+  )
+
+  // Daily payment reminder check (9am UTC)
+  const paymentQueue = getQueue(QUEUE_NAMES.PAYMENT)
+  await paymentQueue.add(
+    'payment-reminder',
+    { type: 'payment_reminder' },
+    {
+      repeat: {
+        pattern: '0 9 * * *', // Daily at 9am UTC
+      },
+      jobId: 'recurring-payment-reminder',
+    }
+  )
+
+  // Weekly contract expiry check (Monday 9am UTC)
+  await paymentQueue.add(
+    'contract-expiring',
+    { type: 'contract_expiring' },
+    {
+      repeat: {
+        pattern: '0 9 * * 1', // Every Monday at 9am UTC
+      },
+      jobId: 'recurring-contract-expiring',
     }
   )
 

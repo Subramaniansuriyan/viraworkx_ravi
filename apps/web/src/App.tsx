@@ -21,6 +21,12 @@ import AdminClients from './pages/admin/Clients'
 import AdminCandidates from './pages/admin/Candidates'
 import AuditLog from './pages/admin/AuditLog'
 import AdminSettings from './pages/admin/Settings'
+import ContractTemplates from './pages/admin/ContractTemplates'
+import ClientContracts from './pages/client/Contracts'
+import ClientContractReview from './pages/client/ContractReview'
+import Billing from './pages/client/Billing'
+import CandidateContracts from './pages/candidate/Contracts'
+import CandidateContractReview from './pages/candidate/ContractReview'
 
 // Components
 import ProtectedRoute from './components/shared/ProtectedRoute'
@@ -202,6 +208,60 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['admin']}>
             <AdminSettings />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Client contract & billing routes */}
+      <Route
+        path="/client/contracts"
+        element={
+          <ProtectedRoute allowedTypes={['client', 'admin']}>
+            <ClientContracts />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/client/contracts/:id"
+        element={
+          <ProtectedRoute allowedTypes={['client', 'admin']}>
+            <ClientContractReview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/client/billing"
+        element={
+          <ProtectedRoute allowedTypes={['client', 'admin']}>
+            <Billing />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Candidate contract routes */}
+      <Route
+        path="/candidate/contracts"
+        element={
+          <ProtectedRoute allowedTypes={['candidate']}>
+            <CandidateContracts />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/candidate/contracts/:id"
+        element={
+          <ProtectedRoute allowedTypes={['candidate']}>
+            <CandidateContractReview />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin contract templates */}
+      <Route
+        path="/admin/contract-templates"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <ContractTemplates />
           </ProtectedRoute>
         }
       />
