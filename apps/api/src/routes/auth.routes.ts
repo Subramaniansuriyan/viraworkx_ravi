@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { authService } from '../services/auth.service.js'
 import { authenticateToken, AuthRequest } from '../middleware/auth.js'
 import { emailService } from '../services/email.service.js'
+import { recordFailedLogin } from '../middleware/blocklist.js'
+import { logSecurityEvent } from '../middleware/security-logger.js'
 
 const router = Router()
 
@@ -93,6 +95,9 @@ router.post('/login', async (req: Request, res: Response) => {
     }
     if (error instanceof Error) {
       if (error.message === 'Invalid email or password') {
+        const ip = req.ip || req.socket.remoteAddress || 'unknown'
+        recordFailedLogin(ip)
+        logSecurityEvent('failed_login', req, { email: req.body?.email })
         return res.status(401).json({ error: error.message })
       }
       return res.status(500).json({ error: error.message })

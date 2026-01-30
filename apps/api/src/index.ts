@@ -36,10 +36,25 @@ import paymentRoutes from './routes/payment.routes.js'
 import { authenticateToken, AuthRequest } from './middleware/auth.js'
 import { requireActiveSubscription } from './middleware/subscription.js'
 
-const app = express()
+// Security middleware imports
+import { requestId } from './middleware/request-id.js'
+import { checkBlocklist, getBlockedIPs, manualBlockIP, unblockIP, getSecurityStats } from './middleware/blocklist.js'
+import { globalLimiter, authLimiter, authSlowDown, apiLimiter } from './middleware/rate-limit.js'
+import { securityLogger, logSecurityEvent } from './middleware/security-logger.js'
 
-// Middleware
+const app = express()
+const startTime = Date.now()
+
+// 1. Request ID (first — traceability for all subsequent logs)
+app.use(requestId)
+
+// 2. Blocklist check (reject blocked IPs before any processing)
+app.use(checkBlocklist)
+
+// 3. Security headers
 app.use(helmet())
+
+// 4. CORS
 const CORS_ORIGINS = [
   'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002',
   'http://localhost:5000', 'http://localhost:5173',
@@ -49,6 +64,14 @@ app.use(cors({
   origin: CORS_ORIGINS,
   credentials: true
 }))
+
+// 5. Global rate limiter
+app.use(globalLimiter)
+
+// 6. Security logger (suspicious path detection)
+app.use(securityLogger)
+
+// 7. Request logging
 app.use(morgan('dev'))
 
 // Stripe webhook needs raw body - must be before express.json()
@@ -59,8 +82,20 @@ app.use(express.json({ limit: '10mb' }))
 // Serve static files (uploads)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
-// Health check
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }))
+// Health check (expanded with uptime and memory)
+app.get('/health', (req, res) => {
+  const memUsage = process.memoryUsage()
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor((Date.now() - startTime) / 1000),
+    memory: {
+      rss: Math.round(memUsage.rss / 1024 / 1024),
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+    },
+  })
+})
 
 // Job queue stats (for monitoring)
 app.get('/api/v1/jobs/stats', authenticateToken, async (req: AuthRequest, res) => {
@@ -79,41 +114,84 @@ app.get('/api/v1/jobs/stats', authenticateToken, async (req: AuthRequest, res) =
   }
 })
 
-// Auth routes (public)
-app.use('/api/v1/auth', authRoutes)
+// ── Admin security endpoints ──
+
+app.get('/api/v1/admin/blocked-ips', authenticateToken, (req: AuthRequest, res) => {
+  if (req.user?.userType !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' })
+  }
+  res.json({ blockedIPs: getBlockedIPs() })
+})
+
+app.post('/api/v1/admin/blocked-ips', authenticateToken, (req: AuthRequest, res) => {
+  if (req.user?.userType !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' })
+  }
+  const { ip, reason, durationMs } = req.body
+  if (!ip) {
+    return res.status(400).json({ error: 'IP address is required' })
+  }
+  manualBlockIP(ip, reason || 'manual_block', durationMs)
+  logSecurityEvent('ip_blocked', req, { blockedIP: ip, reason })
+  res.status(201).json({ message: `IP ${ip} blocked`, blockedIPs: getBlockedIPs() })
+})
+
+app.delete('/api/v1/admin/blocked-ips/:ip', authenticateToken, (req: AuthRequest, res) => {
+  if (req.user?.userType !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' })
+  }
+  const { ip } = req.params
+  const removed = unblockIP(ip)
+  if (removed) {
+    logSecurityEvent('ip_unblocked', req, { unblockedIP: ip })
+  }
+  res.json({ message: removed ? `IP ${ip} unblocked` : `IP ${ip} was not blocked` })
+})
+
+app.get('/api/v1/admin/security-stats', authenticateToken, (req: AuthRequest, res) => {
+  if (req.user?.userType !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' })
+  }
+  res.json({ stats: getSecurityStats(), timestamp: new Date().toISOString() })
+})
+
+// ── Auth routes (with auth-specific rate limiting + slow down) ──
+app.use('/api/v1/auth', authLimiter, authSlowDown, authRoutes)
+
+// ── API routes (with API-tier rate limiting) ──
 
 // Assessment routes (iMocha integration)
-app.use('/api/v1/assessments', assessmentRoutes)
+app.use('/api/v1/assessments', apiLimiter, assessmentRoutes)
 
 // Candidate routes
-app.use('/api/v1/candidates', candidateRoutes)
+app.use('/api/v1/candidates', apiLimiter, candidateRoutes)
 
 // Job routes
-app.use('/api/v1/jobs', jobRoutes)
+app.use('/api/v1/jobs', apiLimiter, jobRoutes)
 
 // Application routes
-app.use('/api/v1/applications', applicationRoutes)
+app.use('/api/v1/applications', apiLimiter, applicationRoutes)
 
 // Interview routes
-app.use('/api/v1/interviews', interviewRoutes)
+app.use('/api/v1/interviews', apiLimiter, interviewRoutes)
 
 // Client routes
-app.use('/api/v1/clients', clientRoutes)
+app.use('/api/v1/clients', apiLimiter, clientRoutes)
 
 // Notification routes
-app.use('/api/v1/notifications', notificationRoutes)
+app.use('/api/v1/notifications', apiLimiter, notificationRoutes)
 
 // AI routes (require active subscription for client users)
-app.use('/api/v1/ai', authenticateToken, requireActiveSubscription, aiRoutes)
+app.use('/api/v1/ai', apiLimiter, authenticateToken, requireActiveSubscription, aiRoutes)
 
 // Analytics routes
-app.use('/api/v1/analytics', analyticsRoutes)
+app.use('/api/v1/analytics', apiLimiter, analyticsRoutes)
 
 // Contract routes
-app.use('/api/v1/contracts', contractRoutes)
+app.use('/api/v1/contracts', apiLimiter, contractRoutes)
 
 // Payment routes
-app.use('/api/v1/payments', paymentRoutes)
+app.use('/api/v1/payments', apiLimiter, paymentRoutes)
 
 // Me routes (convenience endpoints for current user)
 app.get('/api/v1/me/profile', authenticateToken, async (req: AuthRequest, res) => {
@@ -227,14 +305,21 @@ app.put('/api/v1/me/profile', authenticateToken, async (req: AuthRequest, res) =
   }
 })
 
-// Error handler
+// Error handler — sanitize in production
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack)
-  res.status(500).json({ error: 'Internal Server Error' })
+  const isProduction = process.env.NODE_ENV === 'production'
+  res.status(500).json({
+    error: 'Internal Server Error',
+    ...(isProduction ? {} : { message: err.message }),
+  })
 })
 
 // Create HTTP server for Apollo and Socket.io
 const httpServer = http.createServer(app)
+
+// 30s request timeout
+httpServer.setTimeout(30000)
 
 // Initialize Socket.io
 socketService.initialize(httpServer)
@@ -249,11 +334,13 @@ interface GraphQLContext {
 }
 
 // Initialize Apollo Server
+const isProduction = process.env.NODE_ENV === 'production'
+
 const apolloServer = new ApolloServer<GraphQLContext>({
   typeDefs,
   resolvers,
   plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
-  introspection: true, // Enable introspection for development
+  introspection: !isProduction, // Disable introspection in production
 })
 
 // Start server function
@@ -262,9 +349,9 @@ async function startServer() {
   if (!SKIP_REDIS) {
     initializeWorkers()
     await scheduleRecurringJobs()
-    console.log('📋 Background job workers initialized')
+    console.log('Background job workers initialized')
   } else {
-    console.log('⏭️  Skipping BullMQ workers (SKIP_REDIS=true)')
+    console.log('Skipping BullMQ workers (SKIP_REDIS=true)')
   }
 
   // Start Apollo Server
@@ -322,21 +409,14 @@ async function startServer() {
 
   // Start HTTP server
   httpServer.listen(PORT, () => {
-    console.log(`🚀 API running at http://localhost:${PORT}`)
-    console.log(`📚 Health: http://localhost:${PORT}/health`)
-    console.log(`🔐 Auth endpoints ready`)
-    console.log(`📋 Assessment/iMocha endpoints ready`)
-    console.log(`👥 Candidate endpoints ready`)
-    console.log(`💼 Job endpoints ready`)
-    console.log(`📝 Application endpoints ready`)
-    console.log(`📅 Interview endpoints ready`)
-    console.log(`🏢 Client endpoints ready`)
-    console.log(`🔔 Notification endpoints ready`)
-    console.log(`🤖 AI endpoints ready`)
-    console.log(`📊 Analytics endpoints ready`)
-    console.log(`📈 GraphQL: http://localhost:${PORT}/graphql`)
-    console.log(`🔌 WebSocket: ws://localhost:${PORT} (Socket.io)`)
-    console.log(`⚙️  Job queues: http://localhost:${PORT}/api/v1/jobs/stats`)
+    console.log(`API running at http://localhost:${PORT}`)
+    console.log(`Health: http://localhost:${PORT}/health`)
+    console.log(`GraphQL: http://localhost:${PORT}/graphql`)
+    console.log(`WebSocket: ws://localhost:${PORT} (Socket.io)`)
+    console.log(`Security middleware active: rate-limit, blocklist, request-id, security-logger`)
+    if (isProduction) {
+      console.log('Production mode: GraphQL introspection disabled, error stacks hidden')
+    }
   })
 }
 

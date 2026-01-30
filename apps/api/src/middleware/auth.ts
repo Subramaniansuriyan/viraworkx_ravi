@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
+import { recordInvalidToken } from './blocklist.js'
+import { logSecurityEvent } from './security-logger.js'
 
 export interface JwtPayload {
   userId: string
@@ -26,9 +28,14 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
     req.user = decoded
     next()
   } catch (error) {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown'
     if (error instanceof jwt.TokenExpiredError) {
+      recordInvalidToken(ip)
+      logSecurityEvent('invalid_token', req, { reason: 'expired' })
       return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' })
     }
+    recordInvalidToken(ip)
+    logSecurityEvent('invalid_token', req, { reason: 'invalid_signature' })
     return res.status(403).json({ error: 'Invalid token' })
   }
 }
