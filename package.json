@@ -1,36 +1,13 @@
 {
   "name": "viraworkx",
   "version": "1.0.0",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "dev": "concurrently -n web,api -c blue,green \"npm run dev:web\" \"npm run dev:api\"",
-    "dev:web": "npm run dev --workspace=apps/web",
-    "dev:api": "npm run dev --workspace=apps/api",
-    "dev:ai": "cd apps/ai-engine && source venv/bin/activate && python -m uvicorn main:app --reload --port 5000",
-    "build": "npm run build --workspaces",
-    "db:generate": "prisma generate --schema=packages/db/prisma/schema.prisma",
-    "db:push": "prisma db push --schema=packages/db/prisma/schema.prisma",
-    "db:migrate": "prisma migrate dev --schema=packages/db/prisma/schema.prisma",
-    "db:studio": "prisma studio --schema=packages/db/prisma/schema.prisma",
-    "db:seed": "cd packages/db && npx tsx prisma/seed.ts",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f",
-    "setup:ai": "cd apps/ai-engine && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt",
-    "start:all": "concurrently -n docker,web,api -c magenta,blue,green \"docker-compose up\" \"sleep 5 && npm run dev:web\" \"sleep 5 && npm run dev:api\""
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "concurrently": "^8.2.2",
-    "prisma": "^5.7.0",
-    "typescript": "^5.3.0"
-  },
-  "dependencies": {
-    "@types/multer": "^2.0.0",
-    "multer": "^2.0.2"
-  }
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }
