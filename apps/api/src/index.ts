@@ -69,8 +69,8 @@ app.use(cors({
   credentials: true
 }))
 
-// 5. Global rate limiter
-app.use(globalLimiter)
+// 5. Global rate limiter (disabled during development)
+// app.use(globalLimiter)
 
 // 6. Security logger (suspicious path detection)
 app.use(securityLogger)
@@ -160,42 +160,42 @@ app.get('/api/v1/admin/security-stats', authenticateToken, (req: AuthRequest, re
 })
 
 // ── Auth routes (with auth-specific rate limiting + slow down) ──
-app.use('/api/v1/auth', authLimiter, authSlowDown, authRoutes)
+app.use('/api/v1/auth', authRoutes)
 
 // ── API routes (with API-tier rate limiting) ──
 
 // Assessment routes (iMocha integration)
-app.use('/api/v1/assessments', apiLimiter, assessmentRoutes)
+app.use('/api/v1/assessments', assessmentRoutes)
 
 // Candidate routes
-app.use('/api/v1/candidates', apiLimiter, candidateRoutes)
+app.use('/api/v1/candidates', candidateRoutes)
 
 // Job routes
-app.use('/api/v1/jobs', apiLimiter, jobRoutes)
+app.use('/api/v1/jobs', jobRoutes)
 
 // Application routes
-app.use('/api/v1/applications', apiLimiter, applicationRoutes)
+app.use('/api/v1/applications', applicationRoutes)
 
 // Interview routes
-app.use('/api/v1/interviews', apiLimiter, interviewRoutes)
+app.use('/api/v1/interviews', interviewRoutes)
 
 // Client routes
-app.use('/api/v1/clients', apiLimiter, clientRoutes)
+app.use('/api/v1/clients', clientRoutes)
 
 // Notification routes
-app.use('/api/v1/notifications', apiLimiter, notificationRoutes)
+app.use('/api/v1/notifications', notificationRoutes)
 
 // AI routes (require active subscription for client users)
-app.use('/api/v1/ai', apiLimiter, authenticateToken, requireActiveSubscription, aiRoutes)
+app.use('/api/v1/ai', authenticateToken, requireActiveSubscription, aiRoutes)
 
 // Analytics routes
-app.use('/api/v1/analytics', apiLimiter, analyticsRoutes)
+app.use('/api/v1/analytics', analyticsRoutes)
 
 // Contract routes
-app.use('/api/v1/contracts', apiLimiter, contractRoutes)
+app.use('/api/v1/contracts', contractRoutes)
 
 // Payment routes
-app.use('/api/v1/payments', apiLimiter, paymentRoutes)
+app.use('/api/v1/payments', paymentRoutes)
 
 // Me routes (convenience endpoints for current user)
 app.get('/api/v1/me/profile', authenticateToken, async (req: AuthRequest, res) => {
