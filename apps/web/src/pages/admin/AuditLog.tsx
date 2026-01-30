@@ -12,7 +12,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 const AI_ENGINE_URL = 'http://localhost:5001'
 
 export default function AuditLog() {
-  const { user, logout, token } = useAuthStore()
+  const { user, logout, accessToken: token } = useAuthStore()
   const [selectedAgent, setSelectedAgent] = useState<string>('')
   const [selectedStatus, setSelectedStatus] = useState<string>('')
   const [page, setPage] = useState(1)

@@ -28,8 +28,9 @@ async function main() {
 
   console.log('🗑️  Cleared existing data')
 
-  // Hash password (same for all test users: "password123")
-  const passwordHash = await bcrypt.hash('password123', 10)
+  // Hash password for all seed users
+  const seedPassword = process.env.SEED_PASSWORD || 'V1r@W0rkx#2026!'
+  const passwordHash = await bcrypt.hash(seedPassword, 10)
 
   // ============ CREATE ADMIN USER (ViraWorkx CEO - Rahul Ramachandran) ============
   const VIRAWORKX_CEO_ID = '00000000-0000-4000-a000-000000000001'
@@ -621,7 +622,7 @@ async function main() {
   // ============ SUMMARY ============
   console.log('\n✅ Seed completed successfully!\n')
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log('📧 TEST ACCOUNTS (Password: password123)')
+  console.log(`📧 TEST ACCOUNTS (Password: ${seedPassword})`)
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   console.log('')
   console.log('👑 ADMIN:')

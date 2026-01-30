@@ -1,8 +1,12 @@
 import dotenv from 'dotenv'
 import path from 'path'
+import { existsSync } from 'fs'
 
-// Load environment variables from root .env file
-dotenv.config({ path: path.resolve(process.cwd(), '../../.env') })
+// Load environment variables from root .env file (dev only; in production env vars are set by Cloud Run)
+const envPath = path.resolve(process.cwd(), '../../.env')
+if (existsSync(envPath)) {
+  dotenv.config({ path: envPath })
+}
 
 // Export commonly used environment variables
 export const JWT_SECRET = process.env.JWT_SECRET || 'viraworkx-dev-secret-change-in-production'

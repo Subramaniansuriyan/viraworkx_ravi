@@ -1,5 +1,7 @@
 import { Redis } from 'ioredis'
 
+export const SKIP_REDIS = process.env.SKIP_REDIS === 'true'
+
 // Redis connection configuration
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost'
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10)
@@ -19,6 +21,9 @@ export const redisConnection = {
 let redisClient: Redis | null = null
 
 export function getRedisClient(): Redis {
+  if (SKIP_REDIS) {
+    throw new Error('Redis is disabled (SKIP_REDIS=true)')
+  }
   if (!redisClient) {
     redisClient = new Redis(redisConnection)
 

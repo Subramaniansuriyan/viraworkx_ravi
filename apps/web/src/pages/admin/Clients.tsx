@@ -11,7 +11,7 @@ import { useAuthStore } from '../../stores/authStore'
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 export default function AdminClients() {
-  const { user, logout, token } = useAuthStore()
+  const { user, logout, accessToken: token } = useAuthStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTier, setSelectedTier] = useState<string>('')
   const [page, setPage] = useState(1)

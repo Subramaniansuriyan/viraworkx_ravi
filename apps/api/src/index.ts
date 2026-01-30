@@ -17,7 +17,7 @@ import { resolvers } from './graphql/resolvers/index.js'
 import { socketService } from './services/socket.service.js'
 import { initializeWorkers, closeWorkers, scheduleRecurringJobs, getQueueStats } from './jobs/index.js'
 import { closeAllQueues } from './jobs/queues.js'
-import { closeRedisConnection } from './config/redis.js'
+import { closeRedisConnection, SKIP_REDIS } from './config/redis.js'
 
 // Route imports
 import authRoutes from './routes/auth.routes.js'
@@ -40,8 +40,13 @@ const app = express()
 
 // Middleware
 app.use(helmet())
+const CORS_ORIGINS = [
+  'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002',
+  'http://localhost:5000', 'http://localhost:5173',
+  ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
+]
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:5000', 'http://localhost:5173'],
+  origin: CORS_ORIGINS,
   credentials: true
 }))
 app.use(morgan('dev'))
@@ -62,6 +67,9 @@ app.get('/api/v1/jobs/stats', authenticateToken, async (req: AuthRequest, res) =
   try {
     if (req.user?.userType !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' })
+    }
+    if (SKIP_REDIS) {
+      return res.json({ stats: {}, message: 'Redis disabled (SKIP_REDIS=true)', timestamp: new Date().toISOString() })
     }
     const stats = await getQueueStats()
     res.json({ stats, timestamp: new Date().toISOString() })
@@ -250,10 +258,14 @@ const apolloServer = new ApolloServer<GraphQLContext>({
 
 // Start server function
 async function startServer() {
-  // Initialize job workers
-  initializeWorkers()
-  await scheduleRecurringJobs()
-  console.log('📋 Background job workers initialized')
+  // Initialize job workers (skip if Redis is disabled)
+  if (!SKIP_REDIS) {
+    initializeWorkers()
+    await scheduleRecurringJobs()
+    console.log('📋 Background job workers initialized')
+  } else {
+    console.log('⏭️  Skipping BullMQ workers (SKIP_REDIS=true)')
+  }
 
   // Start Apollo Server
   await apolloServer.start()
@@ -262,7 +274,7 @@ async function startServer() {
   app.use(
     '/graphql',
     cors<cors.CorsRequest>({
-      origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:5000', 'http://localhost:5173'],
+      origin: CORS_ORIGINS,
       credentials: true
     }),
     express.json(),
@@ -297,9 +309,11 @@ async function startServer() {
   // Graceful shutdown
   process.on('SIGTERM', async () => {
     console.log('SIGTERM received, shutting down...')
-    await closeWorkers()
-    await closeAllQueues()
-    await closeRedisConnection()
+    if (!SKIP_REDIS) {
+      await closeWorkers()
+      await closeAllQueues()
+      await closeRedisConnection()
+    }
     await apolloServer.stop()
     await prisma.$disconnect()
     console.log('Graceful shutdown complete')
