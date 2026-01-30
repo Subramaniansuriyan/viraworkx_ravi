@@ -45,6 +45,10 @@ import { securityLogger, logSecurityEvent } from './middleware/security-logger.j
 const app = express()
 const startTime = Date.now()
 
+// Trust proxy (Cloud Run / load balancers set X-Forwarded-For)
+// Use 1 to trust the first proxy hop (Cloud Run's load balancer)
+app.set('trust proxy', 1)
+
 // 1. Request ID (first — traceability for all subsequent logs)
 app.use(requestId)
 

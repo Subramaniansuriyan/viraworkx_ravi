@@ -9,6 +9,7 @@ export const globalLimiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false, trustProxy: false },
   message: { error: 'Too many requests, please try again later.' },
   handler: (req: Request, res, _next, options) => {
     incrementRateLimitHits()
@@ -22,6 +23,7 @@ export const authLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false, trustProxy: false },
   message: { error: 'Too many authentication attempts, please try again later.' },
   handler: (req: Request, res, _next, options) => {
     incrementRateLimitHits()
@@ -35,6 +37,7 @@ export const apiLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false, trustProxy: false },
   message: { error: 'Too many requests, please try again later.' },
   handler: (req: Request, res, _next, options) => {
     incrementRateLimitHits()
