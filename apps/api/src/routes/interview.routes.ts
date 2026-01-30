@@ -273,7 +273,7 @@ router.put('/:id', authenticateToken, requireRole('client', 'admin'), async (req
       socketService.notifyInterviewUpdated(
         interview.id,
         input.status,
-        [...new Set(participantUserIds)] // dedupe
+        [...new Set(participantUserIds)] as string[] // dedupe
       )
     }
 

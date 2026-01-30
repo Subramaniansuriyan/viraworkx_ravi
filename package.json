@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "packages/db"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
