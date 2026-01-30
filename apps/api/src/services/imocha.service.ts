@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
 import crypto from 'crypto'
 import prisma from '../config/database.js'
-import { imochaConfig, getBadgeLevel, BadgeLevel, isIMochaConfigured } from '../config/imocha.js'
+import { imochaConfig, getBadgeLevel, BadgeLevel, getTierLevel, isIMochaConfigured } from '../config/imocha.js'
 import { socketService } from './socket.service.js'
 
 // Types
@@ -439,17 +439,23 @@ class IMochaService {
       skillScores = this.generateMockSkillScores(assessment.testName || 'Assessment')
     }
 
+    // Compute tier based on score percentage
+    const finalScore = score || 85
+    const finalMaxScore = maxScore || 100
+    const tier = getTierLevel(finalScore, finalMaxScore)
+
     // Update assessment record
     await prisma.assessment.update({
       where: { id: assessment.id },
       data: {
         imochaAttemptId: attemptId,
         status: 'completed',
-        score: score || 85,
-        maxScore: maxScore || 100,
+        score: finalScore,
+        maxScore: finalMaxScore,
         percentile: percentile || 75,
         skillScores: skillScores as any,
         reportUrl,
+        tier,
         proctoringFlags: proctoringFlags as any,
         completedAt: new Date(payload.timestamp),
       }

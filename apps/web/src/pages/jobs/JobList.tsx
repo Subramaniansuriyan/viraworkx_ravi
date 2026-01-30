@@ -137,10 +137,8 @@ export default function JobList() {
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">All</option>
-                  <option value="full_time">Full-time</option>
-                  <option value="part_time">Part-time</option>
-                  <option value="contract">Contract</option>
-                  <option value="internship">Internship</option>
+                  <option value="freelancer">Freelancer</option>
+                  <option value="contractor">Contractor</option>
                 </select>
               </div>
 

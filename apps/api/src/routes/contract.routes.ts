@@ -126,6 +126,27 @@ router.get('/:id', async (req: AuthRequest, res) => {
   }
 })
 
+// PDF download endpoint
+router.get('/:id/pdf', async (req: AuthRequest, res) => {
+  try {
+    const pdfBuffer = await contractService.getContractPdf(req.params.id)
+    if (!pdfBuffer) {
+      return res.status(404).json({ error: 'Contract PDF not found' })
+    }
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="contract-${req.params.id}.pdf"`,
+      'Content-Length': pdfBuffer.length.toString(),
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'ETag': `"${Date.now()}"`,
+    })
+    res.send(pdfBuffer)
+  } catch (error) {
+    console.error('Error fetching contract PDF:', error)
+    res.status(500).json({ error: 'Failed to fetch contract PDF' })
+  }
+})
+
 router.post('/generate', requireRole('client', 'admin'), async (req: AuthRequest, res) => {
   try {
     const { applicationId, templateId, terms } = req.body
@@ -168,19 +189,22 @@ router.post('/:id/sign', async (req: AuthRequest, res) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' })
 
-    const { signedName } = req.body
+    const { signedName, signatureImage } = req.body
     if (!signedName) {
       return res.status(400).json({ error: 'signedName is required' })
     }
+    if (!signatureImage) {
+      return res.status(400).json({ error: 'signatureImage is required' })
+    }
 
     // Determine signer role from user type
-    let signerRole: 'client' | 'candidate'
+    let signerRole: 'client' | 'viraworkx'
     if (req.user.userType === 'client') {
       signerRole = 'client'
-    } else if (req.user.userType === 'candidate') {
-      signerRole = 'candidate'
+    } else if (req.user.userType === 'admin') {
+      signerRole = 'viraworkx'
     } else {
-      return res.status(403).json({ error: 'Only clients and candidates can sign contracts' })
+      return res.status(403).json({ error: 'Only clients and admins can sign contracts' })
     }
 
     const contract = await contractService.signContract({
@@ -188,6 +212,7 @@ router.post('/:id/sign', async (req: AuthRequest, res) => {
       userId: req.user.userId,
       signerRole,
       signedName,
+      signatureImage,
       ipAddress: req.ip,
       userAgent: req.get('user-agent'),
     })

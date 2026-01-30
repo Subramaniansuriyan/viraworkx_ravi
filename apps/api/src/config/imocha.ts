@@ -19,6 +19,13 @@ export const imochaConfig = {
     identityVerification: false,
   },
 
+  // Tier level thresholds based on overall score percentage
+  tierLevels: {
+    tier1: 80,  // score > 80%
+    tier2: 70,  // score > 70%
+    tier3: 60,  // score > 60%
+  },
+
   // Badge level thresholds based on percentile
   badgeLevels: {
     expert: 90,      // 90th percentile and above
@@ -57,6 +64,16 @@ export function isIMochaConfigured(): boolean {
 }
 
 export type BadgeLevel = 'expert' | 'advanced' | 'intermediate' | 'beginner'
+
+export type TierLevel = 'Tier 1' | 'Tier 2' | 'Tier 3'
+
+export function getTierLevel(score: number, maxScore: number): TierLevel | null {
+  const percentage = (score / maxScore) * 100
+  if (percentage > imochaConfig.tierLevels.tier1) return 'Tier 1'
+  if (percentage > imochaConfig.tierLevels.tier2) return 'Tier 2'
+  if (percentage > imochaConfig.tierLevels.tier3) return 'Tier 3'
+  return null
+}
 
 export function getBadgeLevel(percentile: number): BadgeLevel {
   if (percentile >= imochaConfig.badgeLevels.expert) return 'expert'

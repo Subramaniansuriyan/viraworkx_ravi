@@ -24,6 +24,7 @@ interface PendingCandidate {
     skills: string[]
     profileScore: number
     badges: Array<{ skillName: string; level: string; percentile: number }>
+    assessmentTier?: string
   }
   job: {
     id: string
@@ -310,6 +311,15 @@ export default function TestAllocation() {
                             <Star className="w-4 h-4" />
                             Profile: {candidate.candidate.profileScore}%
                           </span>
+                          {candidate.candidate.assessmentTier && (
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                              candidate.candidate.assessmentTier === 'Tier 1' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' :
+                              candidate.candidate.assessmentTier === 'Tier 2' ? 'bg-gray-100 text-gray-700 border border-gray-300' :
+                              'bg-orange-100 text-orange-700 border border-orange-300'
+                            }`}>
+                              {candidate.candidate.assessmentTier}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

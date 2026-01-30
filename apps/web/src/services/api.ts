@@ -352,10 +352,11 @@ export const contractApi = {
     api.put<{ contract: Contract }>(`/contracts/${id}`, data),
   sendForSignatures: (id: string) =>
     api.post<{ contract: Contract }>(`/contracts/${id}/send-for-signatures`),
-  sign: (id: string, signedName: string) =>
-    api.post<{ contract: Contract }>(`/contracts/${id}/sign`, { signedName }),
+  sign: (id: string, signedName: string, signatureImage: string) =>
+    api.post<{ contract: Contract }>(`/contracts/${id}/sign`, { signedName, signatureImage }),
   terminate: (id: string) =>
     api.post<{ contract: Contract }>(`/contracts/${id}/terminate`),
+  getPdfUrl: (id: string) => `/api/v1/contracts/${id}/pdf`,
 }
 
 // Payment API

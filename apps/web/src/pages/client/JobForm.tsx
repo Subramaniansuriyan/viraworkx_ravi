@@ -15,7 +15,7 @@ import {
   LogOut
 } from 'lucide-react'
 
-type EmploymentType = 'full_time' | 'part_time' | 'contract' | 'internship'
+type EmploymentType = 'freelancer' | 'contractor'
 type RemotePolicy = 'remote' | 'hybrid' | 'onsite'
 
 interface JobFormData {
@@ -42,7 +42,7 @@ const initialFormData: JobFormData = {
   requirements: '',
   responsibilities: '',
   department: '',
-  employmentType: 'full_time',
+  employmentType: 'freelancer',
   experienceMin: '',
   experienceMax: '',
   salaryMin: '',
@@ -101,7 +101,7 @@ export default function JobForm() {
         requirements: job.requirements || '',
         responsibilities: job.responsibilities || '',
         department: job.department || '',
-        employmentType: (job.employmentType || 'full_time') as EmploymentType,
+        employmentType: (job.employmentType || 'freelancer') as EmploymentType,
         experienceMin: job.experienceMin || '',
         experienceMax: job.experienceMax || '',
         salaryMin: job.salaryMin || '',
@@ -292,10 +292,8 @@ export default function JobForm() {
                     onChange={(e) => setFormData({ ...formData, employmentType: e.target.value as EmploymentType })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
-                    <option value="full_time">Full-time</option>
-                    <option value="part_time">Part-time</option>
-                    <option value="contract">Contract</option>
-                    <option value="internship">Internship</option>
+                    <option value="freelancer">Freelancer</option>
+                    <option value="contractor">Contractor</option>
                   </select>
                 </div>
               </div>

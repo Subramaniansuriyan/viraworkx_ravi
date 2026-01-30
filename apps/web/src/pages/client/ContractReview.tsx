@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { FileText, ArrowLeft, CheckCircle, Clock, PenTool, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Clock, PenTool, AlertTriangle, Download } from 'lucide-react'
 import { contractApi } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import type { Contract } from '../../types'
+import PdfViewer from '../../components/ui/PdfViewer'
+import SignaturePad from '../../components/ui/SignaturePad'
 
 export default function ClientContractReview() {
   const { id } = useParams<{ id: string }>()
@@ -12,6 +14,7 @@ export default function ClientContractReview() {
   const [contract, setContract] = useState<Contract | null>(null)
   const [loading, setLoading] = useState(true)
   const [signedName, setSignedName] = useState('')
+  const [signatureImage, setSignatureImage] = useState<string | null>(null)
   const [signing, setSigning] = useState(false)
   const [showSignModal, setShowSignModal] = useState(false)
   const [error, setError] = useState('')
@@ -40,14 +43,15 @@ export default function ClientContractReview() {
   }
 
   async function handleSign() {
-    if (!id || !signedName.trim()) return
+    if (!id || !signedName.trim() || !signatureImage) return
     setSigning(true)
     setError('')
     try {
-      const { data } = await contractApi.sign(id, signedName.trim())
+      const { data } = await contractApi.sign(id, signedName.trim(), signatureImage)
       setContract(data.contract)
       setShowSignModal(false)
       setSignedName('')
+      setSignatureImage(null)
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to sign contract')
     } finally {
@@ -73,9 +77,10 @@ export default function ClientContractReview() {
     return <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">Contract not found</div>
   }
 
+  const viraworkxSig = contract.signatures?.find((s) => s.signerRole === 'viraworkx')
   const clientSig = contract.signatures?.find((s) => s.signerRole === 'client')
-  const candidateSig = contract.signatures?.find((s) => s.signerRole === 'candidate')
   const canSign = contract.status === 'pending_signatures' && clientSig && !clientSig.signedAt
+  const pdfUrl = contractApi.getPdfUrl(id!)
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -101,6 +106,21 @@ export default function ClientContractReview() {
 
         {/* Signature Status */}
         <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className={`p-4 rounded-xl border ${viraworkxSig?.signedAt ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-700/30 bg-slate-900/50'}`}>
+            <div className="flex items-center gap-2 mb-2">
+              {viraworkxSig?.signedAt ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Clock className="w-5 h-5 text-slate-500" />}
+              <span className="font-medium">ViraWorkx Signature</span>
+            </div>
+            {viraworkxSig?.signedAt ? (
+              <div className="text-sm text-slate-400">
+                <p>Signed by: <span className="text-white">{viraworkxSig.signedName}</span></p>
+                <p>Date: {new Date(viraworkxSig.signedAt).toLocaleDateString()}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">Not yet signed</p>
+            )}
+          </div>
+
           <div className={`p-4 rounded-xl border ${clientSig?.signedAt ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-700/30 bg-slate-900/50'}`}>
             <div className="flex items-center gap-2 mb-2">
               {clientSig?.signedAt ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Clock className="w-5 h-5 text-slate-500" />}
@@ -110,21 +130,6 @@ export default function ClientContractReview() {
               <div className="text-sm text-slate-400">
                 <p>Signed by: <span className="text-white">{clientSig.signedName}</span></p>
                 <p>Date: {new Date(clientSig.signedAt).toLocaleDateString()}</p>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">Not yet signed</p>
-            )}
-          </div>
-
-          <div className={`p-4 rounded-xl border ${candidateSig?.signedAt ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-700/30 bg-slate-900/50'}`}>
-            <div className="flex items-center gap-2 mb-2">
-              {candidateSig?.signedAt ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Clock className="w-5 h-5 text-slate-500" />}
-              <span className="font-medium">Candidate Signature</span>
-            </div>
-            {candidateSig?.signedAt ? (
-              <div className="text-sm text-slate-400">
-                <p>Signed by: <span className="text-white">{candidateSig.signedName}</span></p>
-                <p>Date: {new Date(candidateSig.signedAt).toLocaleDateString()}</p>
               </div>
             ) : (
               <p className="text-sm text-slate-500">Not yet signed</p>
@@ -149,39 +154,52 @@ export default function ClientContractReview() {
               Terminate Contract
             </button>
           )}
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 rounded-lg bg-slate-800/50 text-slate-300 text-sm font-medium flex items-center gap-2 hover:bg-slate-700/50"
+          >
+            <Download className="w-4 h-4" /> Download PDF
+          </a>
         </div>
 
-        {/* Contract Content */}
-        <div className="bg-white rounded-2xl p-8 text-slate-900 prose prose-sm max-w-none">
-          <div dangerouslySetInnerHTML={{ __html: contract.content }} />
-        </div>
+        {/* Contract PDF Viewer */}
+        <PdfViewer url={pdfUrl} />
 
-        {/* Sign Modal */}
+        {/* Sign Modal with Signature Pad */}
         {showSignModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6 w-full max-w-md">
+            <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6 w-full max-w-lg">
               <h3 className="text-lg font-semibold mb-4">Sign Contract</h3>
               <p className="text-sm text-slate-400 mb-4">
-                By typing your full legal name below, you agree to the terms of this contract.
-                This constitutes your electronic signature.
+                Draw your signature below and type your full legal name to sign this contract.
               </p>
-              <input
-                value={signedName}
-                onChange={(e) => setSignedName(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white text-lg mb-4"
-                placeholder="Type your full legal name"
-                autoFocus
-              />
-              {signedName && (
-                <div className="mb-4 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                  <p className="text-xs text-slate-500 mb-1">Signature preview:</p>
-                  <p className="text-xl italic font-serif text-blue-400">{signedName}</p>
-                </div>
-              )}
+
+              <div className="mb-4">
+                <label className="block text-sm text-slate-400 mb-2">Draw your signature</label>
+                <SignaturePad
+                  onSignatureChange={setSignatureImage}
+                  width={440}
+                  height={150}
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm text-slate-400 mb-2">Full legal name</label>
+                <input
+                  value={signedName}
+                  onChange={(e) => setSignedName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white text-lg"
+                  placeholder="Type your full legal name"
+                  autoFocus
+                />
+              </div>
+
               <div className="flex gap-3">
                 <button
                   onClick={handleSign}
-                  disabled={!signedName.trim() || signing}
+                  disabled={!signedName.trim() || !signatureImage || signing}
                   className="flex-1 px-4 py-2 rounded-lg bg-emerald-500 text-white font-medium disabled:opacity-50"
                 >
                   {signing ? 'Signing...' : 'Confirm Signature'}

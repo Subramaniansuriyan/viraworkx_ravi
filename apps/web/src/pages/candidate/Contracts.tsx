@@ -46,8 +46,9 @@ export default function CandidateContracts() {
         ) : (
           <div className="space-y-3">
             {contracts.map((contract) => {
-              const candidateSig = contract.signatures?.find((s) => s.signerRole === 'candidate')
-              const needsSignature = contract.status === 'pending_signatures' && !candidateSig?.signedAt
+              const viraworkxSig = contract.signatures?.find((s) => s.signerRole === 'viraworkx')
+              const clientSig = contract.signatures?.find((s) => s.signerRole === 'client')
+              const allSigned = viraworkxSig?.signedAt && clientSig?.signedAt
 
               return (
                 <div
@@ -67,9 +68,9 @@ export default function CandidateContracts() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {needsSignature ? (
+                      {contract.status === 'pending_signatures' && !allSigned ? (
                         <span className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-medium flex items-center gap-1">
-                          <PenTool className="w-3 h-3" /> Signature Required
+                          <PenTool className="w-3 h-3" /> Awaiting Signatures
                         </span>
                       ) : contract.status === 'active' ? (
                         <span className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium flex items-center gap-1">

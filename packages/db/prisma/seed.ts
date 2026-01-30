@@ -31,15 +31,17 @@ async function main() {
   // Hash password (same for all test users: "password123")
   const passwordHash = await bcrypt.hash('password123', 10)
 
-  // ============ CREATE ADMIN USER ============
+  // ============ CREATE ADMIN USER (ViraWorkx CEO - Rahul Ramachandran) ============
+  const VIRAWORKX_CEO_ID = '00000000-0000-4000-a000-000000000001'
   const adminUser = await prisma.user.create({
     data: {
+      id: VIRAWORKX_CEO_ID,
       email: 'admin@viraworkx.ai',
       passwordHash,
       userType: 'admin',
     }
   })
-  console.log('👑 Created admin user: admin@viraworkx.ai')
+  console.log('👑 Created admin user: admin@viraworkx.ai (Rahul Ramachandran, CEO)')
 
   // ============ CREATE CLIENT COMPANIES ============
   const techStartup = await prisma.client.create({
@@ -273,7 +275,7 @@ async function main() {
         requirements: '5+ years of experience with React and Node.js. Strong understanding of cloud services.',
         responsibilities: 'Design and implement features, mentor junior developers, participate in architecture decisions.',
         department: 'Engineering',
-        employmentType: 'full_time',
+        employmentType: 'contractor',
         experienceMin: 5,
         experienceMax: 10,
         salaryMin: 100000,
@@ -296,7 +298,7 @@ async function main() {
         requirements: '3+ years of ML experience. Strong Python skills.',
         responsibilities: 'Develop ML models, deploy to production, optimize for performance.',
         department: 'AI/ML',
-        employmentType: 'full_time',
+        employmentType: 'freelancer',
         experienceMin: 3,
         experienceMax: 7,
         salaryMin: 120000,
@@ -319,7 +321,7 @@ async function main() {
         requirements: '4+ years backend experience. Fintech experience preferred.',
         responsibilities: 'Build payment APIs, ensure security compliance, optimize transaction processing.',
         department: 'Payments',
-        employmentType: 'full_time',
+        employmentType: 'contractor',
         experienceMin: 4,
         experienceMax: 8,
         salaryMin: 130000,
@@ -342,7 +344,7 @@ async function main() {
         requirements: '3+ years DevOps experience. AWS or GCP certified preferred.',
         responsibilities: 'Maintain CI/CD pipelines, manage Kubernetes clusters, ensure system reliability.',
         department: 'Infrastructure',
-        employmentType: 'full_time',
+        employmentType: 'freelancer',
         experienceMin: 3,
         experienceMax: 6,
         salaryMin: 110000,
@@ -365,7 +367,7 @@ async function main() {
         requirements: '2+ years React experience. Healthcare experience a plus.',
         responsibilities: 'Develop UI components, ensure accessibility, optimize performance.',
         department: 'Product',
-        employmentType: 'full_time',
+        employmentType: 'contractor',
         experienceMin: 2,
         experienceMax: 5,
         salaryMin: 80000,
@@ -466,6 +468,7 @@ async function main() {
         score: 88,
         maxScore: 100,
         percentile: 92,
+        tier: 'Tier 1',
         invitedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
         startedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
         completedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
@@ -487,6 +490,7 @@ async function main() {
         score: 82,
         maxScore: 100,
         percentile: 85,
+        tier: 'Tier 1',
         invitedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         startedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
         completedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),

@@ -1,5 +1,6 @@
 import prisma from '../config/database.js'
 import { stripeService } from './stripe.service.js'
+import { pdfService } from './pdf.service.js'
 
 interface GenerateContractInput {
   applicationId: string
@@ -15,8 +16,9 @@ interface GenerateContractInput {
 interface SignContractInput {
   contractId: string
   userId: string
-  signerRole: 'client' | 'candidate'
+  signerRole: 'client' | 'viraworkx'
   signedName: string
+  signatureImage: string // base64 PNG data URL
   ipAddress?: string
   userAgent?: string
 }
@@ -87,24 +89,40 @@ class ContractService {
     })
     if (!application) throw new Error('Application not found')
 
-    const candidateUserId = application.candidate.userId
     const clientOwnerId = application.job.client.clientUsers[0]?.userId
     if (!clientOwnerId) throw new Error('Client has no owner user')
 
+    // Determine ViraWorkx signer: env var or fallback to client owner
+    const viraworkxSignerId = process.env.VIRAWORKX_SIGNER_USER_ID || clientOwnerId
+
+    const candidateName = `${application.candidate.firstName} ${application.candidate.lastName}`
+    const companyName = application.job.client.companyName
+    const dateStr = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+
     // Render template placeholders
     const renderedContent = this.renderTemplate(template.content, {
-      candidateName: `${application.candidate.firstName} ${application.candidate.lastName}`,
-      companyName: application.job.client.companyName,
+      candidateName,
+      companyName,
       jobTitle: application.job.title,
       salary: input.terms?.salary?.toString() || 'TBD',
       startDate: input.terms?.startDate || 'TBD',
       duration: input.terms?.duration || 'Indefinite',
       location: application.job.location || 'Remote',
-      date: new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
+      date: dateStr,
+    })
+
+    // Generate PDF from the rendered content
+    const pdfBuffer = await pdfService.generateContractPdf({
+      title: `${template.name} - ${candidateName}`,
+      date: dateStr,
+      companyName,
+      candidateName,
+      jobTitle: application.job.title,
+      bodyText: renderedContent,
     })
 
     // Create contract + two empty signature records in a transaction
@@ -115,18 +133,19 @@ class ContractService {
           applicationId: input.applicationId,
           clientId: application.job.clientId,
           candidateId: application.candidateId,
-          title: `${template.name} - ${application.candidate.firstName} ${application.candidate.lastName}`,
+          title: `${template.name} - ${candidateName}`,
           content: renderedContent,
           status: 'draft',
           terms: input.terms || {},
+          pdfData: pdfBuffer,
         },
       })
 
-      // Create signature placeholders for both parties
+      // Create signature placeholders for ViraWorkx and Client
       await tx.contractSignature.createMany({
         data: [
+          { contractId: c.id, userId: viraworkxSignerId, signerRole: 'viraworkx' },
           { contractId: c.id, userId: clientOwnerId, signerRole: 'client' },
-          { contractId: c.id, userId: candidateUserId, signerRole: 'candidate' },
         ],
       })
 
@@ -255,15 +274,46 @@ class ContractService {
       throw new Error('You have already signed this contract')
     }
 
-    // Record the signature
+    // Decode base64 signature image to Buffer
+    const base64Data = input.signatureImage.replace(/^data:image\/png;base64,/, '')
+    const signatureImageBuffer = Buffer.from(base64Data, 'base64')
+
+    // Embed signature into the PDF
+    const currentPdf = contract.pdfData
+    if (!currentPdf) {
+      throw new Error('Contract PDF not found')
+    }
+
+    const signedDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+
+    const updatedPdf = await pdfService.embedSignatureInPdf({
+      existingPdfBytes: Buffer.from(currentPdf),
+      signatureImagePng: signatureImageBuffer,
+      signerRole: input.signerRole,
+      signedName: input.signedName,
+      signedDate,
+    })
+
+    // Record the signature and update PDF
     await prisma.contractSignature.update({
       where: { id: signatureRecord.id },
       data: {
         signedName: input.signedName,
+        signatureImage: signatureImageBuffer,
         signedAt: new Date(),
         ipAddress: input.ipAddress,
         userAgent: input.userAgent,
       },
+    })
+
+    // Update contract PDF with the new signature embedded
+    await prisma.contract.update({
+      where: { id: input.contractId },
+      data: { pdfData: updatedPdf },
     })
 
     // Check if both parties have signed
@@ -273,6 +323,11 @@ class ContractService {
     const allSigned = otherSignature?.signedAt != null
 
     if (allSigned) {
+      // Copy final PDF to pdfSignedData
+      await prisma.contract.update({
+        where: { id: input.contractId },
+        data: { pdfSignedData: updatedPdf },
+      })
       await this.activateContract(input.contractId)
     }
 
@@ -280,6 +335,20 @@ class ContractService {
       where: { id: input.contractId },
       include: { signatures: true },
     })
+  }
+
+  async getContractPdf(contractId: string): Promise<Buffer | null> {
+    const contract = await prisma.contract.findUnique({
+      where: { id: contractId },
+      select: { pdfSignedData: true, pdfData: true },
+    })
+    if (!contract) return null
+
+    // Return signed PDF if available, otherwise the current PDF
+    const pdfBytes = contract.pdfSignedData || contract.pdfData
+    if (!pdfBytes) return null
+
+    return Buffer.from(pdfBytes)
   }
 
   private async activateContract(contractId: string) {

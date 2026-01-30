@@ -245,8 +245,9 @@ export interface ContractSignature {
   id: string
   contractId: string
   userId: string
-  signerRole: 'client' | 'candidate'
+  signerRole: 'client' | 'viraworkx'
   signedName?: string
+  signatureImage?: string
   signedAt?: string
   ipAddress?: string
   user?: { id: string; email: string }
@@ -264,6 +265,7 @@ export interface Contract {
   version: number
   status: ContractStatus
   terms?: ContractTerms
+  hasPdf?: boolean
   expiresAt?: string
   activatedAt?: string
   terminatedAt?: string

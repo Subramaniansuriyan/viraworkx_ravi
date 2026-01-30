@@ -686,11 +686,22 @@ export default function CandidateProfile() {
                               </div>
 
                               {assessment.status === 'completed' && assessment.score && (
-                                <div className="text-right">
-                                  <p className="text-2xl font-bold text-green-600">{assessment.score}%</p>
-                                  <p className="text-xs text-gray-500">
-                                    {assessment.percentile}th percentile
-                                  </p>
+                                <div className="text-right flex items-center gap-3">
+                                  {assessment.tier && (
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                      assessment.tier === 'Tier 1' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' :
+                                      assessment.tier === 'Tier 2' ? 'bg-gray-100 text-gray-700 border border-gray-300' :
+                                      'bg-orange-100 text-orange-700 border border-orange-300'
+                                    }`}>
+                                      {assessment.tier}
+                                    </span>
+                                  )}
+                                  <div>
+                                    <p className="text-2xl font-bold text-green-600">{assessment.score}%</p>
+                                    <p className="text-xs text-gray-500">
+                                      {assessment.percentile}th percentile
+                                    </p>
+                                  </div>
                                 </div>
                               )}
 

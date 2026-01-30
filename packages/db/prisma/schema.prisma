@@ -352,6 +352,8 @@ model Contract {
   version       Int       @default(1)
   status        String    @default("draft") // draft, pending_review, pending_signatures, active, expired, terminated
   terms         Json?
+  pdfData       Bytes?    @map("pdf_data")
+  pdfSignedData Bytes?    @map("pdf_signed_data")
   expiresAt     DateTime? @map("expires_at")
   activatedAt   DateTime? @map("activated_at")
   terminatedAt  DateTime? @map("terminated_at")
@@ -367,18 +369,19 @@ model Contract {
 }
 
 model ContractSignature {
-  id         String    @id @default(uuid())
-  contractId String    @map("contract_id")
-  userId     String    @map("user_id")
-  signerRole String    @map("signer_role") // client, candidate
-  signedName String?   @map("signed_name")
-  signedAt   DateTime? @map("signed_at")
-  ipAddress  String?   @map("ip_address")
-  userAgent  String?   @map("user_agent")
-  createdAt  DateTime  @default(now()) @map("created_at")
+  id             String    @id @default(uuid())
+  contractId     String    @map("contract_id")
+  userId         String    @map("user_id")
+  signerRole     String    @map("signer_role") // client, viraworkx
+  signedName     String?   @map("signed_name")
+  signatureImage Bytes?    @map("signature_image")
+  signedAt       DateTime? @map("signed_at")
+  ipAddress      String?   @map("ip_address")
+  userAgent      String?   @map("user_agent")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
-  contract   Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  user       User      @relation(fields: [userId], references: [id])
+  contract       Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id])
 
   @@unique([contractId, signerRole])
   @@map("contract_signatures")

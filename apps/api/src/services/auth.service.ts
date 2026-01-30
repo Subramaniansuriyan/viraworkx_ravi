@@ -90,10 +90,16 @@ class AuthService {
   async login(input: LoginInput): Promise<{ user: UserResponse; tokens: AuthTokens }> {
     const { email, password } = input
 
-    // Find user
+    // Find user with profile data (candidate or client)
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { candidate: true }
+      include: {
+        candidate: true,
+        clientUsers: {
+          include: { client: true },
+          take: 1
+        }
+      }
     })
 
     if (!user) {
@@ -137,7 +143,13 @@ class AuthService {
   async getMe(userId: string): Promise<UserResponse> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { candidate: true }
+      include: {
+        candidate: true,
+        clientUsers: {
+          include: { client: true },
+          take: 1
+        }
+      }
     })
 
     if (!user) {
@@ -201,14 +213,24 @@ class AuthService {
   }
 
   private formatUserResponse(user: any): UserResponse {
+    let profile: UserResponse['profile'] = undefined
+
+    if (user.candidate) {
+      profile = {
+        firstName: user.candidate.firstName,
+        lastName: user.candidate.lastName,
+      }
+    } else if (user.clientUsers?.length > 0) {
+      profile = {
+        companyName: user.clientUsers[0].client.companyName,
+      }
+    }
+
     return {
       id: user.id,
       email: user.email,
       userType: user.userType,
-      profile: user.candidate ? {
-        firstName: user.candidate.firstName,
-        lastName: user.candidate.lastName,
-      } : undefined
+      profile
     }
   }
 }

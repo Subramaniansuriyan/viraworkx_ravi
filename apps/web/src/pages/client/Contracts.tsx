@@ -75,8 +75,8 @@ export default function ClientContracts() {
             {filtered.map((contract) => {
               const cfg = STATUS_CONFIG[contract.status] || STATUS_CONFIG.draft
               const StatusIcon = cfg.icon
+              const viraworkxSigned = contract.signatures?.find((s) => s.signerRole === 'viraworkx')?.signedAt
               const clientSigned = contract.signatures?.find((s) => s.signerRole === 'client')?.signedAt
-              const candidateSigned = contract.signatures?.find((s) => s.signerRole === 'candidate')?.signedAt
 
               return (
                 <div
@@ -98,11 +98,11 @@ export default function ClientContracts() {
                     <div className="flex items-center gap-3">
                       {contract.status === 'pending_signatures' && (
                         <div className="flex gap-2 text-xs">
+                          <span className={viraworkxSigned ? 'text-emerald-400' : 'text-slate-500'}>
+                            ViraWorkx: {viraworkxSigned ? 'Signed' : 'Pending'}
+                          </span>
                           <span className={clientSigned ? 'text-emerald-400' : 'text-slate-500'}>
                             Client: {clientSigned ? 'Signed' : 'Pending'}
-                          </span>
-                          <span className={candidateSigned ? 'text-emerald-400' : 'text-slate-500'}>
-                            Candidate: {candidateSigned ? 'Signed' : 'Pending'}
                           </span>
                         </div>
                       )}

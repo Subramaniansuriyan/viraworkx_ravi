@@ -12,7 +12,7 @@ const createJobSchema = z.object({
   requirements: z.string().optional(),
   responsibilities: z.string().optional(),
   department: z.string().optional(),
-  employmentType: z.enum(['full_time', 'part_time', 'contract', 'internship']).optional(),
+  employmentType: z.enum(['freelancer', 'contractor']).optional(),
   experienceMin: z.number().int().min(0).optional(),
   experienceMax: z.number().int().min(0).optional(),
   salaryMin: z.number().int().min(0).optional(),

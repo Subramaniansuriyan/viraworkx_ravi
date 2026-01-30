@@ -195,6 +195,7 @@ export default function AdminCandidates() {
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Experience</th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Profile Score</th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Badges</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Tier</th>
                     <th className="text-right px-6 py-4 text-sm font-medium text-gray-500">Actions</th>
                   </tr>
                 </thead>
@@ -241,6 +242,20 @@ export default function AdminCandidates() {
                           <Award className="w-4 h-4 text-amber-500" />
                           <span className="text-gray-600">{candidate._count?.skillBadges || 0}</span>
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {candidate.assessmentTier ? (
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            candidate.assessmentTier === 'Tier 1' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' :
+                            candidate.assessmentTier === 'Tier 2' ? 'bg-gray-100 text-gray-700 border border-gray-300' :
+                            candidate.assessmentTier === 'Tier 3' ? 'bg-orange-100 text-orange-700 border border-orange-300' :
+                            ''
+                          }`}>
+                            {candidate.assessmentTier}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">

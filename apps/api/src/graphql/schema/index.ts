@@ -40,10 +40,8 @@ export const typeDefs = gql`
   }
 
   enum EmploymentType {
-    full_time
-    part_time
-    contract
-    internship
+    freelancer
+    contractor
   }
 
   enum InterviewType {

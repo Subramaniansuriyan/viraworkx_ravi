@@ -49,7 +49,7 @@ app.use(morgan('dev'))
 // Stripe webhook needs raw body - must be before express.json()
 app.use('/api/v1/payments/webhook', express.raw({ type: 'application/json' }))
 
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 
 // Serve static files (uploads)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
