@@ -1,7 +1,7 @@
 import { Router, Response } from 'express'
 import { z } from 'zod'
 import prisma from '../config/database.js'
-import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
+import { authenticateToken, optionalAuth, AuthRequest, requireRole } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -113,7 +113,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
  * GET /api/v1/jobs/:id
  * Get job by ID
  */
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
     const job = await prisma.job.findUnique({
       where: { id: req.params.id },

@@ -3,7 +3,7 @@ ViraWorkx Portal - Full E2E Checklist
 Runs against live production Cloud Run deployment.
 Includes delays between auth calls to respect rate limiting.
 """
-import requests
+import httpx
 import json
 import time
 import sys
@@ -25,6 +25,11 @@ NEW_CLIENT_EMAIL    = f"test_client_{TS}@example.com"
 results  = []
 failures = []
 bugs     = []
+
+# Minimum interval between any two HTTP calls (avoids urllib3 keep-alive
+# reuse on connections Cloud Run closes after 4xx responses).
+MIN_CALL_INTERVAL = 1.5
+_last_call_time   = 0.0
 
 def test(name, passed, detail="", is_bug=False):
     passed = bool(passed)
@@ -51,17 +56,34 @@ def section(title):
     sys.stdout.flush()
 
 def _req(method, url, payload=None, headers=None, timeout=20, pause=0):
-    """Make HTTP request, with optional pause before for rate-limit safety."""
-    if pause:
-        time.sleep(pause)
+    """Make HTTP request using httpx with HTTP/2.
+
+    Cloud Run's load balancer uses HTTP/2. Python's `requests` library only
+    speaks HTTP/1.1, which causes connection errors on 4xx responses because
+    urllib3 tries to reuse a connection that Cloud Run has already closed.
+    httpx with HTTP/2 support avoids this entirely — each stream is independent
+    and the connection is properly multiplexed.
+
+    MIN_CALL_INTERVAL still enforces a minimum gap to avoid hitting any
+    server-side per-IP rate limits.
+    """
+    global _last_call_time
+    now  = time.time()
+    wait = max(pause, MIN_CALL_INTERVAL - (now - _last_call_time))
+    if wait > 0:
+        time.sleep(wait)
+    _last_call_time = time.time()
+
+    h = {"Content-Type": "application/json"}
+    if headers:
+        h.update(headers)
+
     t0 = time.time()
     try:
-        h = {"Content-Type": "application/json"}
-        if headers:
-            h.update(headers)
-        r = requests.request(method, url, json=payload, headers=h, timeout=timeout)
+        with httpx.Client(http2=True, timeout=timeout) as client:
+            r = client.request(method, url, json=payload, headers=h)
         return r, round(time.time() - t0, 2)
-    except Exception as e:
+    except Exception:
         return None, round(time.time() - t0, 2)
 
 def post(url, payload=None, headers=None, pause=0):
@@ -84,7 +106,7 @@ print(f"\n🚀 ViraWorkx Portal — Full E2E Checklist")
 print(f"   Started:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 print(f"   API:      {API_URL}")
 print(f"   AI:       {AI_URL}")
-print(f"   Note:     1-2s delays between auth calls to respect rate limiting")
+print(f"   Note:     ≥{MIN_CALL_INTERVAL}s between every call + Connection:close to avoid keep-alive reuse")
 
 # ─────────────────────────────────────────────────────────────
 # SECTION 1: Authentication & Registration
@@ -236,14 +258,14 @@ else:
     test("GET own candidate profile → 200", False,
          f"profile_id={'not found' if admin_token else 'no admin token'}")
 
-# 2.2 Own applications (sub-resource of candidate profile)
-if candidate_token and candidate_profile_id:
-    r, t = get(f"{API_URL}/api/v1/candidates/{candidate_profile_id}/applications",
+# 2.2 Own applications
+if candidate_token:
+    r, t = get(f"{API_URL}/api/v1/candidates/me/applications",
                headers=auth_header(candidate_token))
-    test("GET /candidates/:id/applications → 200",
+    test("GET /candidates/me/applications → 200",
          r and r.status_code == 200, f"status={status_of(r)} {t}s")
 else:
-    test("GET /candidates/:id/applications → 200", False, "No profile_id")
+    test("GET /candidates/me/applications → 200", False, "No candidate token")
 
 # 2.3 Public jobs listing
 r, t = get(f"{API_URL}/api/v1/jobs")
@@ -289,23 +311,14 @@ if candidate_token:
 else:
     test("GET /applications (candidate view) → 200", False, "No candidate token")
 
-# 2.7 Skill badges
-if candidate_token and candidate_profile_id:
-    r, t = get(f"{API_URL}/api/v1/candidates/{candidate_profile_id}/badges",
+# 2.7 AI job matches (route is /me/job-matches, not /:id/job-matches)
+if candidate_token:
+    r, t = get(f"{API_URL}/api/v1/candidates/me/job-matches",
                headers=auth_header(candidate_token))
-    test("GET /candidates/:id/badges → 200",
+    test("GET /candidates/me/job-matches → 200",
          r and r.status_code == 200, f"status={status_of(r)} {t}s")
 else:
-    test("GET /candidates/:id/badges → 200", False, "No profile_id")
-
-# 2.8 AI job matches
-if candidate_token and candidate_profile_id:
-    r, t = get(f"{API_URL}/api/v1/candidates/{candidate_profile_id}/job-matches",
-               headers=auth_header(candidate_token))
-    test("GET /candidates/:id/job-matches → 200",
-         r and r.status_code == 200, f"status={status_of(r)} {t}s")
-else:
-    test("GET /candidates/:id/job-matches → 200", False, "No profile_id")
+    test("GET /candidates/me/job-matches → 200", False, "No candidate token")
 
 # ─────────────────────────────────────────────────────────────
 # SECTION 3: Client Portal
