@@ -70,11 +70,16 @@ class AuthService {
       }
     })
 
-    // If client, create client record separately (since schema doesn't have direct relation)
+    // If client, create client record and link via client_users
     if (userType === 'client' && companyName) {
-      await prisma.client.create({
+      const client = await prisma.client.create({
+        data: { companyName }
+      })
+      await prisma.clientUser.create({
         data: {
-          companyName,
+          clientId: client.id,
+          userId: user.id,
+          role: 'owner',
         }
       })
     }
