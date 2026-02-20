@@ -27,7 +27,7 @@ import {
 } from 'lucide-react'
 
 // API functions for AI Engine
-const AI_ENGINE_URL = 'http://localhost:5001'
+const AI_ENGINE_BASE = '/api/ats/v1'
 
 const aiApi = {
   getActions: async (params: any) => {
@@ -36,27 +36,27 @@ const aiApi = {
     if (params.agent_type) queryParams.append('agent_type', params.agent_type)
     if (params.requires_approval !== undefined) queryParams.append('requires_approval', params.requires_approval)
 
-    const response = await fetch(`${AI_ENGINE_URL}/api/v1/actions?${queryParams}`)
+    const response = await fetch(`${AI_ENGINE_BASE}/actions?${queryParams}`)
     return response.json()
   },
 
   getPendingApprovals: async () => {
-    const response = await fetch(`${AI_ENGINE_URL}/api/v1/actions/pending-approval`)
+    const response = await fetch(`${AI_ENGINE_BASE}/actions/pending-approval`)
     return response.json()
   },
 
   getStats: async () => {
-    const response = await fetch(`${AI_ENGINE_URL}/api/v1/actions/stats`)
+    const response = await fetch(`${AI_ENGINE_BASE}/actions/stats`)
     return response.json()
   },
 
   getActionDetail: async (id: string) => {
-    const response = await fetch(`${AI_ENGINE_URL}/api/v1/actions/${id}`)
+    const response = await fetch(`${AI_ENGINE_BASE}/actions/${id}`)
     return response.json()
   },
 
   approveAction: async (id: string, data: { approved: boolean; reviewer_id: string; reviewer_notes?: string }) => {
-    const response = await fetch(`${AI_ENGINE_URL}/api/v1/actions/${id}/approve`, {
+    const response = await fetch(`${AI_ENGINE_BASE}/actions/${id}/approve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)

@@ -9,7 +9,7 @@ import {
 import { useAuthStore } from '../../stores/authStore'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
-const AI_ENGINE_URL = 'http://localhost:5001'
+const AI_ENGINE_BASE = '/api/ats/v1'
 
 export default function AuditLog() {
   const { user, logout, accessToken: token } = useAuthStore()
@@ -28,7 +28,7 @@ export default function AuditLog() {
       if (selectedAgent) params.append('agentType', selectedAgent)
       if (selectedStatus) params.append('status', selectedStatus)
 
-      const res = await fetch(`${AI_ENGINE_URL}/api/v1/actions?${params}`)
+      const res = await fetch(`${AI_ENGINE_BASE}/actions?${params}`)
       if (!res.ok) throw new Error('Failed to fetch audit log')
       return res.json()
     }

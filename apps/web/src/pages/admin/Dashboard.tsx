@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 
-const AI_ENGINE_URL = 'http://localhost:5001'
+const AI_ENGINE_BASE = '/api/ats/v1'
 
 export default function AdminDashboard() {
   const { user, logout } = useAuthStore()
@@ -16,7 +16,7 @@ export default function AdminDashboard() {
   const { data: statsData } = useQuery({
     queryKey: ['aiStats'],
     queryFn: async () => {
-      const res = await fetch(`${AI_ENGINE_URL}/api/v1/actions/stats`)
+      const res = await fetch(`${AI_ENGINE_BASE}/actions/stats`)
       return res.json()
     },
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -26,7 +26,7 @@ export default function AdminDashboard() {
   const { data: pendingData } = useQuery({
     queryKey: ['pendingApprovals'],
     queryFn: async () => {
-      const res = await fetch(`${AI_ENGINE_URL}/api/v1/actions/pending-approval`)
+      const res = await fetch(`${AI_ENGINE_BASE}/actions/pending-approval`)
       return res.json()
     },
     refetchInterval: 10000, // Refresh every 10 seconds
