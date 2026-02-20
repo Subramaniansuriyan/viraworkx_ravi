@@ -29,4 +29,4 @@ COPY apps/web/nginx.conf.template /etc/nginx/nginx.conf.template
 EXPOSE 8080
 
 # Substitute only API_URL in the nginx config, then start nginx
-CMD ["/bin/sh", "-c", "envsubst '${API_URL}' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "envsubst '${API_URL} ${AI_ENGINE_URL}' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
