@@ -6,5 +6,5 @@ __all__ = [
     "resume_parser",
     "ResumeParser",
     "job_matcher",
-    "JobMatcher"
+    "JobMatcher",
 ]

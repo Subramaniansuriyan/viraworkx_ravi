@@ -27,6 +27,7 @@ import ClientContractReview from './pages/client/ContractReview'
 import Billing from './pages/client/Billing'
 import CandidateContracts from './pages/candidate/Contracts'
 import CandidateContractReview from './pages/candidate/ContractReview'
+import Timesheet from './pages/timesheet/Timesheet'
 
 // Components
 import ProtectedRoute from './components/shared/ProtectedRoute'
@@ -262,6 +263,16 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['admin']}>
             <ContractTemplates />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Timesheet - accessible to all authenticated users (candidate/client/admin) */}
+      <Route
+        path="/timesheet"
+        element={
+          <ProtectedRoute>
+            <Timesheet />
           </ProtectedRoute>
         }
       />

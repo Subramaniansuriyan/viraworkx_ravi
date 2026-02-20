@@ -1,14 +1,241 @@
-"""Resume Parser Service using Claude for intelligent extraction"""
-from typing import Dict, Any, Optional
-from anthropic import Anthropic
+"""
+Resume Parser Service — Merged from existing LangChain parser + ATS pdfplumber/PyPDF2/docx extraction.
+Uses Claude for intelligent extraction and includes file-based text extraction and Celery task wrapper.
+"""
+import io
 import json
 import logging
 import re
+from typing import Dict, Any, Optional
+from datetime import datetime, timezone
+
+from anthropic import Anthropic
+import PyPDF2
+import pdfplumber
+from docx import Document as DocxDocument
 
 from config import settings
 
 logger = logging.getLogger(__name__)
 
+
+# ================================================================
+# FILE TEXT EXTRACTION (from ATS resume_parser.py)
+# ================================================================
+
+def extract_text_from_pdf(file_bytes: bytes) -> str:
+    """Extract text from PDF using pdfplumber (primary) with PyPDF2 fallback."""
+    text = ""
+
+    # Try pdfplumber first (better formatting)
+    try:
+        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+        if text.strip():
+            return text.strip()
+    except Exception as e:
+        logger.warning(f"pdfplumber failed, trying PyPDF2: {e}")
+
+    # Fallback to PyPDF2
+    try:
+        reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+        for page in reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+    except Exception as e:
+        logger.error(f"PyPDF2 also failed: {e}")
+
+    return text.strip()
+
+
+def extract_text_from_docx(file_bytes: bytes) -> str:
+    """Extract text from DOCX file."""
+    try:
+        doc = DocxDocument(io.BytesIO(file_bytes))
+        paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+        return "\n".join(paragraphs)
+    except Exception as e:
+        logger.error(f"DOCX extraction failed: {e}")
+        return ""
+
+
+def extract_resume_text(file_bytes: bytes, filename: str) -> str:
+    """Route to correct extractor based on file type."""
+    lower = filename.lower()
+    if lower.endswith(".pdf"):
+        return extract_text_from_pdf(file_bytes)
+    elif lower.endswith(".docx") or lower.endswith(".doc"):
+        return extract_text_from_docx(file_bytes)
+    else:
+        # Try both
+        text = extract_text_from_pdf(file_bytes)
+        if not text:
+            text = extract_text_from_docx(file_bytes)
+        return text
+
+
+# ================================================================
+# ATS AI RESUME PARSING (structured extraction via Claude)
+# ================================================================
+
+ATS_EXTRACTION_PROMPT = """You are an expert resume parser. Extract structured data from the following resume text.
+
+RESUME TEXT:
+---
+{resume_text}
+---
+
+Extract the following information and respond ONLY with valid JSON, no other text:
+
+{{
+    "first_name": "string",
+    "last_name": "string",
+    "email": "string or null",
+    "phone": "string or null",
+    "location": "string (city, state/country) or null",
+    "current_role": "string (most recent job title) or null",
+    "current_company": "string (most recent employer) or null",
+    "experience_years": number (estimate total years of professional experience),
+    "education": "string (highest degree: Bachelor's, Master's, PhD, Self-taught, Bootcamp) or null",
+    "education_institution": "string or null",
+    "skills": ["list", "of", "all", "technical", "skills", "mentioned"],
+    "primary_skills": ["top", "3-5", "strongest", "skills"],
+    "expertise_domain": "string (one of: AI/ML, Data Engineering, DevOps/Cloud, Full Stack, Frontend, Backend, Mobile, Cybersecurity, QA/Testing, Other) or null",
+    "industries": ["list of industries they have worked in: Fintech, HealthTech, SaaS, EdTech, E-commerce, Logistics, InsurTech, Crypto/Web3, Media, Marketplace, etc."],
+    "certifications": ["list of certifications mentioned"],
+    "linkedin_url": "string or null",
+    "github_url": "string or null",
+    "portfolio_url": "string or null",
+    "summary": "2-3 sentence professional summary"
+}}
+
+Be accurate. If information is not present in the resume, use null. For experience_years, estimate based on work history dates. For skills, extract ALL technical skills, frameworks, tools, and languages mentioned."""
+
+
+async def parse_resume_with_ai(resume_text: str) -> Optional[dict]:
+    """Use Claude API to extract structured data from resume text (ATS-style)."""
+    if not resume_text or len(resume_text) < 50:
+        logger.warning("Resume text too short for parsing")
+        return None
+
+    if not settings.ANTHROPIC_API_KEY and not settings.anthropic_api_key:
+        logger.error("ANTHROPIC_API_KEY not configured")
+        return None
+
+    api_key = settings.ANTHROPIC_API_KEY or settings.anthropic_api_key
+
+    try:
+        client = Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=2000,
+            messages=[
+                {
+                    "role": "user",
+                    "content": ATS_EXTRACTION_PROMPT.format(resume_text=resume_text[:8000])
+                }
+            ],
+        )
+
+        # Extract JSON from response
+        response_text = response.content[0].text.strip()
+        # Remove markdown code fences if present
+        if response_text.startswith("```"):
+            response_text = response_text.split("\n", 1)[1]
+            response_text = response_text.rsplit("```", 1)[0]
+
+        parsed = json.loads(response_text)
+        return parsed
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse AI response as JSON: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"AI resume parsing failed: {e}")
+        return None
+
+
+# ================================================================
+# CELERY TASK WRAPPER (from ATS resume_parser.py)
+# ================================================================
+
+def parse_resume_task(candidate_id: int, file_bytes: bytes, filename: str):
+    """
+    Background task: Parse resume and update candidate record.
+    Called via: parse_resume_task.delay(candidate_id, file_bytes, filename)
+    """
+    import asyncio
+    from sqlalchemy import select
+    from core.database import async_session as ats_async_session
+    from models.candidate import Candidate
+
+    async def _run():
+        # Extract text
+        resume_text = extract_resume_text(file_bytes, filename)
+        if not resume_text:
+            logger.error(f"No text extracted from resume for candidate {candidate_id}")
+            return
+
+        # Parse with AI
+        parsed = await parse_resume_with_ai(resume_text)
+        if not parsed:
+            logger.error(f"AI parsing failed for candidate {candidate_id}")
+            return
+
+        # Update candidate record
+        async with ats_async_session() as session:
+            result = await session.execute(
+                select(Candidate).where(Candidate.id == candidate_id)
+            )
+            candidate = result.scalar_one_or_none()
+            if not candidate:
+                logger.error(f"Candidate {candidate_id} not found")
+                return
+
+            # Update fields from parsed data
+            if parsed.get("skills"):
+                candidate.skills = parsed["skills"]
+            if parsed.get("primary_skills"):
+                candidate.primary_skills = parsed["primary_skills"]
+            if parsed.get("expertise_domain"):
+                candidate.expertise_domain = parsed["expertise_domain"]
+            if parsed.get("industries"):
+                candidate.industries = parsed["industries"]
+            if parsed.get("certifications"):
+                candidate.certifications = parsed["certifications"]
+            if parsed.get("experience_years"):
+                candidate.experience_years = parsed["experience_years"]
+            if parsed.get("education"):
+                candidate.education = parsed["education"]
+            if parsed.get("education_institution"):
+                candidate.education_institution = parsed["education_institution"]
+            if parsed.get("current_role") and not candidate.current_role:
+                candidate.current_role = parsed["current_role"]
+            if parsed.get("current_company") and not candidate.current_company:
+                candidate.current_company = parsed["current_company"]
+            if parsed.get("linkedin_url") and not candidate.linkedin_url:
+                candidate.linkedin_url = parsed["linkedin_url"]
+            if parsed.get("github_url") and not candidate.github_url:
+                candidate.github_url = parsed["github_url"]
+
+            candidate.resume_parsed = parsed
+            candidate.resume_text = resume_text
+            candidate.resume_parsed_at = datetime.now(timezone.utc)
+            candidate.last_activity_at = datetime.now(timezone.utc)
+
+            await session.commit()
+            logger.info(f"Resume parsed successfully for candidate {candidate_id}")
+
+    asyncio.run(_run())
+
+
+# ================================================================
+# EXISTING LANGCHAIN-STYLE RESUME PARSER CLASS
+# ================================================================
 
 class ResumeParser:
     """
@@ -17,7 +244,8 @@ class ResumeParser:
     """
 
     def __init__(self):
-        self.client = Anthropic(api_key=settings.anthropic_api_key)
+        api_key = settings.anthropic_api_key or settings.ANTHROPIC_API_KEY
+        self.client = Anthropic(api_key=api_key)
         self.model = settings.default_model
 
         self.system_prompt = """You are an expert resume parser with deep experience in technical recruiting.
@@ -217,7 +445,7 @@ Be thorough and extract all available information. Use null for fields that cann
 
     def _calculate_experience_years(self, experience: list) -> int:
         """Calculate total years of experience from work history"""
-        from datetime import datetime
+        from datetime import datetime as dt
         from dateutil import parser as date_parser
 
         total_months = 0
@@ -232,15 +460,15 @@ Be thorough and extract all available information. Use null for fields that cann
 
                 # Parse start date
                 if len(start) == 4:  # Just year
-                    start_date = datetime(int(start), 1, 1)
+                    start_date = dt(int(start), 1, 1)
                 else:
                     start_date = date_parser.parse(start)
 
                 # Parse end date
                 if end.lower() == "present" or job.get("is_current"):
-                    end_date = datetime.now()
+                    end_date = dt.now()
                 elif len(end) == 4:
-                    end_date = datetime(int(end), 12, 31)
+                    end_date = dt(int(end), 12, 31)
                 else:
                     end_date = date_parser.parse(end)
 
@@ -264,7 +492,6 @@ Be thorough and extract all available information. Use null for fields that cann
     def _calculate_confidence(self, data: Dict) -> int:
         """Calculate extraction confidence score"""
         score = 0
-        max_score = 100
 
         # Check personal info completeness
         personal = data.get("personal", {})
@@ -297,7 +524,7 @@ Be thorough and extract all available information. Use null for fields that cann
         if data.get("summary"):
             score += 5
 
-        return min(score, max_score)
+        return min(score, 100)
 
     def _get_empty_structure(self) -> Dict[str, Any]:
         """Return empty structure for failed parsing"""

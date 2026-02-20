@@ -11,20 +11,16 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Starting seed...')
 
-  // Clear existing data (in reverse order of dependencies)
-  await prisma.notification.deleteMany()
-  await prisma.interviewFeedback.deleteMany()
-  await prisma.interviewParticipant.deleteMany()
-  await prisma.interview.deleteMany()
-  await prisma.skillBadge.deleteMany()
-  await prisma.assessment.deleteMany()
-  await prisma.application.deleteMany()
-  await prisma.job.deleteMany()
-  await prisma.clientUser.deleteMany()
-  await prisma.client.deleteMany()
-  await prisma.candidate.deleteMany()
-  await prisma.aiAction.deleteMany()
-  await prisma.user.deleteMany()
+  // Clear all tables using TRUNCATE CASCADE to handle FK constraints
+  await prisma.$executeRawUnsafe(`
+    TRUNCATE TABLE
+      notifications, interview_feedback, interview_participants, interviews,
+      skill_badges, assessments, contract_signatures, contracts,
+      pipeline_history, candidate_notes, email_logs, applications,
+      jobs, client_users, subscriptions, payments, clients,
+      candidates, ai_actions, email_templates, users
+    RESTART IDENTITY CASCADE
+  `)
 
   console.log('🗑️  Cleared existing data')
 

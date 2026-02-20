@@ -1,6 +1,6 @@
 """
 ViraWorkx AI Engine - FastAPI Application
-Human-in-the-Loop AI Pipeline for Recruiting
+Human-in-the-Loop AI Pipeline for Recruiting + ATS API Routes
 """
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +18,11 @@ from agents.scheduling_agent import scheduling_agent
 from services.resume_parser import resume_parser
 from services.job_matcher import job_matcher
 
+# ATS API Routers
+from api.candidates import router as candidates_router
+from api.jobs import router as jobs_router
+from api.auth import router as auth_router
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -31,8 +36,8 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Initialize and cleanup resources"""
     logger.info("Starting AI Engine...")
-    # Initialize database tables (if needed)
-    # await init_db()
+    # Initialize ATS database tables
+    await init_db()
     yield
     logger.info("Shutting down AI Engine...")
 
@@ -61,6 +66,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ==================== Include ATS Routers ====================
+app.include_router(candidates_router, tags=["ATS Candidates"])  # routes already include /api prefix
+app.include_router(jobs_router, prefix="/api", tags=["ATS Jobs"])
+app.include_router(auth_router, tags=["ATS Auth"])
 
 
 # ==================== Pydantic Models ====================

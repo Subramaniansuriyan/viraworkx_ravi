@@ -1,6 +1,5 @@
 """Database models and connection for AI Engine"""
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, String, Integer, DateTime, Text, Boolean, JSON, Enum as SQLEnum
 from datetime import datetime
 from enum import Enum
@@ -8,13 +7,15 @@ import uuid
 
 from config import settings
 
-# Convert sync URL to async URL
-DATABASE_URL = settings.database_url.replace("postgresql://", "postgresql+asyncpg://")
+# Use the shared Base from core.database so all models share metadata
+from core.database import Base, async_session, engine
 
-engine = create_async_engine(DATABASE_URL, echo=True)
-async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-Base = declarative_base()
+# Re-export for backward compat
+__all__ = [
+    "Base", "async_session", "engine",
+    "AgentType", "ActionStatus", "AiAction",
+    "get_session", "init_db",
+]
 
 
 class AgentType(str, Enum):
