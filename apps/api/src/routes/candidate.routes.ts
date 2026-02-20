@@ -4,7 +4,7 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import prisma from '../config/database.js'
-import { authenticateToken, AuthRequest } from '../middleware/auth.js'
+import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -88,9 +88,9 @@ const updateProfileSchema = z.object({
 
 /**
  * GET /api/v1/candidates
- * List all candidates (for clients/admins)
+ * List all candidates (for clients/admins only)
  */
-router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: AuthRequest, res: Response) => {
   try {
     const { skills, location, experienceMin, experienceMax, limit = '20', offset = '0' } = req.query
 

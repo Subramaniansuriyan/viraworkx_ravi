@@ -54,17 +54,9 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
     const isAdmin = req.user?.userType === 'admin'
     const isMember = !!clientUser
 
-    // Return limited info for non-members
+    // Only admins and client members can access client profile
     if (!isAdmin && !isMember) {
-      return res.json({
-        client: {
-          id: client.id,
-          companyName: client.companyName,
-          companyLogoUrl: client.companyLogoUrl,
-          industry: client.industry,
-          description: client.description,
-        }
-      })
+      return res.status(403).json({ error: 'Access denied' })
     }
 
     res.json({ client })
