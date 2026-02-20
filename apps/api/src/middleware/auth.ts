@@ -36,7 +36,7 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
     }
     recordInvalidToken(ip)
     logSecurityEvent('invalid_token', req, { reason: 'invalid_signature' })
-    return res.status(403).json({ error: 'Invalid token' })
+    return res.status(401).json({ error: 'Invalid token' })
   }
 }
 
