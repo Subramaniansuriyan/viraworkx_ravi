@@ -92,7 +92,7 @@ const updateProfileSchema = z.object({
  */
 router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: AuthRequest, res: Response) => {
   try {
-    const { skills, location, experienceMin, experienceMax, limit = '20', offset = '0' } = req.query
+    const { skills, location, experienceMin, experienceMax, tier, limit = '20', offset = '0' } = req.query
 
     const where: any = {}
 
@@ -109,6 +109,10 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
       where.experienceYears = {}
       if (experienceMin) where.experienceYears.gte = parseInt(experienceMin as string)
       if (experienceMax) where.experienceYears.lte = parseInt(experienceMax as string)
+    }
+
+    if (tier) {
+      where.tier = tier as string
     }
 
     const candidates = await prisma.candidate.findMany({
@@ -148,6 +152,105 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
   } catch (error) {
     console.error('Error fetching candidates:', error)
     res.status(500).json({ error: 'Failed to fetch candidates' })
+  }
+})
+
+/**
+ * GET /api/v1/candidates/profile
+ * Get current candidate's own profile (shorthand, no /me/ prefix)
+ */
+router.get('/profile', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user || req.user.userType !== 'candidate') {
+      return res.status(403).json({ error: 'Only candidates can access this endpoint' })
+    }
+
+    const candidate = await prisma.candidate.findUnique({
+      where: { userId: req.user.userId },
+      include: {
+        user: { select: { email: true } },
+        applications: {
+          include: {
+            job: {
+              select: {
+                id: true,
+                title: true,
+                location: true,
+                client: { select: { companyName: true } }
+              }
+            }
+          },
+          orderBy: { appliedAt: 'desc' },
+          take: 10
+        },
+        assessments: {
+          orderBy: { createdAt: 'desc' },
+          take: 10
+        },
+        skillBadges: {
+          where: { expiresAt: { gt: new Date() } },
+          orderBy: { percentile: 'desc' }
+        }
+      }
+    })
+
+    if (!candidate) {
+      return res.status(404).json({ error: 'Profile not found' })
+    }
+
+    res.json({ profile: candidate })
+  } catch (error) {
+    console.error('Error fetching profile:', error)
+    res.status(500).json({ error: 'Failed to fetch profile' })
+  }
+})
+
+/**
+ * GET /api/v1/candidates/job-matches
+ * Get AI-powered job recommendations (shorthand, no /me/ prefix)
+ */
+router.get('/job-matches', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user || req.user.userType !== 'candidate') {
+      return res.status(403).json({ error: 'Only candidates can access this endpoint' })
+    }
+
+    const candidate = await prisma.candidate.findUnique({
+      where: { userId: req.user.userId }
+    })
+
+    if (!candidate) {
+      return res.status(404).json({ error: 'Profile not found' })
+    }
+
+    const jobs = await prisma.job.findMany({
+      where: {
+        status: 'active',
+        OR: [
+          { skillsRequired: { hasSome: candidate.skills } },
+          { location: candidate.preferredLocations?.length ? { in: candidate.preferredLocations } : undefined }
+        ]
+      },
+      include: {
+        client: { select: { companyName: true, companyLogoUrl: true } }
+      },
+      take: 20,
+      orderBy: { createdAt: 'desc' }
+    })
+
+    const matchScores: Record<string, number> = {}
+    jobs.forEach(job => {
+      const skillMatch = job.skillsRequired.filter(s => candidate.skills.includes(s)).length
+      const totalRequired = job.skillsRequired.length || 1
+      matchScores[job.id] = Math.round((skillMatch / totalRequired) * 100)
+    })
+
+    const sortedJobs = jobs.sort((a, b) => matchScores[b.id] - matchScores[a.id])
+
+    res.json({ jobs: sortedJobs, matchScores })
+  } catch (error) {
+    console.error('Error fetching job matches:', error)
+    res.status(500).json({ error: 'Failed to fetch job matches' })
   }
 })
 
@@ -524,6 +627,76 @@ router.get('/me/job-matches', authenticateToken, async (req: AuthRequest, res: R
   } catch (error) {
     console.error('Error fetching job matches:', error)
     res.status(500).json({ error: 'Failed to fetch job matches' })
+  }
+})
+
+/**
+ * POST /api/v1/candidates/invite
+ * Admin invites a candidate to the platform
+ */
+router.post('/invite', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const schema = z.object({
+      firstName: z.string().min(1),
+      lastName: z.string().min(1),
+      email: z.string().email(),
+      phone: z.string().optional(),
+    })
+
+    const { firstName, lastName, email, phone } = schema.parse(req.body)
+
+    // Check if email already registered
+    const existing = await prisma.user.findUnique({ where: { email } })
+    if (existing) {
+      return res.status(409).json({ error: 'A user with this email already exists' })
+    }
+
+    // Create user + candidate profile in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const tempPassword = Math.random().toString(36).slice(-10) + 'A1!'
+      const bcrypt = await import('bcryptjs')
+      const passwordHash = await bcrypt.default.hash(tempPassword, 10)
+
+      const user = await tx.user.create({
+        data: {
+          email,
+          phone: phone || null,
+          passwordHash,
+          userType: 'candidate',
+          status: 'active',
+        }
+      })
+
+      const candidate = await tx.candidate.create({
+        data: {
+          userId: user.id,
+          firstName,
+          lastName,
+        }
+      })
+
+      return { user, candidate }
+    })
+
+    // Send invite email (non-blocking)
+    const { emailService } = await import('../services/email.service.js')
+    emailService.sendWelcome(email, { userName: firstName, userType: 'candidate' }).catch(console.error)
+
+    res.status(201).json({
+      message: 'Candidate invited successfully',
+      candidate: {
+        id: result.candidate.id,
+        firstName,
+        lastName,
+        email,
+      }
+    })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: 'Invalid input', details: error.errors })
+    }
+    console.error('Error inviting candidate:', error)
+    res.status(500).json({ error: 'Failed to invite candidate' })
   }
 })
 

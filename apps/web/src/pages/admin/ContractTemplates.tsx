@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { FileText, Plus, Edit3, Eye, ToggleLeft, ToggleRight, ArrowLeft } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { FileText, Plus, Edit3, Eye, ToggleLeft, ToggleRight } from 'lucide-react'
 import { contractApi } from '../../services/api'
 import type { ContractTemplate } from '../../types'
+import AdminLayout from '../../components/admin/AdminLayout'
 
 const PLACEHOLDER_HELP = [
   '{{candidateName}}', '{{companyName}}', '{{jobTitle}}',
@@ -10,7 +10,6 @@ const PLACEHOLDER_HELP = [
 ]
 
 export default function ContractTemplates() {
-  const navigate = useNavigate()
   const [templates, setTemplates] = useState<ContractTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
@@ -80,15 +79,12 @@ export default function ContractTemplates() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <AdminLayout>
+      <div className="p-4 md:p-8">
         <div className="flex items-center gap-4 mb-8">
-          <button onClick={() => navigate('/admin/dashboard')} className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
           <div>
-            <h1 className="text-2xl font-bold">Contract Templates</h1>
-            <p className="text-slate-400 text-sm">Manage contract templates for hiring workflows</p>
+            <h1 className="text-2xl font-bold text-gray-900">Contract Templates</h1>
+            <p className="text-gray-600 text-sm">Manage contract templates for hiring workflows</p>
           </div>
           <div className="ml-auto">
             <button onClick={() => openEditor()} className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white flex items-center gap-2 text-sm font-medium">
@@ -224,6 +220,6 @@ export default function ContractTemplates() {
           </div>
         )}
       </div>
-    </div>
+    </AdminLayout>
   )
 }

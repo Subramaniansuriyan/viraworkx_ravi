@@ -1,18 +1,16 @@
 /**
- * Email Service - SendGrid Integration
+ * Email Service - Resend Integration
  * Handles all email notifications for ViraWorkx
  */
-import sgMail from '@sendgrid/mail'
+import { Resend } from 'resend'
 
-// Initialize SendGrid
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || ''
+// Initialize Resend
+const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@viraworkx.ai'
 const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'ViraWorkx'
 const APP_URL = process.env.APP_URL || 'http://localhost:3000'
 
-if (SENDGRID_API_KEY) {
-  sgMail.setApiKey(SENDGRID_API_KEY)
-}
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
 
 // Email Templates
 const templates = {
@@ -327,9 +325,9 @@ class EmailService {
   private enabled: boolean
 
   constructor() {
-    this.enabled = !!SENDGRID_API_KEY
+    this.enabled = !!RESEND_API_KEY
     if (!this.enabled) {
-      console.warn('SendGrid API key not configured. Emails will be logged but not sent.')
+      console.warn('Resend API key not configured. Emails will be logged but not sent.')
     }
   }
 
@@ -337,17 +335,6 @@ class EmailService {
    * Send an email
    */
   async send(to: string, template: { subject: string; html: string; text: string }): Promise<boolean> {
-    const msg = {
-      to,
-      from: {
-        email: EMAIL_FROM,
-        name: EMAIL_FROM_NAME
-      },
-      subject: template.subject,
-      text: template.text,
-      html: template.html
-    }
-
     if (!this.enabled) {
       console.log('📧 Email (not sent - no API key):')
       console.log(`   To: ${to}`)
@@ -356,11 +343,21 @@ class EmailService {
     }
 
     try {
-      await sgMail.send(msg)
+      const { error } = await resend!.emails.send({
+        from: `${EMAIL_FROM_NAME} <${EMAIL_FROM}>`,
+        to,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+      })
+      if (error) {
+        console.error('Failed to send email:', error.message)
+        return false
+      }
       console.log(`📧 Email sent to ${to}: ${template.subject}`)
       return true
     } catch (error: any) {
-      console.error('Failed to send email:', error.response?.body || error.message)
+      console.error('Failed to send email:', error.message)
       return false
     }
   }

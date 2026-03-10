@@ -142,7 +142,7 @@ services:
     container_name: viraworkx-db
     environment:
       POSTGRES_USER: viraworkx
-      POSTGRES_PASSWORD: viraworkx123
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: viraworkx
     ports:
       - "5432:5432"
@@ -183,7 +183,7 @@ DOCKER
 # Environment file
 cat > .env << 'ENVFILE'
 NODE_ENV=development
-DATABASE_URL=postgresql://viraworkx:viraworkx123@localhost:5432/viraworkx
+DATABASE_URL=postgresql://viraworkx:${POSTGRES_PASSWORD}@localhost:5432/viraworkx
 REDIS_URL=redis://localhost:6379
 ELASTICSEARCH_URL=http://localhost:9200
 JWT_SECRET=viraworkx-dev-secret-change-in-production

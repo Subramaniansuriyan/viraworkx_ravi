@@ -1,26 +1,25 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { candidateApi, jobApi } from '../../services/api'
+import { candidateApi } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
 import {
   Briefcase,
   FileText,
   Award,
-  TrendingUp,
   Clock,
   CheckCircle,
   AlertCircle,
   ChevronRight,
   MapPin,
   Building2,
-  User,
-  Bell,
-  Settings,
-  LogOut
 } from 'lucide-react'
+import NotificationBell from '../../components/shared/NotificationBell'
+import CandidateLayout from '../../components/candidate/CandidateLayout'
 
 export default function CandidateDashboard() {
-  const { user, logout } = useAuthStore()
+  const { user, accessToken: token } = useAuthStore()
 
   const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ['profile'],
@@ -37,10 +36,22 @@ export default function CandidateDashboard() {
     queryFn: candidateApi.getJobMatches,
   })
 
+  const { data: assessmentsData } = useQuery({
+    queryKey: ['candidateAssessments'],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/api/v1/assessments`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Failed')
+      return res.json()
+    },
+  })
+
   const profile = profileData?.data?.profile
   const applications = applicationsData?.data?.applications || []
   const jobMatches = jobMatchesData?.data?.jobs || []
   const matchScores = jobMatchesData?.data?.matchScores || {}
+  const completedAssessments = (assessmentsData?.assessments || []).filter((a: any) => a.status === 'completed').length
 
   const getStageColor = (stage: string) => {
     switch (stage) {
@@ -69,98 +80,18 @@ export default function CandidateDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r z-10">
-        <div className="p-6 border-b">
-          <Link to="/" className="text-2xl font-bold text-primary-600">ViraWorkx</Link>
-        </div>
-
-        <nav className="p-4">
-          <ul className="space-y-1">
-            <li>
-              <Link
-                to="/dashboard"
-                className="flex items-center px-4 py-3 text-primary-600 bg-primary-50 rounded-lg font-medium"
-              >
-                <TrendingUp className="w-5 h-5 mr-3" />
-                Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/profile"
-                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg"
-              >
-                <User className="w-5 h-5 mr-3" />
-                My Profile
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/jobs"
-                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg"
-              >
-                <Briefcase className="w-5 h-5 mr-3" />
-                Find Jobs
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/applications"
-                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg"
-              >
-                <FileText className="w-5 h-5 mr-3" />
-                My Applications
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/assessments"
-                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg"
-              >
-                <Award className="w-5 h-5 mr-3" />
-                Assessments
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/candidate/contracts"
-                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg"
-              >
-                <FileText className="w-5 h-5 mr-3" />
-                Contracts
-              </Link>
-            </li>
-          </ul>
-        </nav>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-          <button
-            onClick={() => logout()}
-            className="flex items-center w-full px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg"
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Log out
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="ml-64 p-8">
+    <CandidateLayout>
+      <div className="p-4 md:p-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6 md:mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">
               Welcome back, {profile?.firstName || 'there'}!
             </h1>
-            <p className="text-gray-600">Here's what's happening with your job search</p>
+            <p className="text-gray-600 text-sm md:text-base">Here's what's happening with your job search</p>
           </div>
-          <div className="flex items-center gap-4">
-            <button className="p-2 text-gray-400 hover:text-gray-600 relative">
-              <Bell className="w-6 h-6" />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+          <div className="hidden lg:flex items-center gap-4">
+            <NotificationBell />
             <Link to="/profile" className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                 <span className="text-primary-600 font-semibold">
@@ -357,7 +288,7 @@ export default function CandidateDashboard() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </CandidateLayout>
   )
 }

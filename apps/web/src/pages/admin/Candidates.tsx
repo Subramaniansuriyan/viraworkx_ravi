@@ -1,47 +1,62 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Building2, Users, Briefcase, Search, Filter, MoreVertical,
-  Zap, LogOut, Bot, Activity, Shield, Eye, ClipboardCheck,
-  MapPin, Mail, Star, ChevronLeft, ChevronRight, Award
+  Users, Search, MoreVertical, MapPin, ChevronLeft, ChevronRight, Award,
+  UserPlus, X, Send
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
+import AdminLayout from '../../components/admin/AdminLayout'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
+const INVITE_EMPTY = { firstName: '', lastName: '', email: '', phone: '' }
+
 export default function AdminCandidates() {
-  const { user, logout, accessToken: token } = useAuthStore()
+  const { accessToken: token } = useAuthStore()
+  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
+  const [showInvite, setShowInvite] = useState(false)
+  const [invite, setInvite] = useState(INVITE_EMPTY)
+  const [inviteSuccess, setInviteSuccess] = useState(false)
   const limit = 10
+
+  const inviteMutation = useMutation({
+    mutationFn: async (data: typeof INVITE_EMPTY) => {
+      const res = await fetch(`${API_URL}/api/v1/candidates/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error('Invite failed')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminCandidates'] })
+      setInviteSuccess(true)
+      setTimeout(() => {
+        setShowInvite(false)
+        setInvite(INVITE_EMPTY)
+        setInviteSuccess(false)
+      }, 2000)
+    },
+  })
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminCandidates', page, searchQuery],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-      })
+      const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() })
       if (searchQuery) params.append('search', searchQuery)
-
       const res = await fetch(`${API_URL}/api/v1/candidates?${params}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error('Failed to fetch candidates')
       return res.json()
-    }
+    },
   })
 
   const candidates = data?.candidates || []
   const totalPages = Math.ceil((data?.total || 0) / limit)
-
-  const getUserInitials = () => {
-    if (user?.profile?.firstName && user?.profile?.lastName) {
-      return `${user.profile.firstName[0]}${user.profile.lastName[0]}`
-    }
-    return user?.email?.substring(0, 2).toUpperCase() || 'A'
-  }
 
   const getProfileScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600 bg-green-100'
@@ -50,109 +65,22 @@ export default function AdminCandidates() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-slate-900 text-white z-10">
-        <div className="p-6 border-b border-slate-700">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <span className="text-xl font-bold">ViraWorkX</span>
-              <p className="text-xs text-slate-400">Admin Console</p>
-            </div>
-          </Link>
-        </div>
-
-        <nav className="p-4">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-            Human-in-the-Loop
-          </p>
-          <ul className="space-y-1">
-            <li>
-              <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <Activity className="w-5 h-5 mr-3" />
-                Overview
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/ai-monitor" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <Bot className="w-5 h-5 mr-3" />
-                AI Monitor
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/test-allocation" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <ClipboardCheck className="w-5 h-5 mr-3" />
-                Test Allocation
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/clients" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <Building2 className="w-5 h-5 mr-3" />
-                Clients
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/candidates" className="flex items-center px-4 py-3 text-white bg-slate-800 rounded-lg font-medium">
-                <Users className="w-5 h-5 mr-3" />
-                Candidates
-              </Link>
-            </li>
-          </ul>
-
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 mt-8">
-            System
-          </p>
-          <ul className="space-y-1">
-            <li>
-              <Link to="/admin/audit-log" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <Eye className="w-5 h-5 mr-3" />
-                Audit Log
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/settings" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <Shield className="w-5 h-5 mr-3" />
-                Settings
-              </Link>
-            </li>
-          </ul>
-        </nav>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
-          <div className="flex items-center gap-3 mb-4 px-2">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium">
-              {getUserInitials()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                {user?.profile?.firstName || 'Admin'}
-              </p>
-              <p className="text-xs text-slate-400 truncate">{user?.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => logout()}
-            className="flex items-center w-full px-4 py-3 text-red-400 hover:bg-slate-800 rounded-lg"
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Log out
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="ml-64 p-8">
+    <AdminLayout>
+      <div className="p-4 md:p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Candidates</h1>
             <p className="text-gray-600">View and manage candidate profiles</p>
           </div>
+          <button
+            onClick={() => setShowInvite(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90"
+          >
+            <UserPlus className="w-5 h-5" />
+            Invite Candidate
+          </button>
         </div>
 
-        {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
           <div className="flex items-center gap-4">
             <div className="flex-1 relative">
@@ -168,7 +96,6 @@ export default function AdminCandidates() {
           </div>
         </div>
 
-        {/* Candidates Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           {isLoading ? (
             <div className="p-8 text-center">
@@ -176,9 +103,7 @@ export default function AdminCandidates() {
               <p className="mt-4 text-gray-500">Loading candidates...</p>
             </div>
           ) : error ? (
-            <div className="p-8 text-center text-red-500">
-              Failed to load candidates. Please try again.
-            </div>
+            <div className="p-8 text-center text-red-500">Failed to load candidates. Please try again.</div>
           ) : candidates.length === 0 ? (
             <div className="p-8 text-center">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -233,7 +158,9 @@ export default function AdminCandidates() {
                         {candidate.experienceYears ? `${candidate.experienceYears} years` : '-'}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getProfileScoreColor(candidate.profileScore || 0)}`}>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${getProfileScoreColor(candidate.profileScore || 0)}`}
+                        >
                           {candidate.profileScore || 0}%
                         </span>
                       </td>
@@ -245,12 +172,15 @@ export default function AdminCandidates() {
                       </td>
                       <td className="px-6 py-4">
                         {candidate.assessmentTier ? (
-                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            candidate.assessmentTier === 'Tier 1' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' :
-                            candidate.assessmentTier === 'Tier 2' ? 'bg-gray-100 text-gray-700 border border-gray-300' :
-                            candidate.assessmentTier === 'Tier 3' ? 'bg-orange-100 text-orange-700 border border-orange-300' :
-                            ''
-                          }`}>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-bold ${
+                              candidate.assessmentTier === 'Tier 1'
+                                ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                                : candidate.assessmentTier === 'Tier 2'
+                                ? 'bg-gray-100 text-gray-700 border border-gray-300'
+                                : 'bg-orange-100 text-orange-700 border border-orange-300'
+                            }`}
+                          >
                             {candidate.assessmentTier}
                           </span>
                         ) : (
@@ -267,15 +197,15 @@ export default function AdminCandidates() {
                 </tbody>
               </table>
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t">
                   <p className="text-sm text-gray-500">
-                    Showing {(page - 1) * limit + 1} to {Math.min(page * limit, data?.total || 0)} of {data?.total || 0} candidates
+                    Showing {(page - 1) * limit + 1} to{' '}
+                    {Math.min(page * limit, data?.total || 0)} of {data?.total || 0} candidates
                   </p>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={page === 1}
                       className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50"
                     >
@@ -285,7 +215,7 @@ export default function AdminCandidates() {
                       Page {page} of {totalPages}
                     </span>
                     <button
-                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                       disabled={page === totalPages}
                       className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50"
                     >
@@ -297,7 +227,107 @@ export default function AdminCandidates() {
             </>
           )}
         </div>
-      </main>
-    </div>
+      </div>
+
+      {/* Invite Candidate Modal */}
+      {showInvite && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowInvite(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md m-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Invite Candidate</h2>
+                <p className="text-sm text-gray-500">Send a personal invitation to onboard</p>
+              </div>
+              <button onClick={() => setShowInvite(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {inviteSuccess ? (
+              <div className="p-12 text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Send className="w-8 h-8 text-green-600" />
+                </div>
+                <p className="text-xl font-semibold text-gray-900">Invitation Sent!</p>
+                <p className="text-gray-500 text-sm mt-1">
+                  {invite.firstName} will receive an email to complete their profile.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                      <input
+                        type="text"
+                        value={invite.firstName}
+                        onChange={(e) => setInvite((i) => ({ ...i, firstName: e.target.value }))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        placeholder="Priya"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                      <input
+                        type="text"
+                        value={invite.lastName}
+                        onChange={(e) => setInvite((i) => ({ ...i, lastName: e.target.value }))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        placeholder="Sharma"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+                    <input
+                      type="email"
+                      value={invite.email}
+                      onChange={(e) => setInvite((i) => ({ ...i, email: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      placeholder="priya@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
+                    <input
+                      type="tel"
+                      value={invite.phone}
+                      onChange={(e) => setInvite((i) => ({ ...i, phone: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+                  {inviteMutation.isError && (
+                    <p className="text-sm text-red-600">Failed to send invite. Please try again.</p>
+                  )}
+                </div>
+                <div className="flex gap-3 p-6 border-t bg-gray-50">
+                  <button
+                    onClick={() => setShowInvite(false)}
+                    className="flex-1 py-2 border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => inviteMutation.mutate(invite)}
+                    disabled={!invite.firstName || !invite.email || inviteMutation.isPending}
+                    className="flex-1 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {inviteMutation.isPending ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    {inviteMutation.isPending ? 'Sending...' : 'Send Invite'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </AdminLayout>
   )
 }

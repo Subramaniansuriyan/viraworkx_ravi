@@ -17,14 +17,21 @@ import ClientPipeline from './pages/client/Pipeline'
 import AIMonitor from './pages/client/AIMonitor'
 import AdminDashboard from './pages/admin/Dashboard'
 import TestAllocation from './pages/admin/TestAllocation'
+import AdminVetting from './pages/admin/Vetting'
 import AdminClients from './pages/admin/Clients'
 import AdminCandidates from './pages/admin/Candidates'
+import AdminJobs from './pages/admin/Jobs'
+import AdminApplications from './pages/admin/Applications'
+import AdminInterviews from './pages/admin/Interviews'
+import AdminAnalytics from './pages/admin/Analytics'
+import AdminUsers from './pages/admin/Users'
 import AuditLog from './pages/admin/AuditLog'
 import AdminSettings from './pages/admin/Settings'
 import ContractTemplates from './pages/admin/ContractTemplates'
 import ClientContracts from './pages/client/Contracts'
 import ClientContractReview from './pages/client/ContractReview'
 import Billing from './pages/client/Billing'
+import CandidateAssessments from './pages/candidate/Assessments'
 import CandidateContracts from './pages/candidate/Contracts'
 import CandidateContractReview from './pages/candidate/ContractReview'
 import Timesheet from './pages/timesheet/Timesheet'
@@ -122,6 +129,16 @@ export default function App() {
         }
       />
 
+      {/* Candidate assessments route */}
+      <Route
+        path="/assessments"
+        element={
+          <ProtectedRoute allowedTypes={['candidate']}>
+            <CandidateAssessments />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Client job management routes */}
       <Route
         path="/client/jobs"
@@ -181,6 +198,14 @@ export default function App() {
         }
       />
       <Route
+        path="/admin/vetting"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminVetting />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin/clients"
         element={
           <ProtectedRoute allowedTypes={['admin']}>
@@ -193,6 +218,46 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['admin']}>
             <AdminCandidates />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/jobs"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminJobs />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/applications"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminApplications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/interviews"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminInterviews />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/analytics"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminAnalytics />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminUsers />
           </ProtectedRoute>
         }
       />

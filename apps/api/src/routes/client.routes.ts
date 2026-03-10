@@ -335,6 +335,89 @@ router.delete('/:id/users/:userId', authenticateToken, requireRole('client', 'ad
 })
 
 /**
+ * GET /api/v1/clients/me/dashboard
+ * Get current client's dashboard (no clientId needed — resolved from token)
+ */
+router.get('/me/dashboard', authenticateToken, requireRole('client', 'admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    let clientId: string
+
+    if (req.user?.userType === 'admin') {
+      return res.status(400).json({ error: 'Admins must use /clients/:id/dashboard' })
+    }
+
+    const clientUser = await prisma.clientUser.findFirst({ where: { userId: req.user!.userId } })
+    if (!clientUser) return res.status(404).json({ error: 'No client associated with this account' })
+    clientId = clientUser.clientId
+
+    const now = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const todayEnd = new Date(todayStart.getTime() + 86400000)
+
+    const [activeJobs, totalApplications, interviewsToday, hiredApps, recentApplications, recentAiActions] = await Promise.all([
+      prisma.job.count({ where: { clientId, status: 'active' } }),
+      prisma.application.count({ where: { job: { clientId } } }),
+      prisma.interview.count({
+        where: {
+          application: { job: { clientId } },
+          scheduledAt: { gte: todayStart, lt: todayEnd },
+          status: { in: ['scheduled', 'confirmed'] }
+        }
+      }),
+      prisma.application.findMany({
+        where: { job: { clientId }, stage: 'hired' },
+        select: { appliedAt: true, stageUpdatedAt: true },
+        take: 100
+      }),
+      prisma.application.findMany({
+        where: { job: { clientId } },
+        include: {
+          candidate: { select: { firstName: true, lastName: true, headline: true, skills: true } },
+          job: { select: { title: true } }
+        },
+        orderBy: { appliedAt: 'desc' },
+        take: 5
+      }),
+      prisma.aiAction.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 3
+      })
+    ])
+
+    // Count unique candidates
+    const uniqueCandidates = await prisma.application.groupBy({
+      by: ['candidateId'],
+      where: { job: { clientId } }
+    })
+
+    // Avg time to hire
+    let avgTimeToHire = 0
+    if (hiredApps.length > 0) {
+      const days = hiredApps.map(a => {
+        const diff = new Date(a.stageUpdatedAt || a.appliedAt).getTime() - new Date(a.appliedAt).getTime()
+        return Math.ceil(diff / (1000 * 60 * 60 * 24))
+      })
+      avgTimeToHire = Math.round(days.reduce((a, b) => a + b, 0) / days.length)
+    }
+
+    res.json({
+      stats: {
+        activeJobs,
+        totalApplications,
+        totalCandidates: uniqueCandidates.length,
+        interviewsToday,
+        avgTimeToHire
+      },
+      recentApplications,
+      recentAiActions
+    })
+  } catch (error) {
+    console.error('Error fetching client dashboard:', error)
+    res.status(500).json({ error: 'Failed to fetch dashboard data' })
+  }
+})
+
+/**
  * GET /api/v1/clients/:id/dashboard
  * Get client dashboard data
  */

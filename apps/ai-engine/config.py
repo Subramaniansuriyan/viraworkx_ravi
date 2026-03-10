@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     node_api_url: str = "http://localhost:4000"
 
     # AI Model Settings
-    default_model: str = "claude-sonnet-4-20250514"
+    default_model: str = "claude-opus-4-6"
     max_tokens: int = 4096
     temperature: float = 0.3
 

@@ -89,7 +89,7 @@ async def score_resume_against_job(
     try:
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         response = client.messages.create(
-            model="claude-sonnet-4-5-20250929",
+            model="claude-opus-4-6",
             max_tokens=1500,
             messages=[
                 {

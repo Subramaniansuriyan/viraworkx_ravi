@@ -32,87 +32,85 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-20 pb-32 overflow-hidden">
+      <section className="relative pt-12 lg:pt-20 pb-16 lg:pb-32 overflow-hidden">
         <div className="absolute inset-0 bg-grid-pattern opacity-50 pointer-events-none" />
 
         <div className="container mx-auto px-4 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Column */}
-            <div className="space-y-8 animate-slide-left">
+          <div className="grid sm:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
+
+            {/* Image column — order-1 on mobile (top), order-2 on desktop (right) */}
+            <div className="relative order-1 sm:order-2 animate-slide-right">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200/50 glass-card">
+                <img
+                  src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80"
+                  alt="Team collaboration"
+                  className="w-full h-48 sm:h-full lg:h-auto object-cover hover:scale-105 transition-transform duration-700"
+                />
+              </div>
+
+              {/* Floating Card - Bottom Left — hidden on small screens to avoid overflow */}
+              <div className="hidden sm:flex absolute -bottom-6 -left-6 bg-white p-3 lg:p-4 rounded-xl shadow-xl border border-gray-100 animate-fade-zoom delay-500 animate-float items-center gap-3">
+                <div className="h-9 w-9 lg:h-10 lg:w-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 shrink-0">
+                  <Award className="w-4 h-4 lg:w-5 lg:h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Screening Score</p>
+                  <p className="text-base lg:text-lg font-bold text-gray-900">94%</p>
+                </div>
+              </div>
+
+              {/* Floating Card - Top Right — hidden on small screens to avoid overflow */}
+              <div className="hidden sm:flex absolute top-8 lg:top-12 -right-4 lg:-right-6 bg-white p-3 lg:p-4 rounded-xl shadow-xl border border-gray-100 animate-fade-zoom delay-700 animate-float items-center gap-3" style={{ animationDelay: '1.5s' }}>
+                <div className="h-9 w-9 lg:h-10 lg:w-10 bg-blue-100 rounded-full flex items-center justify-center text-primary shrink-0">
+                  <Users className="w-4 h-4 lg:w-5 lg:h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Talent Pool</p>
+                  <p className="text-base lg:text-lg font-bold text-gray-900">12K+</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Text column — order-2 on mobile (below image), order-1 on desktop (left) */}
+            <div className="space-y-5 sm:space-y-6 lg:space-y-8 order-2 sm:order-1 animate-slide-left">
               <span className="inline-flex px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20">
                 AI-Powered Recruiting Platform
               </span>
 
-              <h1 className="text-5xl md:text-6xl font-bold font-heading leading-[1.1] tracking-tight text-gray-900">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-heading leading-[1.1] tracking-tight text-gray-900">
                 Connecting Top{' '}
                 <span className="text-primary">Indian Engineers</span>
                 {' '}with US Startups
               </h1>
 
-              <p className="text-xl text-gray-500 leading-relaxed max-w-lg">
+              <p className="text-base lg:text-xl text-gray-500 leading-relaxed max-w-lg">
                 Pre-vetted candidates, technical assessments, and seamless onboarding.
                 <span className="block mt-2 font-medium text-gray-700">
                   Hire exceptional talent in days, not months.
                 </span>
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Link to="/register" className="inline-flex items-center justify-center gap-2 h-12 px-8 text-base font-medium bg-primary text-white rounded-lg shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:bg-primary-700 transition-all">
+              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 pt-2 lg:pt-4">
+                <Link to="/register" className="inline-flex items-center justify-center gap-2 h-11 lg:h-12 px-6 lg:px-8 text-sm lg:text-base font-medium bg-primary text-white rounded-lg shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:bg-primary-700 transition-all">
                   Start Hiring <ArrowRight className="w-4 h-4" />
                 </Link>
-                <Link to="/register?type=candidate" className="inline-flex items-center justify-center h-12 px-8 text-base font-medium bg-white/50 backdrop-blur-sm border border-gray-200 text-gray-700 rounded-lg hover:bg-white hover:border-gray-300 transition-all">
+                <Link to="/register?type=candidate" className="inline-flex items-center justify-center h-11 lg:h-12 px-6 lg:px-8 text-sm lg:text-base font-medium bg-white/50 backdrop-blur-sm border border-gray-200 text-gray-700 rounded-lg hover:bg-white hover:border-gray-300 transition-all">
                   Join as Candidate
                 </Link>
               </div>
 
-              <div className="pt-8 flex items-center gap-8 text-sm text-gray-500">
+              <div className="flex items-center gap-6 text-sm text-gray-500">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 shrink-0" />
                   <span>iMocha Verified</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 shrink-0" />
                   <span>Assessment Certified</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Hero Image with Floating Cards */}
-            <div className="relative animate-slide-right">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200/50 glass-card">
-                <img
-                  src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80"
-                  alt="Team collaboration"
-                  className="w-full h-auto object-cover hover:scale-105 transition-transform duration-700"
-                />
-              </div>
-
-              {/* Floating Card - Bottom Left */}
-              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-xl border border-gray-100 animate-fade-zoom delay-500 animate-float">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                    <Award className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Screening Score</p>
-                    <p className="text-lg font-bold text-gray-900">94%</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating Card - Top Right */}
-              <div className="absolute top-12 -right-6 bg-white p-4 rounded-xl shadow-xl border border-gray-100 animate-fade-zoom delay-700 animate-float" style={{ animationDelay: '1.5s' }}>
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-primary">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Talent Pool</p>
-                    <p className="text-lg font-bold text-gray-900">12K+</p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -132,7 +130,7 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-24 bg-white">
+      <section id="features" className="py-14 md:py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl font-bold font-heading mb-4 text-gray-900">Why Choose ViraWorkX?</h2>
@@ -141,7 +139,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-3 gap-5 sm:gap-8">
             {/* Feature 1 */}
             <div className="bg-white border border-gray-200/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
               <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 mb-4">
@@ -179,7 +177,7 @@ export default function Landing() {
       </section>
 
       {/* How it Works Section */}
-      <section id="how-it-works" className="py-24 bg-gray-50/50">
+      <section id="how-it-works" className="py-14 md:py-24 bg-gray-50/50">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl font-bold font-heading mb-4 text-gray-900">How It Works</h2>
@@ -188,7 +186,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             {[
               { step: '01', title: 'Post a Job', desc: 'Create detailed job listings with skill requirements', icon: Briefcase },
               { step: '02', title: 'AI Matching', desc: 'Our AI finds and ranks the best candidates', icon: Target },
@@ -213,17 +211,17 @@ export default function Landing() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-24 bg-primary">
+      <section className="py-14 md:py-24 bg-primary">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
             {[
-              { value: '12,000+', label: 'Verified Engineers' },
-              { value: '500+', label: 'Companies Hiring' },
-              { value: '94%', label: 'Placement Rate' },
-              { value: '18 Days', label: 'Avg. Time to Hire' },
+              { value: '25+', label: 'Verified Engineers' },
+              { value: '3+', label: 'Companies Hiring' },
+              { value: '100%', label: 'Placement Rate' },
+              { value: '2 Days', label: 'Avg. Time to Hire' },
             ].map((stat, i) => (
               <div key={i}>
-                <p className="text-4xl font-bold font-heading text-white mb-2">{stat.value}</p>
+                <p className="text-2xl sm:text-4xl font-bold font-heading text-white mb-1 sm:mb-2">{stat.value}</p>
                 <p className="text-blue-100">{stat.label}</p>
               </div>
             ))}
@@ -232,7 +230,7 @@ export default function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-white">
+      <section className="py-14 md:py-24 bg-white">
         <div className="container mx-auto px-4 text-center max-w-3xl">
           <h2 className="text-3xl md:text-4xl font-bold font-heading mb-6 text-gray-900">
             Ready to Build Your Dream Team?

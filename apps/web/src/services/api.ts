@@ -85,10 +85,10 @@ export const authApi = {
 export const candidateApi = {
   getAll: () => api.get<{ candidates: CandidateProfile[] }>('/candidates'),
   getById: (id: string) => api.get<{ candidate: CandidateProfile }>(`/candidates/${id}`),
-  getProfile: () => api.get<{ profile: CandidateProfile }>('/me/profile'),
+  getProfile: () => api.get<{ profile: CandidateProfile }>('/candidates/me/profile'),
 
   updateProfile: (data: Partial<CandidateProfile>) =>
-    api.put<{ profile: CandidateProfile }>('/me/profile', data),
+    api.put<{ profile: CandidateProfile }>('/candidates/me/profile', data),
 
   uploadResume: (file: File) => {
     const formData = new FormData()
@@ -101,7 +101,7 @@ export const candidateApi = {
   uploadVideo: (file: File) => {
     const formData = new FormData()
     formData.append('video', file)
-    return api.post<{ videoUrl: string }>('/me/video', formData, {
+    return api.post<{ videoUrl: string }>('/candidates/me/video', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
@@ -109,7 +109,7 @@ export const candidateApi = {
   uploadPanCard: (file: File) => {
     const formData = new FormData()
     formData.append('document', file)
-    return api.post<{ panCardUrl: string }>('/me/pan-card', formData, {
+    return api.post<{ panCardUrl: string }>('/candidates/me/pan-card', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
@@ -117,7 +117,7 @@ export const candidateApi = {
   uploadAadhaarFront: (file: File) => {
     const formData = new FormData()
     formData.append('document', file)
-    return api.post<{ aadhaarFrontUrl: string }>('/me/aadhaar-front', formData, {
+    return api.post<{ aadhaarFrontUrl: string }>('/candidates/me/aadhaar-front', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
@@ -125,7 +125,7 @@ export const candidateApi = {
   uploadAadhaarBack: (file: File) => {
     const formData = new FormData()
     formData.append('document', file)
-    return api.post<{ aadhaarBackUrl: string }>('/me/aadhaar-back', formData, {
+    return api.post<{ aadhaarBackUrl: string }>('/candidates/me/aadhaar-back', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
@@ -134,10 +134,10 @@ export const candidateApi = {
     api.get<{ badges: SkillBadge[] }>(`/assessments/candidate/${candidateId}/badges`),
 
   getApplications: () =>
-    api.get<{ applications: Application[] }>('/me/applications'),
+    api.get<{ applications: Application[] }>('/candidates/me/applications'),
 
   getJobMatches: () =>
-    api.get<{ jobs: Job[]; matchScores: Record<string, number> }>('/me/job-matches'),
+    api.get<{ jobs: Job[]; matchScores: Record<string, number> }>('/candidates/me/job-matches'),
 }
 
 // Job API

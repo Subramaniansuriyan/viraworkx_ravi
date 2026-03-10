@@ -10,3 +10,6 @@ venv/
 *.pyc
 coverage/
 .next/
+
+# GCP deployment secrets
+infrastructure/gcp/.env.gcp

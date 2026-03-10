@@ -26,48 +26,51 @@ import {
   X
 } from 'lucide-react'
 
-// API functions for AI Engine
-const AI_ENGINE_BASE = '/api/ats/v1'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
 
-const aiApi = {
-  getActions: async (params: any) => {
-    const queryParams = new URLSearchParams()
-    if (params.status) queryParams.append('status', params.status)
-    if (params.agent_type) queryParams.append('agent_type', params.agent_type)
-    if (params.requires_approval !== undefined) queryParams.append('requires_approval', params.requires_approval)
+function makeAiApi(token: string) {
+  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
-    const response = await fetch(`${AI_ENGINE_BASE}/actions?${queryParams}`)
-    return response.json()
-  },
+  return {
+    getActions: async (params: any) => {
+      const queryParams = new URLSearchParams()
+      if (params.status) queryParams.append('status', params.status)
+      if (params.agent_type) queryParams.append('agentType', params.agent_type)
+      if (params.requires_approval !== undefined) queryParams.append('requiresApproval', params.requires_approval)
+      const response = await fetch(`${API_URL}/api/v1/ai/actions?${queryParams}`, { headers })
+      return response.json()
+    },
 
-  getPendingApprovals: async () => {
-    const response = await fetch(`${AI_ENGINE_BASE}/actions/pending-approval`)
-    return response.json()
-  },
+    getPendingApprovals: async () => {
+      const response = await fetch(`${API_URL}/api/v1/ai/actions/pending-approval`, { headers })
+      return response.json()
+    },
 
-  getStats: async () => {
-    const response = await fetch(`${AI_ENGINE_BASE}/actions/stats`)
-    return response.json()
-  },
+    getStats: async () => {
+      const response = await fetch(`${API_URL}/api/v1/ai/actions/stats`, { headers })
+      return response.json()
+    },
 
-  getActionDetail: async (id: string) => {
-    const response = await fetch(`${AI_ENGINE_BASE}/actions/${id}`)
-    return response.json()
-  },
+    getActionDetail: async (id: string) => {
+      const response = await fetch(`${API_URL}/api/v1/ai/actions/${id}`, { headers })
+      return response.json()
+    },
 
-  approveAction: async (id: string, data: { approved: boolean; reviewer_id: string; reviewer_notes?: string }) => {
-    const response = await fetch(`${AI_ENGINE_BASE}/actions/${id}/approve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    })
-    return response.json()
+    approveAction: async (id: string, data: { approved: boolean; reviewer_id: string; reviewer_notes?: string }) => {
+      const response = await fetch(`${API_URL}/api/v1/ai/actions/${id}/approve`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data)
+      })
+      return response.json()
+    }
   }
 }
 
 export default function AIMonitor() {
-  const { user, logout } = useAuthStore()
+  const { user, logout, accessToken: token } = useAuthStore()
   const queryClient = useQueryClient()
+  const aiApi = makeAiApi(token || '')
   const [selectedAction, setSelectedAction] = useState<any>(null)
   const [filter, setFilter] = useState({
     status: '',
@@ -79,14 +82,14 @@ export default function AIMonitor() {
   const { data: statsData, refetch: refetchStats } = useQuery({
     queryKey: ['ai-stats'],
     queryFn: aiApi.getStats,
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000
   })
 
   // Fetch pending approvals
   const { data: pendingData, refetch: refetchPending } = useQuery({
     queryKey: ['ai-pending'],
     queryFn: aiApi.getPendingApprovals,
-    refetchInterval: 10000 // Refresh every 10 seconds
+    refetchInterval: 10000
   })
 
   // Fetch all actions with filters

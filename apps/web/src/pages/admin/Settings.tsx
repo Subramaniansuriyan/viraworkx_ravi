@@ -1,16 +1,11 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
-  Building2, Users, Zap, LogOut, Bot, Activity, Shield, Eye,
-  ClipboardCheck, Save, Bell, Mail, Globe, Lock, Database,
-  Cpu, ToggleLeft, ToggleRight
+  Save, Bell, Mail, Globe, Lock, Database, Cpu, ClipboardCheck,
+  ToggleLeft, ToggleRight
 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
+import AdminLayout from '../../components/admin/AdminLayout'
 
 export default function AdminSettings() {
-  const { user, logout } = useAuthStore()
-
-  // Settings state
   const [settings, setSettings] = useState({
     aiAutoApprove: false,
     aiAutoApproveThreshold: 85,
@@ -26,17 +21,9 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  const getUserInitials = () => {
-    if (user?.profile?.firstName && user?.profile?.lastName) {
-      return `${user.profile.firstName[0]}${user.profile.lastName[0]}`
-    }
-    return user?.email?.substring(0, 2).toUpperCase() || 'A'
-  }
-
   const handleSave = async () => {
     setSaving(true)
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
@@ -53,101 +40,8 @@ export default function AdminSettings() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-slate-900 text-white z-10">
-        <div className="p-6 border-b border-slate-700">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <span className="text-xl font-bold">ViraWorkX</span>
-              <p className="text-xs text-slate-400">Admin Console</p>
-            </div>
-          </Link>
-        </div>
-
-        <nav className="p-4">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-            Human-in-the-Loop
-          </p>
-          <ul className="space-y-1">
-            <li>
-              <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <Activity className="w-5 h-5 mr-3" />
-                Overview
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/ai-monitor" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <Bot className="w-5 h-5 mr-3" />
-                AI Monitor
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/test-allocation" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <ClipboardCheck className="w-5 h-5 mr-3" />
-                Test Allocation
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/clients" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <Building2 className="w-5 h-5 mr-3" />
-                Clients
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/candidates" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <Users className="w-5 h-5 mr-3" />
-                Candidates
-              </Link>
-            </li>
-          </ul>
-
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 mt-8">
-            System
-          </p>
-          <ul className="space-y-1">
-            <li>
-              <Link to="/admin/audit-log" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg">
-                <Eye className="w-5 h-5 mr-3" />
-                Audit Log
-              </Link>
-            </li>
-            <li>
-              <Link to="/admin/settings" className="flex items-center px-4 py-3 text-white bg-slate-800 rounded-lg font-medium">
-                <Shield className="w-5 h-5 mr-3" />
-                Settings
-              </Link>
-            </li>
-          </ul>
-        </nav>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
-          <div className="flex items-center gap-3 mb-4 px-2">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium">
-              {getUserInitials()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                {user?.profile?.firstName || 'Admin'}
-              </p>
-              <p className="text-xs text-slate-400 truncate">{user?.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => logout()}
-            className="flex items-center w-full px-4 py-3 text-red-400 hover:bg-slate-800 rounded-lg"
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Log out
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="ml-64 p-8">
+    <AdminLayout>
+      <div className="p-4 md:p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
@@ -188,7 +82,7 @@ export default function AdminSettings() {
                 </div>
                 <Toggle
                   enabled={settings.requireHumanApproval}
-                  onChange={() => setSettings(s => ({ ...s, requireHumanApproval: !s.requireHumanApproval }))}
+                  onChange={() => setSettings((s) => ({ ...s, requireHumanApproval: !s.requireHumanApproval }))}
                 />
               </div>
 
@@ -199,22 +93,22 @@ export default function AdminSettings() {
                 </div>
                 <Toggle
                   enabled={settings.aiAutoApprove}
-                  onChange={() => setSettings(s => ({ ...s, aiAutoApprove: !s.aiAutoApprove }))}
+                  onChange={() => setSettings((s) => ({ ...s, aiAutoApprove: !s.aiAutoApprove }))}
                 />
               </div>
 
               {settings.aiAutoApprove && (
                 <div className="py-4 border-b">
-                  <label className="block font-medium text-gray-900 mb-2">
-                    Auto-Approve Threshold
-                  </label>
+                  <label className="block font-medium text-gray-900 mb-2">Auto-Approve Threshold</label>
                   <div className="flex items-center gap-4">
                     <input
                       type="range"
                       min="70"
                       max="100"
                       value={settings.aiAutoApproveThreshold}
-                      onChange={(e) => setSettings(s => ({ ...s, aiAutoApproveThreshold: parseInt(e.target.value) }))}
+                      onChange={(e) =>
+                        setSettings((s) => ({ ...s, aiAutoApproveThreshold: parseInt(e.target.value) }))
+                      }
                       className="flex-1"
                     />
                     <span className="text-lg font-semibold text-primary w-16 text-right">
@@ -228,16 +122,16 @@ export default function AdminSettings() {
               )}
 
               <div className="py-4">
-                <label className="block font-medium text-gray-900 mb-2">
-                  Minimum Match Score Threshold
-                </label>
+                <label className="block font-medium text-gray-900 mb-2">Minimum Match Score Threshold</label>
                 <div className="flex items-center gap-4">
                   <input
                     type="range"
                     min="40"
                     max="90"
                     value={settings.matchScoreThreshold}
-                    onChange={(e) => setSettings(s => ({ ...s, matchScoreThreshold: parseInt(e.target.value) }))}
+                    onChange={(e) =>
+                      setSettings((s) => ({ ...s, matchScoreThreshold: parseInt(e.target.value) }))
+                    }
                     className="flex-1"
                   />
                   <span className="text-lg font-semibold text-primary w-16 text-right">
@@ -273,22 +167,24 @@ export default function AdminSettings() {
                   min="1"
                   max="30"
                   value={settings.assessmentExpirationDays}
-                  onChange={(e) => setSettings(s => ({ ...s, assessmentExpirationDays: parseInt(e.target.value) }))}
+                  onChange={(e) =>
+                    setSettings((s) => ({ ...s, assessmentExpirationDays: parseInt(e.target.value) }))
+                  }
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
                 <p className="text-sm text-gray-500 mt-1">Days until assessment invitation expires</p>
               </div>
 
               <div>
-                <label className="block font-medium text-gray-900 mb-2">
-                  Maximum Retries
-                </label>
+                <label className="block font-medium text-gray-900 mb-2">Maximum Retries</label>
                 <input
                   type="number"
                   min="0"
                   max="5"
                   value={settings.maxAssessmentRetries}
-                  onChange={(e) => setSettings(s => ({ ...s, maxAssessmentRetries: parseInt(e.target.value) }))}
+                  onChange={(e) =>
+                    setSettings((s) => ({ ...s, maxAssessmentRetries: parseInt(e.target.value) }))
+                  }
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
                 <p className="text-sm text-gray-500 mt-1">Number of times a candidate can retry</p>
@@ -319,7 +215,9 @@ export default function AdminSettings() {
                 </div>
                 <Toggle
                   enabled={settings.emailNotifications}
-                  onChange={() => setSettings(s => ({ ...s, emailNotifications: !s.emailNotifications }))}
+                  onChange={() =>
+                    setSettings((s) => ({ ...s, emailNotifications: !s.emailNotifications }))
+                  }
                 />
               </div>
 
@@ -333,19 +231,19 @@ export default function AdminSettings() {
                 </div>
                 <Toggle
                   enabled={settings.slackNotifications}
-                  onChange={() => setSettings(s => ({ ...s, slackNotifications: !s.slackNotifications }))}
+                  onChange={() =>
+                    setSettings((s) => ({ ...s, slackNotifications: !s.slackNotifications }))
+                  }
                 />
               </div>
 
               <div className="py-4">
-                <label className="block font-medium text-gray-900 mb-2">
-                  Webhook URL (Optional)
-                </label>
+                <label className="block font-medium text-gray-900 mb-2">Webhook URL (Optional)</label>
                 <input
                   type="url"
                   placeholder="https://your-webhook-endpoint.com/notify"
                   value={settings.webhookUrl}
-                  onChange={(e) => setSettings(s => ({ ...s, webhookUrl: e.target.value }))}
+                  onChange={(e) => setSettings((s) => ({ ...s, webhookUrl: e.target.value }))}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
                 <p className="text-sm text-gray-500 mt-1">Custom webhook for event notifications</p>
@@ -381,7 +279,7 @@ export default function AdminSettings() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   )
 }

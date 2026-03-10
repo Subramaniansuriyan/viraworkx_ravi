@@ -131,7 +131,7 @@ async def parse_resume_with_ai(resume_text: str) -> Optional[dict]:
     try:
         client = Anthropic(api_key=api_key)
         response = client.messages.create(
-            model="claude-sonnet-4-5-20250929",
+            model="claude-opus-4-6",
             max_tokens=2000,
             messages=[
                 {

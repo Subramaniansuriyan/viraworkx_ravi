@@ -6,14 +6,16 @@ import { useAuthStore } from '../../stores/authStore'
 import {
   ArrowLeft,
   Save,
-  Eye,
   Zap,
   X,
   Plus,
-  Bell,
   ChevronDown,
-  LogOut
+  LogOut,
+  Sparkles,
+  Loader2,
 } from 'lucide-react'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 type EmploymentType = 'freelancer' | 'contractor'
 type RemotePolicy = 'remote' | 'hybrid' | 'onsite'
@@ -64,6 +66,10 @@ export default function JobForm() {
   const [formData, setFormData] = useState<JobFormData>(initialFormData)
   const [newSkill, setNewSkill] = useState('')
   const [newPreferredSkill, setNewPreferredSkill] = useState('')
+  const [showAIModal, setShowAIModal] = useState(false)
+  const [aiContext, setAIContext] = useState('')
+  const [aiLoading, setAILoading] = useState(false)
+  const [aiError, setAIError] = useState('')
 
   // Fetch existing job data if editing
   const { data: jobData, isLoading: jobLoading } = useQuery({
@@ -170,6 +176,52 @@ export default function JobForm() {
     }
   }
 
+  const generateWithAI = async () => {
+    if (!formData.title.trim()) {
+      setAIError('Please enter a job title first.')
+      return
+    }
+    setAILoading(true)
+    setAIError('')
+    try {
+      const res = await fetch(`${API_URL}/api/v1/ai/job-description`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          department: formData.department || undefined,
+          employmentType: formData.employmentType,
+          experienceMin: formData.experienceMin !== '' ? Number(formData.experienceMin) : undefined,
+          experienceMax: formData.experienceMax !== '' ? Number(formData.experienceMax) : undefined,
+          remotePolicy: formData.remotePolicy,
+          location: formData.location || undefined,
+          skillsRequired: formData.skillsRequired.length ? formData.skillsRequired : undefined,
+          context: aiContext || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Generation failed')
+      }
+      const data = await res.json()
+      setFormData(prev => ({
+        ...prev,
+        description: data.description || prev.description,
+        requirements: data.requirements || prev.requirements,
+        responsibilities: data.responsibilities || prev.responsibilities,
+      }))
+      setShowAIModal(false)
+      setAIContext('')
+    } catch (err: any) {
+      setAIError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setAILoading(false)
+    }
+  }
+
   const getUserInitials = () => {
     if (user?.profile?.firstName && user?.profile?.lastName) {
       return `${user.profile.firstName[0]}${user.profile.lastName[0]}`
@@ -252,7 +304,17 @@ export default function JobForm() {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Info */}
           <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Basic Information</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
+              <button
+                type="button"
+                onClick={() => { setShowAIModal(true); setAIError('') }}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-violet-700 hover:to-indigo-700 transition-all shadow-sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate with AI
+              </button>
+            </div>
 
             <div className="space-y-4">
               <div>
@@ -549,6 +611,89 @@ export default function JobForm() {
           </div>
         </form>
       </main>
+
+      {/* AI Generate Modal */}
+      {showAIModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowAIModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg m-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">AI Job Description</h2>
+                  <p className="text-sm text-gray-500">Claude will write description, requirements & responsibilities</p>
+                </div>
+              </div>
+              <button onClick={() => setShowAIModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-violet-50 rounded-lg p-4 text-sm text-violet-700">
+                <p className="font-medium mb-1">Generating for: <span className="text-violet-900">{formData.title || 'Untitled role'}</span></p>
+                <p className="text-violet-600">
+                  {[
+                    formData.skillsRequired.length && `${formData.skillsRequired.length} skills`,
+                    formData.experienceMin !== '' && `${formData.experienceMin}+ yrs exp`,
+                    formData.remotePolicy,
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Additional context <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={aiContext}
+                  onChange={(e) => setAIContext(e.target.value)}
+                  placeholder="e.g. 'Fast-paced fintech startup, team of 12, candidate will own the entire frontend stack'"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 text-sm resize-none"
+                />
+              </div>
+
+              {aiError && (
+                <p className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-2">{aiError}</p>
+              )}
+
+              <p className="text-xs text-gray-400">
+                This will overwrite the current description, requirements, and responsibilities fields.
+              </p>
+            </div>
+
+            <div className="flex gap-3 p-6 border-t bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => setShowAIModal(false)}
+                className="flex-1 py-2.5 border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={generateWithAI}
+                disabled={aiLoading || !formData.title.trim()}
+                className="flex-1 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg font-medium hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {aiLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Generate
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,9 +1,11 @@
 import { Router, Response } from 'express'
 import { z } from 'zod'
+import Anthropic from '@anthropic-ai/sdk'
 import prisma from '../config/database.js'
 import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
 
 const router = Router()
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 // AI Screening Schema
 const screenCandidateSchema = z.object({
@@ -392,22 +394,180 @@ Best regards`
 })
 
 /**
+ * POST /api/v1/ai/job-description
+ * Generate a full job description using Claude
+ */
+router.post('/job-description', authenticateToken, requireRole('client', 'admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const input = z.object({
+      title: z.string().min(2).max(200),
+      department: z.string().optional(),
+      employmentType: z.string().optional(),
+      experienceMin: z.number().optional(),
+      experienceMax: z.number().optional(),
+      remotePolicy: z.string().optional(),
+      location: z.string().optional(),
+      skillsRequired: z.array(z.string()).optional(),
+      context: z.string().max(500).optional(), // extra notes from user
+    }).parse(req.body)
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(503).json({ error: 'AI service not configured' })
+    }
+
+    const prompt = `You are an expert technical recruiter writing job descriptions for US-based startups hiring remote talent from India.
+
+Generate a compelling, well-structured job description for the following role. Return ONLY valid JSON with these exact keys: description, requirements, responsibilities.
+
+Role details:
+- Title: ${input.title}
+${input.department ? `- Department: ${input.department}` : ''}
+${input.employmentType ? `- Employment type: ${input.employmentType}` : ''}
+${input.experienceMin != null || input.experienceMax != null ? `- Experience: ${input.experienceMin ?? 0}–${input.experienceMax ?? '10+'} years` : ''}
+${input.remotePolicy ? `- Work style: ${input.remotePolicy}` : ''}
+${input.location ? `- Location: ${input.location}` : ''}
+${input.skillsRequired?.length ? `- Required skills: ${input.skillsRequired.join(', ')}` : ''}
+${input.context ? `- Additional context: ${input.context}` : ''}
+
+Guidelines:
+- description: 3–4 sentences. Exciting overview of the role, team, and impact. Mention the India–US collaboration angle.
+- requirements: Bullet list (5–7 items) as a single string with \\n• separators. Include technical and soft skill requirements.
+- responsibilities: Bullet list (5–7 items) as a single string with \\n• separators. Focus on day-to-day ownership and impact.
+
+Respond with ONLY the JSON object, no markdown, no explanation.`
+
+    const message = await anthropic.messages.create({
+      model: 'claude-opus-4-6',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: prompt }]
+    })
+
+    const text = message.content[0].type === 'text' ? message.content[0].text : ''
+
+    let parsed: { description: string; requirements: string; responsibilities: string }
+    try {
+      parsed = JSON.parse(text)
+    } catch {
+      // Strip markdown code fences if Claude added them
+      const cleaned = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim()
+      parsed = JSON.parse(cleaned)
+    }
+
+    if (!parsed.description || !parsed.requirements || !parsed.responsibilities) {
+      throw new Error('Incomplete response from AI')
+    }
+
+    await prisma.aiAction.create({
+      data: {
+        agentType: 'sourcing',
+        actionType: 'generate_job_description',
+        entityType: 'job',
+        inputPayload: input as any,
+        outputPayload: parsed as any,
+        status: 'completed',
+        executedAt: new Date()
+      }
+    })
+
+    res.json(parsed)
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: error.errors })
+    }
+    if (error instanceof SyntaxError) {
+      return res.status(500).json({ error: 'AI returned malformed response, please try again' })
+    }
+    console.error('Error generating job description:', error)
+    res.status(500).json({ error: 'Failed to generate job description' })
+  }
+})
+
+/**
+ * GET /api/v1/ai/actions/stats
+ * Get AI action statistics
+ */
+router.get('/actions/stats', authenticateToken, requireRole('client', 'admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const [total, byStatus, pending] = await Promise.all([
+      prisma.aiAction.count(),
+      prisma.aiAction.groupBy({ by: ['status'], _count: { status: true } }),
+      prisma.aiAction.count({ where: { requiresApproval: true, status: 'pending' } })
+    ])
+
+    const completedActions = await prisma.aiAction.findMany({
+      where: { status: 'completed' },
+      select: { outputPayload: true },
+      take: 100
+    })
+
+    let avgMatchScore = 0
+    const scoresWithMatch = completedActions
+      .map(a => (a.outputPayload as any)?.matchScore)
+      .filter((s) => typeof s === 'number')
+    if (scoresWithMatch.length > 0) {
+      avgMatchScore = Math.round(scoresWithMatch.reduce((a: number, b: number) => a + b, 0) / scoresWithMatch.length)
+    }
+
+    res.json({
+      stats: {
+        total_actions: total,
+        pending_approvals: pending,
+        average_match_score: avgMatchScore,
+        by_status: byStatus.reduce((acc, s) => {
+          acc[s.status] = s._count.status
+          return acc
+        }, {} as Record<string, number>)
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching AI action stats:', error)
+    res.status(500).json({ error: 'Failed to fetch stats' })
+  }
+})
+
+/**
+ * GET /api/v1/ai/actions/pending-approval
+ * Get actions awaiting human review
+ */
+router.get('/actions/pending-approval', authenticateToken, requireRole('client', 'admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const actions = await prisma.aiAction.findMany({
+      where: { requiresApproval: true, status: 'pending' },
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    })
+    res.json({ actions })
+  } catch (error) {
+    console.error('Error fetching pending approvals:', error)
+    res.status(500).json({ error: 'Failed to fetch pending approvals' })
+  }
+})
+
+/**
  * GET /api/v1/ai/actions
  * Get AI action history
  */
 router.get('/actions', authenticateToken, requireRole('client', 'admin'), async (req: AuthRequest, res: Response) => {
   try {
-    const { agentType, status, limit = '50', offset = '0' } = req.query
+    const { agentType, agent_type, status, requiresApproval, limit = '50', offset = '0', page } = req.query
 
     const where: any = {}
-    if (agentType) where.agentType = agentType
+    const resolvedAgentType = (agentType || agent_type) as string | undefined
+    if (resolvedAgentType) where.agentType = resolvedAgentType
     if (status) where.status = status
+    if (requiresApproval === 'true') where.requiresApproval = true
+
+    // Support page-based pagination
+    const take = parseInt(limit as string)
+    const skip = page
+      ? (parseInt(page as string) - 1) * take
+      : parseInt(offset as string)
 
     const actions = await prisma.aiAction.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: parseInt(limit as string),
-      skip: parseInt(offset as string)
+      take,
+      skip
     })
 
     const total = await prisma.aiAction.count({ where })
@@ -416,6 +576,21 @@ router.get('/actions', authenticateToken, requireRole('client', 'admin'), async 
   } catch (error) {
     console.error('Error fetching AI actions:', error)
     res.status(500).json({ error: 'Failed to fetch AI actions' })
+  }
+})
+
+/**
+ * GET /api/v1/ai/actions/:id
+ * Get a single AI action by ID
+ */
+router.get('/actions/:id', authenticateToken, requireRole('client', 'admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const action = await prisma.aiAction.findUnique({ where: { id: req.params.id } })
+    if (!action) return res.status(404).json({ error: 'Action not found' })
+    res.json({ action })
+  } catch (error) {
+    console.error('Error fetching AI action:', error)
+    res.status(500).json({ error: 'Failed to fetch action' })
   }
 })
 

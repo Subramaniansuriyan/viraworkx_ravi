@@ -173,13 +173,15 @@ router.post('/:id/advance', authenticateToken, requireRole('client', 'admin'), a
       return res.status(404).json({ error: 'Application not found' })
     }
 
-    // Validate stage transition
+    // Validate stage transition — auto-advance to next stage if none specified
     const currentIndex = STAGE_ORDER.indexOf(application.stage)
-    const newIndex = STAGE_ORDER.indexOf(stage)
+    const resolvedStage = stage || STAGE_ORDER[currentIndex + 1]
 
-    if (newIndex === -1) {
-      return res.status(400).json({ error: 'Invalid stage' })
+    if (!resolvedStage || STAGE_ORDER.indexOf(resolvedStage) === -1) {
+      return res.status(400).json({ error: 'Invalid or no next stage available' })
     }
+
+    const newIndex = STAGE_ORDER.indexOf(resolvedStage)
 
     const updated = await prisma.application.update({
       where: { id: req.params.id },
