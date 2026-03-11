@@ -67,7 +67,11 @@ const CORS_ORIGINS = [
 ]
 app.use(cors({
   origin: CORS_ORIGINS,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+  exposedHeaders: ['X-Request-ID'],
+  maxAge: 86400,
 }))
 
 // 5. Global rate limiter (disabled during development)

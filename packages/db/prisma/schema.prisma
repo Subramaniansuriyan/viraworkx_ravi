@@ -9,107 +9,104 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  phone         String?
-  passwordHash  String   @map("password_hash")
-  userType      String   @map("user_type")
-  status        String   @default("active")
-  emailVerified Boolean  @default(false) @map("email_verified")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
+  id                    String                 @id @default(uuid())
+  email                 String                 @unique
+  phone                 String?
+  passwordHash          String                 @map("password_hash")
+  userType              String                 @map("user_type")
+  status                String                 @default("active")
+  emailVerified         Boolean                @default(false) @map("email_verified")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  aiActionsApproved     AiAction[]             @relation("ApprovedBy")
+  candidateNotes        CandidateNote[]
   candidate             Candidate?
   clientUsers           ClientUser[]
-  notifications         Notification[]
-  interviewParticipants InterviewParticipant[]
-  interviewFeedback     InterviewFeedback[]
-  aiActionsApproved     AiAction[]             @relation("ApprovedBy")
   contractSignatures    ContractSignature[]
+  interviewFeedback     InterviewFeedback[]
+  interviewParticipants InterviewParticipant[]
+  notifications         Notification[]
   pipelineChanges       PipelineHistory[]
-  candidateNotes        CandidateNote[]
 
   @@map("users")
 }
 
 model Candidate {
-  id                 String   @id @default(uuid())
-  userId             String   @unique @map("user_id")
-  firstName          String   @map("first_name")
-  lastName           String   @map("last_name")
+  id                 String            @id @default(uuid())
+  userId             String            @unique @map("user_id")
+  firstName          String            @map("first_name")
+  lastName           String            @map("last_name")
   headline           String?
-  summary            String?
   location           String?
-  experienceYears    Int?     @map("experience_years")
-  currentCompany     String?  @map("current_company")
-  currentTitle       String?  @map("current_title")
-  expectedSalaryMin  Int?     @map("expected_salary_min")
-  expectedSalaryMax  Int?     @map("expected_salary_max")
-  salaryCurrency     String?  @default("USD") @map("salary_currency")
-  noticePeriodDays   Int?     @map("notice_period_days")
+  experienceYears    Int?              @map("experience_years")
   skills             String[]
-  resumeUrl          String?  @map("resume_url")
-  videoProfileUrl    String?  @map("video_profile_url")
-  linkedinUrl        String?  @map("linkedin_url")
-  githubUrl          String?  @map("github_url")
-  portfolioUrl       String?  @map("portfolio_url")
-  profileScore       Int      @default(0) @map("profile_score")
-  preferredRoles     String[] @map("preferred_roles")
-  preferredLocations String[] @map("preferred_locations")
-  workAuthorization  String?  @map("work_authorization")
-  willingToRelocate  Boolean? @default(false) @map("willing_to_relocate")
-  panNumber          String?  @map("pan_number")
-  aadhaarNumber      String?  @map("aadhaar_number")
-  panCardUrl         String?  @map("pan_card_url")
-  aadhaarFrontUrl    String?  @map("aadhaar_front_url")
-  aadhaarBackUrl     String?  @map("aadhaar_back_url")
-  tier               String?
-  isStarred          Boolean  @default(false) @map("is_starred")
-  overlapHours       Float?   @map("overlap_hours")
+  resumeUrl          String?           @map("resume_url")
+  profileScore       Int               @default(0) @map("profile_score")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  currentCompany     String?           @map("current_company")
+  currentTitle       String?           @map("current_title")
+  expectedSalaryMax  Int?              @map("expected_salary_max")
+  expectedSalaryMin  Int?              @map("expected_salary_min")
+  githubUrl          String?           @map("github_url")
+  linkedinUrl        String?           @map("linkedin_url")
+  noticePeriodDays   Int?              @map("notice_period_days")
+  portfolioUrl       String?           @map("portfolio_url")
+  preferredLocations String[]          @map("preferred_locations")
+  preferredRoles     String[]          @map("preferred_roles")
+  salaryCurrency     String?           @default("USD") @map("salary_currency")
+  summary            String?
+  videoProfileUrl    String?           @map("video_profile_url")
+  willingToRelocate  Boolean?          @default(false) @map("willing_to_relocate")
+  workAuthorization  String?           @map("work_authorization")
+  aadhaarBackUrl     String?           @map("aadhaar_back_url")
+  aadhaarFrontUrl    String?           @map("aadhaar_front_url")
+  aadhaarNumber      String?           @map("aadhaar_number")
+  panCardUrl         String?           @map("pan_card_url")
+  panNumber          String?           @map("pan_number")
+  aiSummary          String?           @map("ai_summary")
   availability       String?
-  source             String?
-  tags               String[] @default([])
-  codingScore        Float?   @map("coding_score")
-  communicationScore Float?   @map("communication_score")
-  psychometricScore  Float?   @map("psychometric_score")
-  overallScore       Float?   @map("overall_score")
-  aiSummary          String?  @map("ai_summary")
-  referredBy         String?  @map("referred_by")
-  graduationYear     Int?     @map("graduation_year")
-  university         String?
+  codingScore        Float?            @map("coding_score")
+  communicationScore Float?            @map("communication_score")
   degree             String?
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  user            User              @relation(fields: [userId], references: [id])
-  applications    Application[]
-  assessments     Assessment[]
-  skillBadges     SkillBadge[]
-  emailLogs       EmailLog[]
-  pipelineHistory PipelineHistory[]
-  candidateNotes  CandidateNote[]
+  graduationYear     Int?              @map("graduation_year")
+  isStarred          Boolean           @default(false) @map("is_starred")
+  overallScore       Float?            @map("overall_score")
+  overlapHours       Float?            @map("overlap_hours")
+  psychometricScore  Float?            @map("psychometric_score")
+  referredBy         String?           @map("referred_by")
+  source             String?
+  tags               String[]          @default([])
+  tier               String?
+  university         String?
+  applications       Application[]
+  assessments        Assessment[]
+  candidateNotes     CandidateNote[]
+  user               User              @relation(fields: [userId], references: [id])
+  emailLogs          EmailLog[]
+  pipelineHistory    PipelineHistory[]
+  skillBadges        SkillBadge[]
 
   @@map("candidates")
 }
 
 model Client {
-  id                   String   @id @default(uuid())
-  companyName          String   @map("company_name")
-  companyWebsite       String?  @map("company_website")
-  companyLogoUrl       String?  @map("company_logo_url")
+  id                   String        @id @default(uuid())
+  companyName          String        @map("company_name")
   industry             String?
-  companySize          String?  @map("company_size")
-  headquartersLocation String?  @map("headquarters_location")
+  planTier             String        @default("startup") @map("plan_tier")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+  companyLogoUrl       String?       @map("company_logo_url")
+  companySize          String?       @map("company_size")
+  companyWebsite       String?       @map("company_website")
   description          String?
-  planTier             String   @default("startup") @map("plan_tier")
-  settingsJson         Json?    @map("settings_json")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
-
-  jobs         Job[]
-  clientUsers  ClientUser[]
-  subscription Subscription?
-  contracts    Contract[]
+  headquartersLocation String?       @map("headquarters_location")
+  settingsJson         Json?         @map("settings_json")
+  clientUsers          ClientUser[]
+  contracts            Contract[]
+  jobs                 Job[]
+  subscription         Subscription?
 
   @@map("clients")
 }
@@ -121,74 +118,71 @@ model ClientUser {
   role        String   @default("member")
   permissions Json?
   createdAt   DateTime @default(now()) @map("created_at")
-
-  client Client @relation(fields: [clientId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+  client      Client   @relation(fields: [clientId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
 
   @@unique([clientId, userId])
   @@map("client_users")
 }
 
 model Job {
-  id                String    @id @default(uuid())
-  clientId          String    @map("client_id")
-  createdById       String?   @map("created_by_id")
+  id                String        @id @default(uuid())
+  clientId          String        @map("client_id")
   title             String
   description       String?
+  salaryMin         Int?          @map("salary_min")
+  salaryMax         Int?          @map("salary_max")
+  location          String?
+  remotePolicy      String?       @map("remote_policy")
+  skillsRequired    String[]      @map("skills_required")
+  status            String        @default("draft")
+  imochaTestId      String?       @map("imocha_test_id")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  imochaTestConfig  Json?         @map("imocha_test_config")
+  aiScreeningConfig Json?         @map("ai_screening_config")
+  benefits          String[]
+  closedAt          DateTime?     @map("closed_at")
+  closesAt          DateTime?     @map("closes_at")
+  createdById       String?       @map("created_by_id")
+  department        String?
+  employmentType    String?       @map("employment_type")
+  experienceMax     Int?          @map("experience_max")
+  experienceMin     Int?          @map("experience_min")
+  postedAt          DateTime?     @map("posted_at")
   requirements      String?
   responsibilities  String?
-  department        String?
-  employmentType    String?   @map("employment_type")
-  experienceMin     Int?      @map("experience_min")
-  experienceMax     Int?      @map("experience_max")
-  salaryMin         Int?      @map("salary_min")
-  salaryMax         Int?      @map("salary_max")
-  salaryCurrency    String?   @default("USD") @map("salary_currency")
-  location          String?
-  remotePolicy      String?   @map("remote_policy")
-  skillsRequired    String[]  @map("skills_required")
-  skillsPreferred   String[]  @map("skills_preferred")
-  benefits          String[]
-  status            String    @default("draft")
-  visibility        String?   @default("public")
-  imochaTestId      String?   @map("imocha_test_id")
-  imochaTestConfig  Json?     @map("imocha_test_config")
-  aiScreeningConfig Json?     @map("ai_screening_config")
-  postedAt          DateTime? @map("posted_at")
-  closedAt          DateTime? @map("closed_at")
-  closesAt          DateTime? @map("closes_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-
-  client       Client        @relation(fields: [clientId], references: [id])
-  applications Application[]
+  salaryCurrency    String?       @default("USD") @map("salary_currency")
+  skillsPreferred   String[]      @map("skills_preferred")
+  visibility        String?       @default("public")
+  applications      Application[]
+  client            Client        @relation(fields: [clientId], references: [id])
 
   @@map("jobs")
 }
 
 model Application {
-  id              String   @id @default(uuid())
-  candidateId     String   @map("candidate_id")
-  jobId           String   @map("job_id")
-  stage           String   @default("new")
-  matchScore      Int?     @map("match_score")
-  matchDetails    Json?    @map("match_details")
-  aiSummary       String?  @map("ai_summary")
-  coverLetter     String?  @map("cover_letter")
-  source          String?
-  referrerId      String?  @map("referrer_id")
+  id              String            @id @default(uuid())
+  candidateId     String            @map("candidate_id")
+  jobId           String            @map("job_id")
+  stage           String            @default("new")
+  matchScore      Int?              @map("match_score")
+  aiSummary       String?           @map("ai_summary")
+  appliedAt       DateTime          @default(now()) @map("applied_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  coverLetter     String?           @map("cover_letter")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  matchDetails    Json?             @map("match_details")
   notes           String?
-  rejectionReason String?  @map("rejection_reason")
-  appliedAt       DateTime @default(now()) @map("applied_at")
-  stageUpdatedAt  DateTime @default(now()) @map("stage_updated_at")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
+  referrerId      String?           @map("referrer_id")
+  rejectionReason String?           @map("rejection_reason")
+  source          String?
+  stageUpdatedAt  DateTime          @default(now()) @map("stage_updated_at")
   candidate       Candidate         @relation(fields: [candidateId], references: [id])
   job             Job               @relation(fields: [jobId], references: [id])
-  interviews      Interview[]
   assessments     Assessment[]
   contracts       Contract[]
+  interviews      Interview[]
   pipelineHistory PipelineHistory[]
 
   @@unique([candidateId, jobId])
@@ -196,110 +190,105 @@ model Application {
 }
 
 model Assessment {
-  id                 String    @id @default(uuid())
-  candidateId        String    @map("candidate_id")
-  applicationId      String?   @map("application_id")
-  imochaTestId       String    @map("imocha_test_id")
-  imochaInvitationId String?   @map("imocha_invitation_id")
-  imochaAttemptId    String?   @map("imocha_attempt_id")
-  testName           String?   @map("test_name")
-  status             String    @default("pending")
+  id                 String       @id @default(uuid())
+  candidateId        String       @map("candidate_id")
+  imochaTestId       String       @map("imocha_test_id")
+  status             String       @default("pending")
   score              Int?
-  maxScore           Int?      @map("max_score")
+  completedAt        DateTime?    @map("completed_at")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  applicationId      String?      @map("application_id")
+  expiresAt          DateTime?    @map("expires_at")
+  imochaAttemptId    String?      @map("imocha_attempt_id")
+  imochaInvitationId String?      @map("imocha_invitation_id")
+  invitedAt          DateTime?    @map("invited_at")
+  maxScore           Int?         @map("max_score")
   percentile         Int?
-  skillScores        Json?     @map("skill_scores")
-  reportUrl          String?   @map("report_url")
+  proctoringFlags    Json?        @map("proctoring_flags")
+  reportUrl          String?      @map("report_url")
+  skillScores        Json?        @map("skill_scores")
+  startedAt          DateTime?    @map("started_at")
+  testName           String?      @map("test_name")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
   tier               String?
-  proctoringFlags    Json?     @map("proctoring_flags")
-  invitedAt          DateTime? @map("invited_at")
-  startedAt          DateTime? @map("started_at")
-  completedAt        DateTime? @map("completed_at")
-  expiresAt          DateTime? @map("expires_at")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-
-  candidate   Candidate    @relation(fields: [candidateId], references: [id])
-  application Application? @relation(fields: [applicationId], references: [id])
-  skillBadges SkillBadge[]
+  application        Application? @relation(fields: [applicationId], references: [id])
+  candidate          Candidate    @relation(fields: [candidateId], references: [id])
+  skillBadges        SkillBadge[]
 
   @@map("assessments")
 }
 
 model SkillBadge {
-  id           String    @id @default(uuid())
-  candidateId  String    @map("candidate_id")
-  assessmentId String?   @map("assessment_id")
-  skillName    String    @map("skill_name")
-  badgeLevel   String    @map("badge_level")
+  id           String      @id @default(uuid())
+  candidateId  String      @map("candidate_id")
+  assessmentId String?     @map("assessment_id")
+  skillName    String      @map("skill_name")
+  badgeLevel   String      @map("badge_level")
   score        Int?
   percentile   Int?
-  verifiedAt   DateTime  @default(now()) @map("verified_at")
-  expiresAt    DateTime? @map("expires_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-
-  candidate  Candidate   @relation(fields: [candidateId], references: [id])
-  assessment Assessment? @relation(fields: [assessmentId], references: [id])
+  verifiedAt   DateTime    @default(now()) @map("verified_at")
+  expiresAt    DateTime?   @map("expires_at")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  assessment   Assessment? @relation(fields: [assessmentId], references: [id])
+  candidate    Candidate   @relation(fields: [candidateId], references: [id])
 
   @@unique([candidateId, skillName])
   @@map("skill_badges")
 }
 
 model Interview {
-  id              String   @id @default(uuid())
-  applicationId   String   @map("application_id")
-  interviewType   String?  @map("interview_type")
-  title           String?
+  id              String                 @id @default(uuid())
+  applicationId   String                 @map("application_id")
+  scheduledAt     DateTime               @map("scheduled_at")
+  status          String                 @default("scheduled")
+  meetingUrl      String?                @map("meeting_url")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  aiSummary       String?                @map("ai_summary")
   description     String?
-  scheduledAt     DateTime @map("scheduled_at")
-  durationMinutes Int?     @default(60) @map("duration_minutes")
-  timezone        String?  @default("UTC")
-  meetingUrl      String?  @map("meeting_url")
-  meetingProvider String?  @map("meeting_provider")
+  durationMinutes Int?                   @default(60) @map("duration_minutes")
+  interviewType   String?                @map("interview_type")
   location        String?
-  status          String   @default("scheduled")
-  recordingUrl    String?  @map("recording_url")
+  meetingProvider String?                @map("meeting_provider")
+  recordingUrl    String?                @map("recording_url")
+  timezone        String?                @default("UTC")
+  title           String?
   transcript      String?
-  aiSummary       String?  @map("ai_summary")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  application  Application            @relation(fields: [applicationId], references: [id])
-  participants InterviewParticipant[]
-  feedback     InterviewFeedback[]
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+  feedback        InterviewFeedback[]
+  participants    InterviewParticipant[]
+  application     Application            @relation(fields: [applicationId], references: [id])
 
   @@map("interviews")
 }
 
 model InterviewParticipant {
-  id              String   @id @default(uuid())
-  interviewId     String   @map("interview_id")
-  userId          String?  @map("user_id")
-  participantType String   @map("participant_type")
-  responseStatus  String   @default("pending") @map("response_status")
+  id              String    @id @default(uuid())
+  interviewId     String    @map("interview_id")
+  userId          String?   @map("user_id")
+  participantType String    @map("participant_type")
+  responseStatus  String    @default("pending") @map("response_status")
   attended        Boolean?
-  createdAt       DateTime @default(now()) @map("created_at")
-
-  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  user      User?     @relation(fields: [userId], references: [id])
+  createdAt       DateTime  @default(now()) @map("created_at")
+  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  user            User?     @relation(fields: [userId], references: [id])
 
   @@map("interview_participants")
 }
 
 model InterviewFeedback {
-  id             String   @id @default(uuid())
-  interviewId    String   @map("interview_id")
-  interviewerId  String   @map("interviewer_id")
-  overallRating  Int      @map("overall_rating")
+  id             String    @id @default(uuid())
+  interviewId    String    @map("interview_id")
+  interviewerId  String    @map("interviewer_id")
+  overallRating  Int       @map("overall_rating")
   recommendation String
   strengths      String?
   concerns       String?
   notes          String?
   scorecard      Json?
-  submittedAt    DateTime @default(now()) @map("submitted_at")
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  interviewer User      @relation(fields: [interviewerId], references: [id])
+  submittedAt    DateTime  @default(now()) @map("submitted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  interview      Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewer    User      @relation(fields: [interviewerId], references: [id])
 
   @@map("interview_feedback")
 }
@@ -316,8 +305,7 @@ model Notification {
   readAt    DateTime? @map("read_at")
   sentAt    DateTime? @map("sent_at")
   createdAt DateTime  @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
 
   @@map("notifications")
 }
@@ -333,62 +321,59 @@ model AiAction {
   status           String    @default("pending")
   errorMessage     String?   @map("error_message")
   requiresApproval Boolean   @default(false) @map("requires_approval")
-  approvalReason   String?   @map("approval_reason")
   approvedBy       String?   @map("approved_by")
   approvedAt       DateTime? @map("approved_at")
-  rejectionReason  String?   @map("rejection_reason")
+  executedAt       DateTime? @map("executed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  approvalReason   String?   @map("approval_reason")
+  completedAt      DateTime? @map("completed_at")
   confidenceScore  Int?      @map("confidence_score")
   matchScore       Int?      @map("match_score")
-  executedAt       DateTime? @map("executed_at")
-  completedAt      DateTime? @map("completed_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-
-  approver User? @relation("ApprovedBy", fields: [approvedBy], references: [id])
+  rejectionReason  String?   @map("rejection_reason")
+  approver         User?     @relation("ApprovedBy", fields: [approvedBy], references: [id])
 
   @@map("ai_actions")
 }
 
 model ContractTemplate {
-  id           String   @id @default(uuid())
+  id           String     @id @default(uuid())
   name         String
   description  String?
   content      String
-  templateType String   @map("template_type") // freelancer, contractor, nda
-  planTier     String?  @map("plan_tier")
-  version      Int      @default(1)
-  isActive     Boolean  @default(true) @map("is_active")
-  createdBy    String?  @map("created_by")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  contracts Contract[]
+  templateType String     @map("template_type")
+  planTier     String?    @map("plan_tier")
+  version      Int        @default(1)
+  isActive     Boolean    @default(true) @map("is_active")
+  createdBy    String?    @map("created_by")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  contracts    Contract[]
 
   @@map("contract_templates")
 }
 
 model Contract {
-  id            String    @id @default(uuid())
-  templateId    String    @map("template_id")
-  applicationId String    @map("application_id")
-  clientId      String    @map("client_id")
-  candidateId   String    @map("candidate_id")
+  id            String              @id @default(uuid())
+  templateId    String              @map("template_id")
+  applicationId String              @map("application_id")
+  clientId      String              @map("client_id")
+  candidateId   String              @map("candidate_id")
   title         String
   content       String
-  version       Int       @default(1)
-  status        String    @default("draft") // draft, pending_review, pending_signatures, active, expired, terminated
+  version       Int                 @default(1)
+  status        String              @default("draft")
   terms         Json?
-  pdfData       Bytes?    @map("pdf_data")
-  pdfSignedData Bytes?    @map("pdf_signed_data")
-  expiresAt     DateTime? @map("expires_at")
-  activatedAt   DateTime? @map("activated_at")
-  terminatedAt  DateTime? @map("terminated_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-
-  template    ContractTemplate    @relation(fields: [templateId], references: [id])
-  application Application         @relation(fields: [applicationId], references: [id])
-  client      Client              @relation(fields: [clientId], references: [id])
-  signatures  ContractSignature[]
+  expiresAt     DateTime?           @map("expires_at")
+  activatedAt   DateTime?           @map("activated_at")
+  terminatedAt  DateTime?           @map("terminated_at")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  pdfData       Bytes?              @map("pdf_data")
+  pdfSignedData Bytes?              @map("pdf_signed_data")
+  signatures    ContractSignature[]
+  application   Application         @relation(fields: [applicationId], references: [id])
+  client        Client              @relation(fields: [clientId], references: [id])
+  template      ContractTemplate    @relation(fields: [templateId], references: [id])
 
   @@map("contracts")
 }
@@ -397,16 +382,15 @@ model ContractSignature {
   id             String    @id @default(uuid())
   contractId     String    @map("contract_id")
   userId         String    @map("user_id")
-  signerRole     String    @map("signer_role") // client, viraworkx
+  signerRole     String    @map("signer_role")
   signedName     String?   @map("signed_name")
-  signatureImage Bytes?    @map("signature_image")
   signedAt       DateTime? @map("signed_at")
   ipAddress      String?   @map("ip_address")
   userAgent      String?   @map("user_agent")
   createdAt      DateTime  @default(now()) @map("created_at")
-
-  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id])
+  signatureImage Bytes?    @map("signature_image")
+  contract       Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id])
 
   @@unique([contractId, signerRole])
   @@map("contract_signatures")
@@ -418,37 +402,35 @@ model Subscription {
   stripeCustomerId     String?   @unique @map("stripe_customer_id")
   stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
   stripePriceId        String?   @map("stripe_price_id")
-  planTier             String    @default("startup") @map("plan_tier") // startup, growth, enterprise
-  status               String    @default("incomplete") // incomplete, active, past_due, canceled, trialing
+  planTier             String    @default("startup") @map("plan_tier")
+  status               String    @default("incomplete")
   currentPeriodStart   DateTime? @map("current_period_start")
   currentPeriodEnd     DateTime? @map("current_period_end")
   cancelAtPeriodEnd    Boolean   @default(false) @map("cancel_at_period_end")
   trialEnd             DateTime? @map("trial_end")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
-
-  client   Client    @relation(fields: [clientId], references: [id])
-  payments Payment[]
+  payments             Payment[]
+  client               Client    @relation(fields: [clientId], references: [id])
 
   @@map("subscriptions")
 }
 
 model Payment {
-  id                    String    @id @default(uuid())
-  subscriptionId        String    @map("subscription_id")
-  stripeInvoiceId       String?   @unique @map("stripe_invoice_id")
-  stripePaymentIntentId String?   @map("stripe_payment_intent_id")
-  amount                Int // in cents
-  currency              String    @default("usd")
-  status                String    @default("pending") // pending, paid, failed, refunded
-  invoiceUrl            String?   @map("invoice_url")
-  invoicePdf            String?   @map("invoice_pdf")
-  periodStart           DateTime? @map("period_start")
-  periodEnd             DateTime? @map("period_end")
-  paidAt                DateTime? @map("paid_at")
-  createdAt             DateTime  @default(now()) @map("created_at")
-
-  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  id                    String       @id @default(uuid())
+  subscriptionId        String       @map("subscription_id")
+  stripeInvoiceId       String?      @unique @map("stripe_invoice_id")
+  stripePaymentIntentId String?      @map("stripe_payment_intent_id")
+  amount                Int
+  currency              String       @default("usd")
+  status                String       @default("pending")
+  invoiceUrl            String?      @map("invoice_url")
+  invoicePdf            String?      @map("invoice_pdf")
+  periodStart           DateTime?    @map("period_start")
+  periodEnd             DateTime?    @map("period_end")
+  paidAt                DateTime?    @map("paid_at")
+  createdAt             DateTime     @default(now()) @map("created_at")
+  subscription          Subscription @relation(fields: [subscriptionId], references: [id])
 
   @@map("payments")
 }
@@ -457,7 +439,7 @@ model EmailTemplate {
   id           String     @id @default(uuid())
   name         String     @unique
   subject      String
-  body         String     @db.Text
+  body         String
   triggerStage String?    @map("trigger_stage")
   isActive     Boolean    @default(true) @map("is_active")
   createdAt    DateTime   @default(now()) @map("created_at")
@@ -470,17 +452,17 @@ model EmailTemplate {
 model EmailLog {
   id           String         @id @default(uuid())
   candidateId  String         @map("candidate_id")
-  candidate    Candidate      @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   templateId   String?        @map("template_id")
-  template     EmailTemplate? @relation(fields: [templateId], references: [id])
   subject      String
   toEmail      String         @map("to_email")
   status       String         @default("sent")
   direction    String         @default("outbound")
-  rawContent   String?        @map("raw_content") @db.Text
+  rawContent   String?        @map("raw_content")
   errorMessage String?        @map("error_message")
   sentAt       DateTime       @default(now()) @map("sent_at")
   createdAt    DateTime       @default(now()) @map("created_at")
+  candidate    Candidate      @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  template     EmailTemplate? @relation(fields: [templateId], references: [id])
 
   @@index([candidateId])
   @@index([sentAt])
@@ -490,16 +472,16 @@ model EmailLog {
 model PipelineHistory {
   id            String       @id @default(uuid())
   candidateId   String       @map("candidate_id")
-  candidate     Candidate    @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   applicationId String?      @map("application_id")
-  application   Application? @relation(fields: [applicationId], references: [id])
   fromStage     String?      @map("from_stage")
   toStage       String       @map("to_stage")
   changedById   String?      @map("changed_by_id")
-  changedBy     User?        @relation(fields: [changedById], references: [id])
   reason        String?
-  notes         String?      @db.Text
+  notes         String?
   createdAt     DateTime     @default(now()) @map("created_at")
+  application   Application? @relation(fields: [applicationId], references: [id])
+  candidate     Candidate    @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  changedBy     User?        @relation(fields: [changedById], references: [id])
 
   @@index([candidateId])
   @@index([createdAt])
@@ -509,14 +491,14 @@ model PipelineHistory {
 model CandidateNote {
   id          String    @id @default(uuid())
   candidateId String    @map("candidate_id")
-  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   authorId    String?   @map("author_id")
-  author      User?     @relation(fields: [authorId], references: [id])
-  content     String    @db.Text
+  content     String
   isPrivate   Boolean   @default(false) @map("is_private")
   noteType    String    @default("general") @map("note_type")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
+  author      User?     @relation(fields: [authorId], references: [id])
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 
   @@index([candidateId])
   @@map("candidate_notes")
