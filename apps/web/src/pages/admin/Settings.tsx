@@ -153,7 +153,7 @@ export default function AdminSettings() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Assessment Settings</h2>
-                <p className="text-sm text-gray-500">Configure iMocha assessment behavior</p>
+                <p className="text-sm text-gray-500">Configure assessment behavior</p>
               </div>
             </div>
 

@@ -102,7 +102,7 @@ export default function Landing() {
               <div className="flex items-center gap-6 text-sm text-gray-500">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 shrink-0" />
-                  <span>iMocha Verified</span>
+                  <span>Skill Verified</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 shrink-0" />
@@ -147,7 +147,7 @@ export default function Landing() {
               </div>
               <h3 className="text-xl font-bold font-heading mb-2 text-gray-900">Skill Assessments</h3>
               <p className="text-gray-500">
-                iMocha-powered technical assessments verify candidate skills with industry-standard tests and proctoring.
+                Technical assessments verify candidate skills with industry-standard tests and proctoring.
               </p>
             </div>
 

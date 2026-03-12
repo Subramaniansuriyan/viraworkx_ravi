@@ -5,7 +5,7 @@ import { paymentApi } from '../../services/api'
 import type { Subscription, PaymentInvoice } from '../../types'
 
 const PLAN_FEATURES: Record<string, string[]> = {
-  startup: ['Up to 5 active jobs', 'Basic AI screening', 'Email support', 'iMocha assessments'],
+  startup: ['Up to 5 active jobs', 'Basic AI screening', 'Email support', 'Skill assessments'],
   growth: ['Up to 25 active jobs', 'Advanced AI screening', 'Priority support', 'Custom assessments', 'Analytics dashboard'],
   enterprise: ['Unlimited jobs', 'Full AI suite', 'Dedicated support', 'Custom integrations', 'Advanced analytics', 'SLA guarantee'],
 }
