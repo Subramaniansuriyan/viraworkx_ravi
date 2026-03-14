@@ -17,6 +17,7 @@ env:
   ARTIFACT_REPO: viraworkx
   API_SERVICE: viraworkx-api
   WEB_SERVICE: viraworkx-web
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -167,6 +168,7 @@ jobs:
             --memory=256Mi \
             --cpu=1 \
             --timeout=10 \
+            --service-account=${{ secrets.GCP_SERVICE_ACCOUNT }} \
             --set-env-vars="API_URL=$API_URL,AI_ENGINE_URL=" \
             --quiet
 
