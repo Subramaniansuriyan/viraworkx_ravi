@@ -147,6 +147,42 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
   }
 })
 
+// POST /api/v1/auth/forgot-password
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Email is required' })
+    }
+    const appUrl = process.env.APP_URL || 'https://www.viraworkx.ai'
+    await authService.forgotPassword(email.toLowerCase().trim(), appUrl)
+    res.json({ message: 'If that email exists, a reset link has been sent.' })
+  } catch (error) {
+    // Always return 200 to prevent email enumeration
+    res.json({ message: 'If that email exists, a reset link has been sent.' })
+  }
+})
+
+// POST /api/v1/auth/reset-password
+router.post('/reset-password', async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token and password are required' })
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' })
+    }
+    await authService.resetPassword(token, password)
+    res.json({ message: 'Password reset successfully' })
+  } catch (error) {
+    if (error instanceof Error) {
+      return res.status(400).json({ error: error.message })
+    }
+    res.status(500).json({ error: 'Failed to reset password' })
+  }
+})
+
 // POST /api/v1/auth/logout
 router.post('/logout', authenticateToken, (req: AuthRequest, res: Response) => {
   // In a production app, you'd invalidate the refresh token here

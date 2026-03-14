@@ -164,6 +164,52 @@ class AuthService {
     return this.formatUserResponse(user)
   }
 
+  async forgotPassword(email: string, appUrl: string): Promise<void> {
+    const user = await prisma.user.findUnique({ where: { email } })
+    // Always return silently — don't reveal if email exists
+    if (!user) return
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, purpose: 'password-reset' },
+      JWT_SECRET + '-reset',
+      { expiresIn: '1h' }
+    )
+
+    const resetUrl = `${appUrl}/reset-password?token=${token}`
+    const userName = email.split('@')[0]
+
+    const { emailService } = await import('./email.service.js')
+    await emailService.sendPasswordReset(email, {
+      userName,
+      resetUrl,
+      expiresIn: '1 hour',
+    })
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    let decoded: { userId: string; email: string; purpose: string }
+    try {
+      decoded = jwt.verify(token, JWT_SECRET + '-reset') as typeof decoded
+    } catch {
+      throw new Error('Invalid or expired reset link')
+    }
+
+    if (decoded.purpose !== 'password-reset') {
+      throw new Error('Invalid reset token')
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } })
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12)
+    await prisma.user.update({
+      where: { id: decoded.userId },
+      data: { passwordHash }
+    })
+  }
+
   async updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } })
     if (!user) {

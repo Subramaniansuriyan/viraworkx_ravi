@@ -6,6 +6,8 @@ import Landing from './pages/Landing'
 import ClientDashboard from './pages/client/Dashboard'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 import CandidateProfile from './pages/candidate/Profile'
 import CandidateApplications from './pages/candidate/Applications'
 import CandidateDashboard from './pages/candidate/Dashboard'
@@ -74,6 +76,8 @@ export default function App() {
         path="/register"
         element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />}
       />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Public job routes */}
       <Route path="/jobs" element={<JobList />} />
