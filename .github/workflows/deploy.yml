@@ -1,0 +1,230 @@
+name: Deploy to GCP Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: 'What to deploy'
+        required: true
+        default: 'all'
+        type: choice
+        options: [all, api, web]
+
+env:
+  GCP_REGION: us-central1
+  ARTIFACT_REPO: viraworkx
+  API_SERVICE: viraworkx-api
+  WEB_SERVICE: viraworkx-web
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Deploy API
+  # ---------------------------------------------------------------------------
+  deploy-api:
+    name: Deploy API
+    runs-on: ubuntu-latest
+    if: github.event.inputs.deploy_target != 'web'
+    outputs:
+      api_url: ${{ steps.api_url.outputs.url }}
+
+    permissions:
+      contents: read
+      id-token: write  # for Workload Identity Federation
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push API image
+        env:
+          IMAGE: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/api
+        run: |
+          docker buildx build --platform linux/amd64 \
+            -f apps/api/Dockerfile \
+            -t $IMAGE:${{ github.sha }} \
+            -t $IMAGE:latest \
+            --push \
+            .
+
+      - name: Deploy API to Cloud Run
+        env:
+          IMAGE: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/api
+          SQL_CONN: ${{ secrets.GCP_SQL_CONNECTION_NAME }}
+        run: |
+          gcloud run deploy ${{ env.API_SERVICE }} \
+            --image=$IMAGE:${{ github.sha }} \
+            --region=${{ env.GCP_REGION }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=8080 \
+            --min-instances=0 \
+            --max-instances=10 \
+            --memory=512Mi \
+            --cpu=1 \
+            --timeout=30 \
+            --service-account=${{ secrets.GCP_SERVICE_ACCOUNT }} \
+            --set-cloudsql-instances=$SQL_CONN \
+            --set-secrets="DATABASE_URL=viraworkx-database-url:latest,JWT_SECRET=viraworkx-jwt-secret:latest,ANTHROPIC_API_KEY=viraworkx-anthropic-key:latest,REDIS_URL=viraworkx-redis-url:latest,STRIPE_SECRET_KEY=viraworkx-stripe-secret:latest,STRIPE_WEBHOOK_SECRET=viraworkx-stripe-webhook:latest,RESEND_API_KEY=viraworkx-resend-key:latest,IMOCHA_API_KEY=viraworkx-imocha-key:latest,CORS_ORIGINS=viraworkx-cors-origins:latest" \
+            --set-env-vars="NODE_ENV=production,SKIP_REDIS=true" \
+            --quiet
+
+      - name: Get API URL
+        id: api_url
+        run: |
+          URL=$(gcloud run services describe ${{ env.API_SERVICE }} \
+            --region=${{ env.GCP_REGION }} --format='value(status.url)')
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "API URL: $URL"
+
+  # ---------------------------------------------------------------------------
+  # Deploy Web
+  # ---------------------------------------------------------------------------
+  deploy-web:
+    name: Deploy Web
+    runs-on: ubuntu-latest
+    needs: [deploy-api]
+    if: |
+      always() &&
+      (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped') &&
+      github.event.inputs.deploy_target != 'api'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Resolve production API URL
+        id: api_url
+        run: |
+          # Use custom domain if set; otherwise use Cloud Run URL from previous job
+          if [[ -n "${{ secrets.PROD_API_URL }}" ]]; then
+            echo "url=${{ secrets.PROD_API_URL }}" >> $GITHUB_OUTPUT
+          elif [[ -n "${{ needs.deploy-api.outputs.api_url }}" ]]; then
+            echo "url=${{ needs.deploy-api.outputs.api_url }}" >> $GITHUB_OUTPUT
+          else
+            # Fetch current deployed API URL
+            URL=$(gcloud run services describe ${{ env.API_SERVICE }} \
+              --region=${{ env.GCP_REGION }} --format='value(status.url)')
+            echo "url=$URL" >> $GITHUB_OUTPUT
+          fi
+          echo "Using API URL: $(cat $GITHUB_OUTPUT | grep url | cut -d= -f2)"
+
+      - name: Build and push Web image
+        env:
+          IMAGE: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/web
+          VITE_API_URL: ${{ steps.api_url.outputs.url }}
+        run: |
+          docker buildx build --platform linux/amd64 \
+            -f apps/web/Dockerfile \
+            --build-arg VITE_API_URL=$VITE_API_URL \
+            -t $IMAGE:${{ github.sha }} \
+            -t $IMAGE:latest \
+            --push \
+            .
+
+      - name: Deploy Web to Cloud Run
+        env:
+          IMAGE: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/web
+          API_URL: ${{ steps.api_url.outputs.url }}
+        run: |
+          gcloud run deploy ${{ env.WEB_SERVICE }} \
+            --image=$IMAGE:${{ github.sha }} \
+            --region=${{ env.GCP_REGION }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=8080 \
+            --min-instances=0 \
+            --max-instances=10 \
+            --memory=256Mi \
+            --cpu=1 \
+            --timeout=10 \
+            --set-env-vars="API_URL=$API_URL,AI_ENGINE_URL=" \
+            --quiet
+
+      - name: Get Web URL
+        run: |
+          URL=$(gcloud run services describe ${{ env.WEB_SERVICE }} \
+            --region=${{ env.GCP_REGION }} --format='value(status.url)')
+          echo "Web URL: $URL"
+
+  # ---------------------------------------------------------------------------
+  # Run DB migrations after API deploy
+  # ---------------------------------------------------------------------------
+  migrate:
+    name: Run DB Migrations
+    runs-on: ubuntu-latest
+    needs: [deploy-api]
+    if: needs.deploy-api.result == 'success'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Run Prisma migrations via Cloud Run Job
+        env:
+          SQL_CONN: ${{ secrets.GCP_SQL_CONNECTION_NAME }}
+          IMAGE: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/api
+        run: |
+          # Create or replace a Cloud Run Job that runs prisma migrate deploy
+          gcloud run jobs create viraworkx-migrate \
+            --image=$IMAGE:${{ github.sha }} \
+            --region=${{ env.GCP_REGION }} \
+            --service-account=${{ secrets.GCP_SERVICE_ACCOUNT }} \
+            --add-cloudsql-instances=$SQL_CONN \
+            --set-secrets="DATABASE_URL=viraworkx-database-url:latest" \
+            --set-env-vars="NODE_ENV=production" \
+            --command="npx" \
+            --args="prisma,db,push,--schema=packages/db/prisma/schema.prisma,--accept-data-loss" \
+            --quiet 2>/dev/null || \
+          gcloud run jobs update viraworkx-migrate \
+            --image=$IMAGE:${{ github.sha }} \
+            --region=${{ env.GCP_REGION }} \
+            --quiet
+
+          gcloud run jobs execute viraworkx-migrate \
+            --region=${{ env.GCP_REGION }} \
+            --wait \
+            --quiet
+          echo "Migrations complete"
