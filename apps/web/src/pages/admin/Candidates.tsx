@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Users, Search, MoreVertical, MapPin, ChevronLeft, ChevronRight, Award,
-  UserPlus, X, Send
+  UserPlus, X, Send, Eye, ClipboardList
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -19,7 +19,58 @@ export default function AdminCandidates() {
   const [showInvite, setShowInvite] = useState(false)
   const [invite, setInvite] = useState(INVITE_EMPTY)
   const [inviteSuccess, setInviteSuccess] = useState(false)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [selectedCandidate, setSelectedCandidate] = useState<any>(null)
+  const [selectedTestId, setSelectedTestId] = useState('')
+  const [assignSuccess, setAssignSuccess] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const limit = 10
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const { data: testsData } = useQuery({
+    queryKey: ['imochaTests'],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/api/v1/assessments/tests`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Failed to fetch tests')
+      return res.json()
+    },
+    enabled: showAssignModal,
+  })
+
+  const assignMutation = useMutation({
+    mutationFn: async ({ testId, candidateId }: { testId: string; candidateId: string }) => {
+      const res = await fetch(`${API_URL}/api/v1/assessments/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ testId, candidateId }),
+      })
+      if (!res.ok) throw new Error('Failed to assign assessment')
+      return res.json()
+    },
+    onSuccess: () => {
+      setAssignSuccess(true)
+      setTimeout(() => {
+        setShowAssignModal(false)
+        setSelectedCandidate(null)
+        setSelectedTestId('')
+        setAssignSuccess(false)
+        assignMutation.reset()
+      }, 2000)
+    },
+  })
 
   const inviteMutation = useMutation({
     mutationFn: async (data: typeof INVITE_EMPTY) => {
@@ -188,9 +239,37 @@ export default function AdminCandidates() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        <div className="relative inline-block" ref={openMenuId === candidate.id ? menuRef : null}>
+                          <button
+                            onClick={() => setOpenMenuId(openMenuId === candidate.id ? null : candidate.id)}
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                          {openMenuId === candidate.id && (
+                            <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                              <button
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  window.open(`/admin/candidates/${candidate.id}`, '_blank')
+                                }}
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                <Eye className="w-4 h-4" /> View Profile
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  setSelectedCandidate(candidate)
+                                  setShowAssignModal(true)
+                                }}
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                <ClipboardList className="w-4 h-4" /> Assign Assessment
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -321,6 +400,112 @@ export default function AdminCandidates() {
                       <Send className="w-4 h-4" />
                     )}
                     {inviteMutation.isPending ? 'Sending...' : 'Send Invite'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Assign Assessment Modal */}
+      {showAssignModal && selectedCandidate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              setShowAssignModal(false)
+              setSelectedTestId('')
+              setAssignSuccess(false)
+              assignMutation.reset()
+            }}
+          />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md m-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Assign Assessment</h2>
+                <p className="text-sm text-gray-500">
+                  {selectedCandidate.firstName} {selectedCandidate.lastName}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAssignModal(false)
+                  setSelectedTestId('')
+                  setAssignSuccess(false)
+                  assignMutation.reset()
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {assignSuccess ? (
+              <div className="p-12 text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ClipboardList className="w-8 h-8 text-green-600" />
+                </div>
+                <p className="text-xl font-semibold text-gray-900">Assessment Assigned!</p>
+                <p className="text-gray-500 text-sm mt-1">
+                  An invitation has been sent to {selectedCandidate.user?.email}.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select Assessment Test *
+                    </label>
+                    <select
+                      value={selectedTestId}
+                      onChange={(e) => setSelectedTestId(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+                    >
+                      <option value="">-- Choose a test --</option>
+                      {(testsData?.tests || []).map((test: any) => (
+                        <option key={test.testId || test.id} value={test.testId || test.id}>
+                          {test.testName || test.name}
+                        </option>
+                      ))}
+                    </select>
+                    {(!testsData?.tests || testsData.tests.length === 0) && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        No tests found. Ensure iMocha is configured correctly.
+                      </p>
+                    )}
+                  </div>
+                  {assignMutation.isError && (
+                    <p className="text-sm text-red-600">Failed to assign assessment. Please try again.</p>
+                  )}
+                </div>
+                <div className="flex gap-3 p-6 border-t bg-gray-50">
+                  <button
+                    onClick={() => {
+                      setShowAssignModal(false)
+                      setSelectedTestId('')
+                      assignMutation.reset()
+                    }}
+                    className="flex-1 py-2 border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() =>
+                      assignMutation.mutate({
+                        testId: selectedTestId,
+                        candidateId: selectedCandidate.id,
+                      })
+                    }
+                    disabled={!selectedTestId || assignMutation.isPending}
+                    className="flex-1 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {assignMutation.isPending ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    {assignMutation.isPending ? 'Sending...' : 'Send Assessment'}
                   </button>
                 </div>
               </>

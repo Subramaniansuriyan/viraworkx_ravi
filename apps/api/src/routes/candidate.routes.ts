@@ -92,9 +92,25 @@ const updateProfileSchema = z.object({
  */
 router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: AuthRequest, res: Response) => {
   try {
-    const { skills, location, experienceMin, experienceMax, tier, limit = '20', offset = '0' } = req.query
+    const { skills, location, experienceMin, experienceMax, tier, limit = '20', offset = '0', page, search } = req.query
+
+    // Support both page-based (frontend) and offset-based pagination
+    const parsedLimit = parseInt(limit as string)
+    const parsedOffset = page
+      ? (parseInt(page as string) - 1) * parsedLimit
+      : parseInt(offset as string)
 
     const where: any = {}
+
+    if (search) {
+      const q = (search as string).trim()
+      where.OR = [
+        { firstName: { contains: q, mode: 'insensitive' } },
+        { lastName: { contains: q, mode: 'insensitive' } },
+        { user: { email: { contains: q, mode: 'insensitive' } } },
+        { skills: { hasSome: [q] } },
+      ]
+    }
 
     if (skills) {
       const skillList = (skills as string).split(',')
@@ -125,8 +141,8 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
           take: 5
         }
       },
-      take: parseInt(limit as string),
-      skip: parseInt(offset as string),
+      take: parsedLimit,
+      skip: parsedOffset,
       orderBy: { profileScore: 'desc' }
     })
 
@@ -146,8 +162,8 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
         skillBadges: c.skillBadges,
       })),
       total,
-      limit: parseInt(limit as string),
-      offset: parseInt(offset as string),
+      limit: parsedLimit,
+      offset: parsedOffset,
     })
   } catch (error) {
     console.error('Error fetching candidates:', error)
