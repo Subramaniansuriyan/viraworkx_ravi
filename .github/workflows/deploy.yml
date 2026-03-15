@@ -80,7 +80,7 @@ jobs:
             --service-account=${{ secrets.GCP_SERVICE_ACCOUNT }} \
             --set-cloudsql-instances=$SQL_CONN \
             --set-secrets="DATABASE_URL=viraworkx-database-url:latest,JWT_SECRET=viraworkx-jwt-secret:latest,ANTHROPIC_API_KEY=viraworkx-anthropic-key:latest,REDIS_URL=viraworkx-redis-url:latest,STRIPE_SECRET_KEY=viraworkx-stripe-secret:latest,STRIPE_WEBHOOK_SECRET=viraworkx-stripe-webhook:latest,RESEND_API_KEY=viraworkx-resend-key:latest,IMOCHA_API_KEY=viraworkx-imocha-key:latest,CORS_ORIGINS=viraworkx-cors-origins:latest" \
-            --set-env-vars="NODE_ENV=production,SKIP_REDIS=true" \
+            --set-env-vars="NODE_ENV=production,SKIP_REDIS=true,GCS_BUCKET=viraworkx-uploads" \
             --quiet
 
       - name: Get API URL
