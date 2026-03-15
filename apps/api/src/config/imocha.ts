@@ -1,5 +1,5 @@
 export const imochaConfig = {
-  baseUrl: process.env.IMOCHA_API_URL || 'https://api.imocha.io/v1',
+  baseUrl: process.env.IMOCHA_API_URL || 'https://apiv3.imocha.io/v3',
   apiKey: process.env.IMOCHA_API_KEY || '',
   tenantId: process.env.IMOCHA_TENANT_ID || '',
   webhookSecret: process.env.IMOCHA_WEBHOOK_SECRET || '',
