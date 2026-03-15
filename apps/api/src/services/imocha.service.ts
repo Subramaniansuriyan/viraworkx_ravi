@@ -432,31 +432,28 @@ class IMochaService {
       return
     }
 
-    // Try to get detailed skill report (may fail in mock mode)
+    // Try to get detailed skill report from iMocha
     let skillScores: IMochaSkillScore[] = []
     try {
       const skillReport = await this.getSkillReport(attemptId)
       skillScores = skillReport.skills
     } catch {
-      // Use mock skill scores if API call fails
-      skillScores = this.generateMockSkillScores(assessment.testName || 'Assessment')
+      console.warn(`Could not fetch skill report for attempt ${attemptId} — badges will not be generated`)
     }
 
-    // Compute tier based on score percentage
-    const finalScore = score || 85
-    const finalMaxScore = maxScore || 100
-    const tier = getTierLevel(finalScore, finalMaxScore)
+    // Compute tier from real score only
+    const tier = (score != null && maxScore != null) ? getTierLevel(score, maxScore) : null
 
-    // Update assessment record
+    // Update assessment record with real iMocha data only
     await prisma.assessment.update({
       where: { id: assessment.id },
       data: {
         imochaAttemptId: attemptId,
         status: 'completed',
-        score: finalScore,
-        maxScore: finalMaxScore,
-        percentile: percentile || 75,
-        skillScores: skillScores as any,
+        score: score ?? null,
+        maxScore: maxScore ?? null,
+        percentile: percentile ?? null,
+        skillScores: skillScores.length > 0 ? skillScores as any : undefined,
         reportUrl,
         tier,
         proctoringFlags: proctoringFlags as any,
@@ -464,8 +461,10 @@ class IMochaService {
       }
     })
 
-    // Generate skill badges
-    await this.generateSkillBadges(assessment.candidateId, assessment.id, skillScores)
+    // Generate skill badges only if we have real skill data
+    if (skillScores.length > 0) {
+      await this.generateSkillBadges(assessment.candidateId, assessment.id, skillScores)
+    }
 
     // Update application stage if linked
     if (assessment.applicationId) {
@@ -479,17 +478,17 @@ class IMochaService {
     await this.updateCandidateProfileScore(assessment.candidateId)
 
     // Send real-time notification
-    if (assessment.application?.jobId) {
+    if (assessment.application?.jobId && score != null && maxScore != null) {
       socketService.notifyAssessmentCompleted(
         assessment.id,
         assessment.candidateId,
-        score || 85,
-        maxScore || 100,
+        score,
+        maxScore,
         assessment.application.jobId
       )
     }
 
-    console.log(`Assessment completed: ${assessment.id}, Score: ${score || 85}/${maxScore || 100}`)
+    console.log(`Assessment completed: ${assessment.id}, Score: ${score ?? 'N/A'}/${maxScore ?? 'N/A'}`)
   }
 
   /**
