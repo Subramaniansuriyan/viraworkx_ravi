@@ -26,17 +26,8 @@ router.get('/tests', authenticateToken, async (req: AuthRequest, res: Response) 
 
     res.json({ tests })
   } catch (error) {
-    console.error('Error fetching tests:', error)
-    // Return mock tests if iMocha API is not configured
-    res.json({
-      tests: [
-        { id: 'react-senior', name: 'React.js Senior Developer', category: 'Frontend', duration: 60, skills: ['React', 'JavaScript', 'TypeScript'], difficulty: 'Advanced' },
-        { id: 'python-backend', name: 'Python Backend Developer', category: 'Backend', duration: 45, skills: ['Python', 'Django', 'SQL'], difficulty: 'Intermediate' },
-        { id: 'nodejs-fullstack', name: 'Node.js Full Stack', category: 'Full Stack', duration: 60, skills: ['Node.js', 'Express', 'React'], difficulty: 'Advanced' },
-        { id: 'devops-aws', name: 'DevOps & AWS', category: 'DevOps', duration: 45, skills: ['AWS', 'Docker', 'Kubernetes'], difficulty: 'Advanced' },
-        { id: 'ml-python', name: 'Machine Learning with Python', category: 'Data Science', duration: 60, skills: ['Python', 'TensorFlow', 'Scikit-learn'], difficulty: 'Advanced' },
-      ]
-    })
+    console.error('Error fetching tests from iMocha:', error)
+    res.status(502).json({ error: 'Failed to fetch tests from iMocha' })
   }
 })
 
@@ -79,50 +70,14 @@ router.post('/invite', authenticateToken, async (req: AuthRequest, res: Response
       ? new Date(Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000)
       : undefined
 
-    // Try to send real invitation, fall back to mock
-    let result
-    try {
-      result = await imochaService.inviteCandidate({
-        testId: input.testId,
-        candidateId: input.candidateId,
-        candidateEmail: candidate.user.email,
-        candidateName: `${candidate.firstName} ${candidate.lastName}`,
-        applicationId: input.applicationId,
-        expiresAt,
-      })
-    } catch {
-      // Create mock assessment if iMocha API is not configured
-      const mockAssessment = await prisma.assessment.create({
-        data: {
-          candidateId: input.candidateId,
-          applicationId: input.applicationId,
-          imochaTestId: input.testId,
-          imochaInvitationId: `mock-inv-${Date.now()}`,
-          testName: input.testId,
-          status: 'invited',
-          invitedAt: new Date(),
-          expiresAt: expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        }
-      })
-
-      // Update application stage if linked
-      if (input.applicationId) {
-        await prisma.application.update({
-          where: { id: input.applicationId },
-          data: { stage: 'assessment' }
-        })
-      }
-
-      result = {
-        assessment: mockAssessment,
-        invitation: {
-          invitationId: mockAssessment.imochaInvitationId,
-          testId: input.testId,
-          testUrl: `https://assessment.imocha.io/test/${mockAssessment.imochaInvitationId}`,
-          expiresAt: mockAssessment.expiresAt?.toISOString(),
-        }
-      }
-    }
+    const result = await imochaService.inviteCandidate({
+      testId: input.testId,
+      candidateId: input.candidateId,
+      candidateEmail: candidate.user.email,
+      candidateName: `${candidate.firstName} ${candidate.lastName}`,
+      applicationId: input.applicationId,
+      expiresAt,
+    })
 
     // Send real-time notification
     const candidateUserId = candidate.userId
@@ -429,76 +384,49 @@ router.get('/candidate/:candidateId/badges', authenticateToken, async (req: Auth
  */
 router.get('/admin/pending-allocation', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
   try {
-    // Get applications that have been screened (have match score) but don't have assessments yet
-    const pendingApplications = await prisma.application.findMany({
+    // Find candidate IDs that already have an active assessment
+    const activeAssessments = await prisma.assessment.findMany({
+      where: { status: { in: ['pending', 'invited', 'started'] } },
+      select: { candidateId: true },
+    })
+    const excludedIds = [...new Set(activeAssessments.map(a => a.candidateId))]
+
+    // Return all candidates without an active assessment
+    const candidateRecords = await prisma.candidate.findMany({
       where: {
-        matchScore: { not: null },
-        stage: { in: ['screening', 'new'] },
-        assessments: {
-          none: {} // No assessments assigned yet
-        }
+        id: { notIn: excludedIds }
       },
       include: {
-        candidate: {
-          include: {
-            user: { select: { email: true } },
-            skillBadges: {
-              where: { expiresAt: { gt: new Date() } },
-              take: 5
-            }
-          }
-        },
-        job: {
-          include: {
-            client: { select: { companyName: true, companyLogoUrl: true } }
-          }
+        user: { select: { email: true } },
+        skillBadges: {
+          where: { expiresAt: { gt: new Date() } },
+          take: 5
         }
       },
-      orderBy: [
-        { matchScore: 'desc' },
-        { appliedAt: 'desc' }
-      ]
+      orderBy: { createdAt: 'desc' }
     })
 
-    // Format response
-    const candidates = pendingApplications.map(app => ({
-      applicationId: app.id,
-      candidateId: app.candidateId,
-      jobId: app.jobId,
+    const candidates = candidateRecords.map(c => ({
+      candidateId: c.id,
       candidate: {
-        id: app.candidate.id,
-        firstName: app.candidate.firstName,
-        lastName: app.candidate.lastName,
-        email: app.candidate.user.email,
-        headline: app.candidate.headline,
-        location: app.candidate.location,
-        experienceYears: app.candidate.experienceYears,
-        skills: app.candidate.skills,
-        profileScore: app.candidate.profileScore,
-        badges: app.candidate.skillBadges.map(b => ({
+        id: c.id,
+        firstName: c.firstName,
+        lastName: c.lastName,
+        email: c.user.email,
+        headline: c.headline,
+        location: c.location,
+        experienceYears: c.experienceYears,
+        skills: c.skills,
+        profileScore: c.profileScore,
+        badges: c.skillBadges.map(b => ({
           skillName: b.skillName,
           level: b.badgeLevel,
           percentile: b.percentile
         }))
-      },
-      job: {
-        id: app.job.id,
-        title: app.job.title,
-        company: app.job.client.companyName,
-        companyLogo: app.job.client.companyLogoUrl,
-        skillsRequired: app.job.skillsRequired,
-        recommendedTestId: app.job.imochaTestId
-      },
-      matchScore: app.matchScore,
-      aiSummary: app.aiSummary,
-      appliedAt: app.appliedAt,
-      stage: app.stage
+      }
     }))
 
-    res.json({
-      candidates,
-      total: candidates.length
-    })
+    res.json({ candidates, total: candidates.length })
   } catch (error) {
     console.error('Error fetching pending allocations:', error)
     res.status(500).json({ error: 'Failed to fetch pending allocations' })
@@ -511,40 +439,34 @@ router.get('/admin/pending-allocation', authenticateToken, requireRole('admin'),
  */
 router.post('/admin/allocate', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
   try {
-    const { applicationId, testId, expiresInDays = 7, notes } = req.body
+    const { candidateId, testId, expiresInDays = 7, notes } = req.body
 
-    if (!applicationId || !testId) {
-      return res.status(400).json({ error: 'Application ID and Test ID are required' })
+    if (!candidateId || !testId) {
+      return res.status(400).json({ error: 'Candidate ID and Test ID are required' })
     }
 
-    // Get application with candidate details
-    const application = await prisma.application.findUnique({
-      where: { id: applicationId },
-      include: {
-        candidate: {
-          include: { user: { select: { email: true } } }
-        },
-        job: {
-          include: { client: { select: { companyName: true } } }
-        }
-      }
+    // Get candidate details
+    const candidate = await prisma.candidate.findUnique({
+      where: { id: candidateId },
+      include: { user: { select: { email: true } } }
     })
 
-    if (!application) {
-      return res.status(404).json({ error: 'Application not found' })
+    if (!candidate) {
+      return res.status(404).json({ error: 'Candidate not found' })
     }
 
-    // Check if assessment already exists
+    // Check if active assessment already exists for this candidate+test
     const existingAssessment = await prisma.assessment.findFirst({
       where: {
-        applicationId,
+        candidateId,
+        imochaTestId: testId,
         status: { in: ['pending', 'invited', 'started'] }
       }
     })
 
     if (existingAssessment) {
       return res.status(409).json({
-        error: 'Assessment already allocated for this application',
+        error: 'Candidate already has an active assessment for this test',
         assessmentId: existingAssessment.id
       })
     }
@@ -552,13 +474,12 @@ router.post('/admin/allocate', authenticateToken, requireRole('admin'), async (r
     // Calculate expiration
     const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
 
-    // Create assessment invitation via iMocha service
+    // Create assessment invitation via iMocha
     const result = await imochaService.inviteCandidate({
       testId,
-      candidateId: application.candidateId,
-      candidateEmail: application.candidate.user.email,
-      candidateName: `${application.candidate.firstName} ${application.candidate.lastName}`,
-      applicationId,
+      candidateId,
+      candidateEmail: candidate.user.email,
+      candidateName: `${candidate.firstName} ${candidate.lastName}`,
       expiresAt
     })
 
@@ -567,14 +488,12 @@ router.post('/admin/allocate', authenticateToken, requireRole('admin'), async (r
       data: {
         agentType: 'admin',
         actionType: 'allocate_assessment',
-        entityType: 'application',
-        entityId: applicationId,
+        entityType: 'candidate',
+        entityId: candidateId,
         inputPayload: {
           testId,
-          candidateId: application.candidateId,
-          candidateName: `${application.candidate.firstName} ${application.candidate.lastName}`,
-          jobTitle: application.job.title,
-          matchScore: application.matchScore,
+          candidateId,
+          candidateName: `${candidate.firstName} ${candidate.lastName}`,
           notes
         },
         outputPayload: {
@@ -588,12 +507,12 @@ router.post('/admin/allocate', authenticateToken, requireRole('admin'), async (r
       }
     })
 
-    // Send notification to candidate
-    socketService.sendNotification(application.candidate.userId, {
+    // Notify candidate
+    socketService.sendNotification(candidate.userId, {
       id: `assessment-${result.assessment.id}`,
       type: 'assessment_invite',
       title: 'Assessment Invitation',
-      message: `You've been invited to complete an assessment for ${application.job.title} at ${application.job.client.companyName}`
+      message: `You've been invited to complete a technical assessment on iMocha`
     })
 
     res.json({

@@ -1,16 +1,14 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Bot, Shield, AlertTriangle, CheckCircle, Target, MapPin, Briefcase,
+  Shield, AlertTriangle, CheckCircle, Target, MapPin, Briefcase,
   Award, X, Send, Star
 } from 'lucide-react'
 import api from '../../services/api'
 import AdminLayout from '../../components/admin/AdminLayout'
 
 interface PendingCandidate {
-  applicationId: string
   candidateId: string
-  jobId: string
   candidate: {
     id: string
     firstName: string
@@ -22,20 +20,7 @@ interface PendingCandidate {
     skills: string[]
     profileScore: number
     badges: Array<{ skillName: string; level: string; percentile: number }>
-    assessmentTier?: string
   }
-  job: {
-    id: string
-    title: string
-    company: string
-    companyLogo: string
-    skillsRequired: string[]
-    recommendedTestId: string
-  }
-  matchScore: number
-  aiSummary: string
-  appliedAt: string
-  stage: string
 }
 
 interface Test {
@@ -76,7 +61,7 @@ export default function TestAllocation() {
 
   // Allocate test mutation
   const allocateMutation = useMutation({
-    mutationFn: async (data: { applicationId: string; testId: string; expiresInDays: number; notes: string }) => {
+    mutationFn: async (data: { candidateId: string; testId: string; expiresInDays: number; notes: string }) => {
       const res = await api.post('/assessments/admin/allocate', data)
       return res.data
     },
@@ -95,17 +80,11 @@ export default function TestAllocation() {
     if (!selectedCandidate || !selectedTestId) return
 
     allocateMutation.mutate({
-      applicationId: selectedCandidate.applicationId,
+      candidateId: selectedCandidate.candidateId,
       testId: selectedTestId,
       expiresInDays,
       notes: allocationNotes
     })
-  }
-
-  const getMatchScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 bg-green-100'
-    if (score >= 60) return 'text-yellow-600 bg-yellow-100'
-    return 'text-red-600 bg-red-100'
   }
 
   return (
@@ -153,9 +132,9 @@ export default function TestAllocation() {
           </div>
         ) : (
           <div className="space-y-4">
-            {candidates.map((candidate) => (
+            {candidates.map((item) => (
               <div
-                key={candidate.applicationId}
+                key={item.candidateId}
                 className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="p-6">
@@ -163,96 +142,52 @@ export default function TestAllocation() {
                     {/* Candidate Info */}
                     <div className="flex items-start gap-4">
                       <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary text-xl font-bold">
-                        {candidate.candidate.firstName[0]}{candidate.candidate.lastName[0]}
+                        {item.candidate.firstName[0]}{item.candidate.lastName[0]}
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">
-                          {candidate.candidate.firstName} {candidate.candidate.lastName}
+                          {item.candidate.firstName} {item.candidate.lastName}
                         </h3>
-                        <p className="text-gray-600">{candidate.candidate.headline || 'No headline'}</p>
+                        <p className="text-gray-500 text-sm">{item.candidate.email}</p>
+                        <p className="text-gray-600">{item.candidate.headline || 'No headline'}</p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                           <span className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />
-                            {candidate.candidate.location || 'Unknown'}
+                            {item.candidate.location || 'Unknown'}
                           </span>
                           <span className="flex items-center gap-1">
                             <Briefcase className="w-4 h-4" />
-                            {candidate.candidate.experienceYears || 0} years
+                            {item.candidate.experienceYears || 0} years
                           </span>
                           <span className="flex items-center gap-1">
                             <Star className="w-4 h-4" />
-                            Profile: {candidate.candidate.profileScore}%
+                            Profile: {item.candidate.profileScore}%
                           </span>
-                          {candidate.candidate.assessmentTier && (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                              candidate.candidate.assessmentTier === 'Tier 1' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' :
-                              candidate.candidate.assessmentTier === 'Tier 2' ? 'bg-gray-100 text-gray-700 border border-gray-300' :
-                              'bg-orange-100 text-orange-700 border border-orange-300'
-                            }`}>
-                              {candidate.candidate.assessmentTier}
-                            </span>
-                          )}
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Match Score */}
-                    <div className="text-right">
-                      <div className={`inline-flex items-center px-4 py-2 rounded-xl ${getMatchScoreColor(candidate.matchScore)}`}>
-                        <span className="text-2xl font-bold">{candidate.matchScore}%</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">Match Score</p>
-                    </div>
-                  </div>
-
-                  {/* Job Applied For */}
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-500 uppercase font-medium mb-2">Applied For</p>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-gray-900">{candidate.job.title}</p>
-                        <p className="text-sm text-gray-600">{candidate.job.company}</p>
-                      </div>
-                      <div className="text-right text-sm text-gray-500">
-                        <p>Applied {new Date(candidate.appliedAt).toLocaleDateString()}</p>
-                        {candidate.job.recommendedTestId && (
-                          <p className="text-primary">Recommended: {candidate.job.recommendedTestId}</p>
-                        )}
                       </div>
                     </div>
                   </div>
 
                   {/* Skills */}
-                  <div className="mt-4">
-                    <p className="text-xs text-gray-500 uppercase font-medium mb-2">Skills</p>
-                    <div className="flex flex-wrap gap-2">
-                      {candidate.candidate.skills.slice(0, 8).map((skill, i) => {
-                        const isRequired = candidate.job.skillsRequired.some(
-                          s => s.toLowerCase() === skill.toLowerCase()
-                        )
-                        return (
-                          <span
-                            key={i}
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              isRequired
-                                ? 'bg-green-100 text-green-700 border border-green-200'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}
-                          >
+                  {item.candidate.skills.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-xs text-gray-500 uppercase font-medium mb-2">Skills</p>
+                      <div className="flex flex-wrap gap-2">
+                        {item.candidate.skills.slice(0, 8).map((skill, i) => (
+                          <span key={i} className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
                             {skill}
-                            {isRequired && ' ✓'}
                           </span>
-                        )
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Badges */}
-                  {candidate.candidate.badges.length > 0 && (
+                  {item.candidate.badges.length > 0 && (
                     <div className="mt-4">
                       <p className="text-xs text-gray-500 uppercase font-medium mb-2">Verified Badges</p>
-                      <div className="flex gap-2">
-                        {candidate.candidate.badges.map((badge, i) => (
+                      <div className="flex gap-2 flex-wrap">
+                        {item.candidate.badges.map((badge, i) => (
                           <span
                             key={i}
                             className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium"
@@ -265,22 +200,12 @@ export default function TestAllocation() {
                     </div>
                   )}
 
-                  {/* AI Summary */}
-                  {candidate.aiSummary && (
-                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                      <p className="text-xs text-blue-600 font-medium mb-1 flex items-center gap-1">
-                        <Bot className="w-3 h-3" /> AI Summary
-                      </p>
-                      <p className="text-sm text-blue-900">{candidate.aiSummary}</p>
-                    </div>
-                  )}
-
                   {/* Action Button */}
                   <div className="mt-6 flex justify-end">
                     <button
                       onClick={() => {
-                        setSelectedCandidate(candidate)
-                        setSelectedTestId(candidate.job.recommendedTestId || '')
+                        setSelectedCandidate(item)
+                        setSelectedTestId('')
                       }}
                       className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-700 flex items-center gap-2"
                     >
@@ -318,15 +243,13 @@ export default function TestAllocation() {
             <div className="p-6 space-y-6">
               {/* Candidate Summary */}
               <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-900">{selectedCandidate.job.title}</p>
-                    <p className="text-sm text-gray-500">{selectedCandidate.job.company}</p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-lg ${getMatchScoreColor(selectedCandidate.matchScore)}`}>
-                    <span className="font-bold">{selectedCandidate.matchScore}% Match</span>
-                  </div>
-                </div>
+                <p className="font-medium text-gray-900">
+                  {selectedCandidate.candidate.firstName} {selectedCandidate.candidate.lastName}
+                </p>
+                <p className="text-sm text-gray-500">{selectedCandidate.candidate.email}</p>
+                {selectedCandidate.candidate.headline && (
+                  <p className="text-sm text-gray-600 mt-1">{selectedCandidate.candidate.headline}</p>
+                )}
               </div>
 
               {/* Select Test */}
@@ -346,11 +269,6 @@ export default function TestAllocation() {
                     </option>
                   ))}
                 </select>
-                {selectedCandidate.job.recommendedTestId && (
-                  <p className="text-xs text-green-600 mt-1">
-                    Recommended: {tests.find(t => t.id === selectedCandidate.job.recommendedTestId)?.name}
-                  </p>
-                )}
               </div>
 
               {/* Expiration */}
