@@ -76,8 +76,7 @@ class IMochaService {
     this.client = axios.create({
       baseURL: imochaConfig.baseUrl,
       headers: {
-        'Authorization': `Bearer ${imochaConfig.apiKey}`,
-        'X-Tenant-Id': imochaConfig.tenantId,
+        'x-api-key': imochaConfig.apiKey,
         'Content-Type': 'application/json',
       },
       timeout: imochaConfig.timeout,
@@ -151,7 +150,17 @@ class IMochaService {
       const response = await this.client.get('/tests', {
         params: { category }
       })
-      return response.data.tests || []
+      const tests = response.data.tests || []
+      // Normalise v3 field names (testId/testName) to our internal shape
+      return tests.map((t: any) => ({
+        id: String(t.testId ?? t.id),
+        name: t.testName ?? t.name,
+        category: t.category || 'General',
+        duration: t.duration || 60,
+        skills: t.labels || [],
+        difficulty: t.difficulty || 'Intermediate',
+        status: t.status,
+      }))
     } catch (error) {
       console.error('Failed to fetch iMocha tests:', error)
       throw new Error('Failed to fetch available tests')
@@ -190,22 +199,16 @@ class IMochaService {
     }
 
     try {
-      // Call iMocha API to create invitation
-      const response = await this.client.post('/invitations', {
-        test_id: params.testId,
-        candidate: {
-          email: params.candidateEmail,
-          name: params.candidateName,
-        },
-        expires_at: expiresAt.toISOString(),
-        callback_url: `${process.env.API_URL || 'http://localhost:4000'}/api/v1/assessments/webhook`,
-        proctoring: imochaConfig.proctoring,
+      // Call iMocha API to create invitation (v3 format)
+      const response = await this.client.post(`/tests/${params.testId}/invite`, {
+        email: params.candidateEmail,
+        name: params.candidateName,
       })
 
       const invitation: IMochaInvitation = {
-        invitationId: response.data.invitation_id,
+        invitationId: String(response.data.testInvitationId),
         testId: params.testId,
-        testUrl: response.data.test_url,
+        testUrl: response.data.testUrl,
         expiresAt: expiresAt.toISOString(),
       }
 

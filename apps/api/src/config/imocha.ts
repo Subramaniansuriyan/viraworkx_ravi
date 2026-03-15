@@ -60,7 +60,7 @@ export const imochaConfig = {
  * Check if iMocha is configured for live API calls
  */
 export function isIMochaConfigured(): boolean {
-  return !!(imochaConfig.apiKey && imochaConfig.tenantId)
+  return !!imochaConfig.apiKey
 }
 
 export type BadgeLevel = 'expert' | 'advanced' | 'intermediate' | 'beginner'
