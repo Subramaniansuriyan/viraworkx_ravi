@@ -9,14 +9,14 @@ import {
 import { useAuthStore } from '../../stores/authStore'
 import NotificationBell from '../shared/NotificationBell'
 
-const AI_ENGINE_BASE = '/api/ats/v1'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 interface AdminLayoutProps {
   children: React.ReactNode
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const { user, logout } = useAuthStore()
+  const { user, logout, accessToken: token } = useAuthStore()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -38,7 +38,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { data: statsData } = useQuery({
     queryKey: ['aiStats'],
     queryFn: async () => {
-      const res = await fetch(`${AI_ENGINE_BASE}/actions/stats`)
+      const res = await fetch(`${API_URL}/api/v1/ai/actions/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       return res.json()
     },
     refetchInterval: 30000,
@@ -47,7 +49,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { data: pendingAllocData } = useQuery({
     queryKey: ['pendingAllocationCount'],
     queryFn: async () => {
-      const res = await fetch(`${AI_ENGINE_BASE}/assessments/admin/pending-allocation`)
+      const res = await fetch(`${API_URL}/api/v1/assessments/admin/pending-allocation`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       return res.json()
     },
     refetchInterval: 30000,

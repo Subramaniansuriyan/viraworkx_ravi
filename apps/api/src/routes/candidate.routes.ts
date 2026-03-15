@@ -142,10 +142,9 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
           take: 5
         },
         assessments: {
-          where: { status: 'completed' },
-          orderBy: { completedAt: 'desc' },
+          orderBy: { createdAt: 'desc' },
           take: 1,
-          select: { score: true, maxScore: true, testName: true, completedAt: true }
+          select: { score: true, maxScore: true, testName: true, completedAt: true, status: true }
         }
       },
       take: parsedLimit,
@@ -158,7 +157,7 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
     res.json({
       candidates: candidates.map(c => {
         const latestAssessment = c.assessments[0]
-        const assessmentTier = latestAssessment?.score != null && latestAssessment?.maxScore != null
+        const assessmentTier = latestAssessment?.status === 'completed' && latestAssessment?.score != null && latestAssessment?.maxScore != null
           ? getTierLevel(latestAssessment.score, latestAssessment.maxScore)
           : null
         return {
@@ -177,6 +176,7 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
             testName: latestAssessment.testName,
             score: latestAssessment.score,
             maxScore: latestAssessment.maxScore,
+            status: latestAssessment.status,
             completedAt: latestAssessment.completedAt,
           } : null,
         }
@@ -204,7 +204,7 @@ router.get('/profile', authenticateToken, async (req: AuthRequest, res: Response
     const candidate = await prisma.candidate.findUnique({
       where: { userId: req.user.userId },
       include: {
-        user: { select: { email: true } },
+        user: { select: { email: true, emailVerified: true } },
         applications: {
           include: {
             job: {
@@ -336,7 +336,7 @@ router.get('/me/profile', authenticateToken, async (req: AuthRequest, res: Respo
     const candidate = await prisma.candidate.findUnique({
       where: { userId: req.user.userId },
       include: {
-        user: { select: { email: true } },
+        user: { select: { email: true, emailVerified: true } },
         applications: {
           include: {
             job: {

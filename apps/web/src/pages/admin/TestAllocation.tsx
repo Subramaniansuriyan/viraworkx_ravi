@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Shield, AlertTriangle, CheckCircle, Target, MapPin, Briefcase,
-  Award, X, Send, Star
+  Award, X, Send, Star, Search
 } from 'lucide-react'
 import api from '../../services/api'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -35,6 +35,7 @@ interface Test {
 export default function TestAllocation() {
 
   const queryClient = useQueryClient()
+  const [search, setSearch] = useState('')
   const [selectedCandidate, setSelectedCandidate] = useState<PendingCandidate | null>(null)
   const [selectedTestId, setSelectedTestId] = useState('')
   const [allocationNotes, setAllocationNotes] = useState('')
@@ -75,6 +76,16 @@ export default function TestAllocation() {
 
   const candidates: PendingCandidate[] = pendingData?.candidates || []
   const tests: Test[] = testsData?.tests || []
+
+  const filtered = candidates.filter((item) => {
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    return (
+      item.candidate.firstName.toLowerCase().includes(q) ||
+      item.candidate.lastName.toLowerCase().includes(q) ||
+      item.candidate.email.toLowerCase().includes(q)
+    )
+  })
 
   const handleAllocate = () => {
     if (!selectedCandidate || !selectedTestId) return
@@ -118,6 +129,18 @@ export default function TestAllocation() {
           </div>
         </div>
 
+        {/* Search */}
+        <div className="mb-6 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search candidates by name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+          />
+        </div>
+
         {/* Candidates List */}
         {loadingPending ? (
           <div className="bg-white rounded-xl p-12 text-center">
@@ -130,9 +153,15 @@ export default function TestAllocation() {
             <h3 className="text-xl font-semibold text-gray-900 mb-2">All caught up!</h3>
             <p className="text-gray-500">No candidates pending test allocation</p>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-xl p-12 text-center">
+            <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No matches</h3>
+            <p className="text-gray-500">No candidates match your search</p>
+          </div>
         ) : (
           <div className="space-y-4">
-            {candidates.map((item) => (
+            {filtered.map((item) => (
               <div
                 key={item.candidateId}
                 className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow"

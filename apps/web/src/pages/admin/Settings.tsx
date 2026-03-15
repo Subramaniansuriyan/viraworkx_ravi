@@ -6,16 +6,22 @@ import {
 import AdminLayout from '../../components/admin/AdminLayout'
 
 export default function AdminSettings() {
-  const [settings, setSettings] = useState({
-    aiAutoApprove: false,
-    aiAutoApproveThreshold: 85,
-    emailNotifications: true,
-    slackNotifications: false,
-    webhookUrl: '',
-    matchScoreThreshold: 60,
-    requireHumanApproval: true,
-    maxAssessmentRetries: 2,
-    assessmentExpirationDays: 7,
+  const [settings, setSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('viraworkx_admin_settings')
+      if (saved) return JSON.parse(saved)
+    } catch {}
+    return {
+      aiAutoApprove: false,
+      aiAutoApproveThreshold: 85,
+      emailNotifications: true,
+      slackNotifications: false,
+      webhookUrl: '',
+      matchScoreThreshold: 60,
+      requireHumanApproval: true,
+      maxAssessmentRetries: 2,
+      assessmentExpirationDays: 7,
+    }
   })
 
   const [saving, setSaving] = useState(false)
@@ -23,10 +29,13 @@ export default function AdminSettings() {
 
   const handleSave = async () => {
     setSaving(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    try {
+      localStorage.setItem('viraworkx_admin_settings', JSON.stringify(settings))
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: () => void }) => (

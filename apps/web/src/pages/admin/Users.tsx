@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Users, Search, ChevronLeft, ChevronRight, MoreVertical,
@@ -23,14 +23,25 @@ export default function AdminUsers() {
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const limit = 20
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminUsers', page, searchQuery, typeFilter, statusFilter],
     queryFn: async () => {
       const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() })
       if (searchQuery) params.append('search', searchQuery)
-      if (typeFilter) params.append('userType', typeFilter)
+      if (typeFilter) params.append('type', typeFilter)
       if (statusFilter) params.append('status', statusFilter)
       const res = await fetch(`${API_URL}/api/v1/users?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -104,7 +115,7 @@ export default function AdminUsers() {
             >
               <option value="">All Statuses</option>
               <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="deactivated">Deactivated</option>
               <option value="suspended">Suspended</option>
             </select>
           </div>
@@ -194,7 +205,7 @@ export default function AdminUsers() {
                           {user.createdAt ? formatDate(user.createdAt) : '-'}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <div className="relative inline-block">
+                          <div className="relative inline-block" ref={openMenuId === user.id ? menuRef : null}>
                             <button
                               onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)}
                               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -219,9 +230,9 @@ export default function AdminUsers() {
                                     <UserX className="w-4 h-4" /> Suspend
                                   </button>
                                 )}
-                                {user.status !== 'inactive' && (
+                                {user.status !== 'deactivated' && (
                                   <button
-                                    onClick={() => toggleStatusMutation.mutate({ userId: user.id, status: 'inactive' })}
+                                    onClick={() => toggleStatusMutation.mutate({ userId: user.id, status: 'deactivated' })}
                                     className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
                                   >
                                     <UserX className="w-4 h-4" /> Deactivate
