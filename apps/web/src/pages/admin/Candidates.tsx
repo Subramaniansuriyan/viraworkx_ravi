@@ -38,8 +38,8 @@ export default function AdminCandidates() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const { data: testsData } = useQuery({
-    queryKey: ['imochaTests'],
+  const { data: testsData, isLoading: testsLoading, isError: testsError } = useQuery({
+    queryKey: ['imochaTests', showAssignModal],
     queryFn: async () => {
       const res = await fetch(`${API_URL}/api/v1/assessments/tests`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -48,6 +48,7 @@ export default function AdminCandidates() {
       return res.json()
     },
     enabled: showAssignModal,
+    retry: 1,
   })
 
   const assignMutation = useMutation({
@@ -457,22 +458,28 @@ export default function AdminCandidates() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Select Assessment Test *
                     </label>
-                    <select
-                      value={selectedTestId}
-                      onChange={(e) => setSelectedTestId(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
-                    >
-                      <option value="">-- Choose a test --</option>
-                      {(testsData?.tests || []).map((test: any) => (
-                        <option key={test.testId || test.id} value={test.testId || test.id}>
-                          {test.testName || test.name}
-                        </option>
-                      ))}
-                    </select>
-                    {(!testsData?.tests || testsData.tests.length === 0) && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        No tests found. Ensure iMocha is configured correctly.
-                      </p>
+                    {testsLoading ? (
+                      <div className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-400 text-sm">
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+                        Loading tests from iMocha...
+                      </div>
+                    ) : testsError ? (
+                      <div className="px-4 py-2 border border-red-200 rounded-lg bg-red-50 text-sm text-red-600">
+                        Failed to load tests from iMocha. Check API configuration.
+                      </div>
+                    ) : (
+                      <select
+                        value={selectedTestId}
+                        onChange={(e) => setSelectedTestId(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+                      >
+                        <option value="">-- Choose a test --</option>
+                        {(testsData?.tests || []).map((test: any) => (
+                          <option key={test.id} value={test.id}>
+                            {test.name}{test.duration ? ` (${test.duration} min)` : ''}
+                          </option>
+                        ))}
+                      </select>
                     )}
                   </div>
                   {assignMutation.isError && (
@@ -497,7 +504,7 @@ export default function AdminCandidates() {
                         candidateId: selectedCandidate.id,
                       })
                     }
-                    disabled={!selectedTestId || assignMutation.isPending}
+                    disabled={!selectedTestId || assignMutation.isPending || testsLoading || testsError}
                     className="flex-1 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {assignMutation.isPending ? (
