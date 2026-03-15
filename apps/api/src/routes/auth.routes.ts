@@ -33,10 +33,34 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 })
 
+// Common disposable/throwaway email domains
+const BLOCKED_DOMAINS = new Set([
+  'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'throwaway.email',
+  'sharklasers.com', 'guerrillamailblock.com', 'grr.la', 'guerrillamail.info',
+  'spam4.me', 'yopmail.com', 'dispostable.com', 'trashmail.com', 'trashmail.me',
+  'maildrop.cc', 'getairmail.com', 'filzmail.com', 'spamgourmet.com',
+  'wegwerfmail.de', 'trash-mail.at', 'mytemp.email', 'fakeinbox.com',
+  'tempr.email', 'discard.email', 'spamgourmet.net', 'spamgourmet.org',
+  'tempinbox.com', 'spambox.us',
+])
+
+function isDisposableEmail(email: string): boolean {
+  const domain = email.split('@')[1]?.toLowerCase()
+  return domain ? BLOCKED_DOMAINS.has(domain) : false
+}
+
 // POST /api/v1/auth/register
 router.post('/register', async (req: Request, res: Response) => {
   try {
     const input = registerSchema.parse(req.body)
+
+    // Block disposable email addresses
+    if (isDisposableEmail(input.email)) {
+      return res.status(400).json({
+        error: 'Please use a valid work or personal email address. Disposable email addresses are not allowed.'
+      })
+    }
+
     const result = await authService.register(input)
 
     // Send welcome email (non-blocking)

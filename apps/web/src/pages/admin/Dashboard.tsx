@@ -1,17 +1,24 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Bot, Bell, TrendingUp, Building2, CheckCircle, AlertTriangle, Activity
+  Bot, TrendingUp, Building2, CheckCircle, AlertTriangle, Activity
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
+import NotificationBell from '../../components/shared/NotificationBell'
+import { useAuthStore } from '../../stores/authStore'
 
-const AI_ENGINE_BASE = '/api/ats/v1'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 export default function AdminDashboard() {
+  const { accessToken: token } = useAuthStore()
+
   const { data: statsData } = useQuery({
     queryKey: ['aiStats'],
     queryFn: async () => {
-      const res = await fetch(`${AI_ENGINE_BASE}/actions/stats`)
+      const res = await fetch(`${API_URL}/api/v1/ai/actions/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) return { stats: {} }
       return res.json()
     },
     refetchInterval: 30000,
@@ -20,7 +27,10 @@ export default function AdminDashboard() {
   const { data: pendingData } = useQuery({
     queryKey: ['pendingApprovals'],
     queryFn: async () => {
-      const res = await fetch(`${AI_ENGINE_BASE}/actions/pending-approval`)
+      const res = await fetch(`${API_URL}/api/v1/ai/actions/pending-approval`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) return { actions: [] }
       return res.json()
     },
     refetchInterval: 10000,
@@ -69,12 +79,7 @@ export default function AdminDashboard() {
             <h1 className="text-2xl font-bold text-gray-900">ViraWorkx Admin Console</h1>
             <p className="text-gray-600">Human-in-the-Loop AI Oversight</p>
           </div>
-          <button className="p-2 text-gray-400 hover:text-gray-600 relative">
-            <Bell className="w-6 h-6" />
-            {(stats.pending_approvals || 0) > 0 && (
-              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-            )}
-          </button>
+          <NotificationBell />
         </div>
 
         {(stats.pending_approvals || 0) > 0 && (

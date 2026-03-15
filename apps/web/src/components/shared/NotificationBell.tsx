@@ -82,7 +82,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-gray-100 z-50">
+        <div className="fixed right-4 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-gray-100 z-[100]" style={{ top: ref.current ? ref.current.getBoundingClientRect().bottom + 8 : 'auto' }}>
           <div className="flex items-center justify-between p-4 border-b">
             <div>
               <h3 className="font-semibold text-gray-900">Notifications</h3>

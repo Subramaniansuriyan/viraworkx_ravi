@@ -4,11 +4,12 @@ import {
   User, Mail, MapPin, Briefcase, Clock, Award, FileText, Video,
   Upload, Edit2, Plus, X, Check, AlertCircle, ExternalLink,
   Linkedin, Github, Globe, Zap, ChevronRight, Star, Shield,
-  Calendar, TrendingUp, Target, Bell, LogOut, ChevronDown
+  Calendar, TrendingUp, Target, LogOut, ChevronDown
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { candidateApi, assessmentApi } from '../../services/api'
 import type { CandidateProfile, Assessment, SkillBadge } from '../../types'
+import NotificationBell from '../../components/shared/NotificationBell'
 
 // Badge level colors
 const badgeLevelColors: Record<string, { bg: string; text: string; border: string }> = {
@@ -295,9 +296,7 @@ export default function CandidateProfile() {
             </nav>
 
             <div className="flex items-center gap-4">
-              <button className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 relative transition-colors">
-                <Bell className="w-5 h-5 text-gray-500" />
-              </button>
+              <NotificationBell />
 
               <div className="relative group">
                 <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">

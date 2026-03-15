@@ -2,31 +2,16 @@ import { Router, Response } from 'express'
 import { z } from 'zod'
 import multer from 'multer'
 import path from 'path'
-import fs from 'fs'
 import prisma from '../config/database.js'
 import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
 import { getTierLevel } from '../config/imocha.js'
+import { uploadFile } from '../services/storage.service.js'
 
 const router = Router()
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    let subDir = 'resumes'
-    if (file.fieldname === 'video') subDir = 'videos'
-    else if (file.fieldname === 'document') subDir = 'documents'
-    const uploadDir = path.join(process.cwd(), 'uploads', subDir)
-    fs.mkdirSync(uploadDir, { recursive: true })
-    cb(null, uploadDir)
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`
-    cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`)
-  }
-})
-
+// Use memory storage — files go to GCS or disk via uploadFile()
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
   },
@@ -61,6 +46,10 @@ const upload = multer({
   }
 })
 
+// Allow URLs or empty strings (empty string → null)
+const optionalUrl = z.union([z.string().url(), z.literal('')]).optional().nullable()
+  .transform(v => (v === '' ? null : v))
+
 // Validation schemas
 const updateProfileSchema = z.object({
   firstName: z.string().min(1).optional(),
@@ -75,9 +64,9 @@ const updateProfileSchema = z.object({
   expectedSalaryMax: z.number().int().min(0).optional(),
   salaryCurrency: z.string().length(3).optional(),
   noticePeriodDays: z.number().int().min(0).optional(),
-  linkedinUrl: z.string().url().optional().nullable(),
-  githubUrl: z.string().url().optional().nullable(),
-  portfolioUrl: z.string().url().optional().nullable(),
+  linkedinUrl: optionalUrl,
+  githubUrl: optionalUrl,
+  portfolioUrl: optionalUrl,
   skills: z.array(z.string()).optional(),
   preferredRoles: z.array(z.string()).optional(),
   preferredLocations: z.array(z.string()).optional(),
@@ -86,6 +75,25 @@ const updateProfileSchema = z.object({
   panNumber: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Invalid PAN format (e.g., ABCDE1234F)').optional().nullable(),
   aadhaarNumber: z.string().regex(/^\d{12}$/, 'Aadhaar must be 12 digits').optional().nullable(),
 })
+
+// Calculate profile score (0–100) based on filled fields
+function calculateProfileScore(candidate: any): number {
+  let score = 0
+  if (candidate.firstName && candidate.lastName) score += 10
+  if (candidate.headline) score += 10
+  if (candidate.location) score += 5
+  if (candidate.skills?.length >= 3) score += 10
+  else if (candidate.skills?.length > 0) score += 5
+  if (candidate.experienceYears) score += 5
+  if (candidate.resumeUrl) score += 20
+  if (candidate.linkedinUrl) score += 10
+  if (candidate.githubUrl) score += 5
+  if (candidate.summary) score += 10
+  if (candidate.currentCompany || candidate.currentTitle) score += 5
+  if (candidate.expectedSalaryMin) score += 5
+  if (candidate.portfolioUrl) score += 5
+  return Math.min(score, 100)
+}
 
 /**
  * GET /api/v1/candidates
@@ -393,10 +401,14 @@ router.put('/me/profile', authenticateToken, async (req: AuthRequest, res: Respo
       return res.status(404).json({ error: 'Profile not found' })
     }
 
+    const merged = { ...candidate, ...input }
+    const profileScore = calculateProfileScore(merged)
+
     const updated = await prisma.candidate.update({
       where: { id: candidate.id },
       data: {
         ...input,
+        profileScore,
         updatedAt: new Date()
       },
       include: {
@@ -431,11 +443,21 @@ router.post('/me/resume', authenticateToken, upload.single('resume'), async (req
       return res.status(400).json({ error: 'No file uploaded' })
     }
 
-    const resumeUrl = `/uploads/resumes/${req.file.filename}`
+    const resumeUrl = await uploadFile(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      'resumes'
+    )
+
+    const existing = await prisma.candidate.findUnique({ where: { userId: req.user.userId } })
+    if (!existing) return res.status(404).json({ error: 'Profile not found' })
+
+    const profileScore = calculateProfileScore({ ...existing, resumeUrl })
 
     const candidate = await prisma.candidate.update({
       where: { userId: req.user.userId },
-      data: { resumeUrl }
+      data: { resumeUrl, profileScore }
     })
 
     res.json({
@@ -463,7 +485,12 @@ router.post('/me/video', authenticateToken, upload.single('video'), async (req: 
       return res.status(400).json({ error: 'No file uploaded' })
     }
 
-    const videoUrl = `/uploads/videos/${req.file.filename}`
+    const videoUrl = await uploadFile(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      'videos'
+    )
 
     const candidate = await prisma.candidate.update({
       where: { userId: req.user.userId },
@@ -495,7 +522,7 @@ router.post('/me/pan-card', authenticateToken, upload.single('document'), async 
       return res.status(400).json({ error: 'No file uploaded' })
     }
 
-    const panCardUrl = `/uploads/documents/${req.file.filename}`
+    const panCardUrl = await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype, 'documents')
 
     const candidate = await prisma.candidate.update({
       where: { userId: req.user.userId },
@@ -527,7 +554,7 @@ router.post('/me/aadhaar-front', authenticateToken, upload.single('document'), a
       return res.status(400).json({ error: 'No file uploaded' })
     }
 
-    const aadhaarFrontUrl = `/uploads/documents/${req.file.filename}`
+    const aadhaarFrontUrl = await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype, 'documents')
 
     const candidate = await prisma.candidate.update({
       where: { userId: req.user.userId },
@@ -559,7 +586,7 @@ router.post('/me/aadhaar-back', authenticateToken, upload.single('document'), as
       return res.status(400).json({ error: 'No file uploaded' })
     }
 
-    const aadhaarBackUrl = `/uploads/documents/${req.file.filename}`
+    const aadhaarBackUrl = await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype, 'documents')
 
     const candidate = await prisma.candidate.update({
       where: { userId: req.user.userId },

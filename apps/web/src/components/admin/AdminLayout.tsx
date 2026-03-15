@@ -154,8 +154,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-slate-700 shrink-0">
-        <div className="flex items-center justify-center mb-3">
+      <div className="p-4 border-t border-slate-700 shrink-0 overflow-visible">
+        <div className="flex items-center justify-center mb-3 relative z-[60]">
           <NotificationBell />
         </div>
         <div className="flex items-center gap-3 mb-3 px-2">

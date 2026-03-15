@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
@@ -10,13 +10,10 @@ import {
   AlertTriangle,
   RefreshCw,
   Filter,
-  Search,
   ChevronRight,
-  Eye,
   ThumbsUp,
   ThumbsDown,
   Zap,
-  Bell,
   ChevronDown,
   LogOut,
   Activity,
@@ -25,8 +22,9 @@ import {
   TrendingUp,
   X
 } from 'lucide-react'
+import NotificationBell from '../../components/shared/NotificationBell'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 function makeAiApi(token: string) {
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
@@ -216,14 +214,7 @@ export default function AIMonitor() {
                 <RefreshCw className="w-5 h-5 text-gray-500" />
               </button>
 
-              <button className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 relative transition-colors">
-                <Bell className="w-5 h-5 text-gray-500" />
-                {pendingActions.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-medium">
-                    {pendingActions.length}
-                  </span>
-                )}
-              </button>
+              <NotificationBell />
 
               <div className="relative group">
                 <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">

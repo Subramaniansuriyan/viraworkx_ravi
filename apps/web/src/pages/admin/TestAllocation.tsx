@@ -39,7 +39,16 @@ export default function TestAllocation() {
   const [selectedCandidate, setSelectedCandidate] = useState<PendingCandidate | null>(null)
   const [selectedTestId, setSelectedTestId] = useState('')
   const [allocationNotes, setAllocationNotes] = useState('')
-  const [expiresInDays, setExpiresInDays] = useState(7)
+  const [expiresInDays, setExpiresInDays] = useState(() => {
+    try {
+      const saved = localStorage.getItem('viraworkx_admin_settings')
+      if (saved) {
+        const settings = JSON.parse(saved)
+        return settings.assessmentExpirationDays || 7
+      }
+    } catch {}
+    return 7
+  })
 
   // Fetch pending candidates for allocation
   const { data: pendingData, isLoading: loadingPending } = useQuery({
