@@ -5,6 +5,7 @@ import path from 'path'
 import fs from 'fs'
 import prisma from '../config/database.js'
 import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
+import { getTierLevel } from '../config/imocha.js'
 
 const router = Router()
 
@@ -139,6 +140,12 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
           where: { expiresAt: { gt: new Date() } },
           orderBy: { percentile: 'desc' },
           take: 5
+        },
+        assessments: {
+          where: { status: 'completed' },
+          orderBy: { completedAt: 'desc' },
+          take: 1,
+          select: { score: true, maxScore: true, testName: true, completedAt: true }
         }
       },
       take: parsedLimit,
@@ -149,18 +156,31 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
     const total = await prisma.candidate.count({ where })
 
     res.json({
-      candidates: candidates.map(c => ({
-        id: c.id,
-        firstName: c.firstName,
-        lastName: c.lastName,
-        email: c.user.email,
-        headline: c.headline,
-        location: c.location,
-        experienceYears: c.experienceYears,
-        skills: c.skills,
-        profileScore: c.profileScore,
-        skillBadges: c.skillBadges,
-      })),
+      candidates: candidates.map(c => {
+        const latestAssessment = c.assessments[0]
+        const assessmentTier = latestAssessment?.score != null && latestAssessment?.maxScore != null
+          ? getTierLevel(latestAssessment.score, latestAssessment.maxScore)
+          : null
+        return {
+          id: c.id,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          email: c.user.email,
+          headline: c.headline,
+          location: c.location,
+          experienceYears: c.experienceYears,
+          skills: c.skills,
+          profileScore: c.profileScore,
+          skillBadges: c.skillBadges,
+          assessmentTier,
+          latestAssessment: latestAssessment ? {
+            testName: latestAssessment.testName,
+            score: latestAssessment.score,
+            maxScore: latestAssessment.maxScore,
+            completedAt: latestAssessment.completedAt,
+          } : null,
+        }
+      }),
       total,
       limit: parsedLimit,
       offset: parsedOffset,

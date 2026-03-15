@@ -187,7 +187,7 @@ export default function AdminCandidates() {
                             <p className="font-medium text-gray-900">
                               {candidate.firstName} {candidate.lastName}
                             </p>
-                            <p className="text-sm text-gray-500">{candidate.user?.email}</p>
+                            <p className="text-sm text-gray-500">{candidate.email || candidate.user?.email}</p>
                           </div>
                         </div>
                       </td>
@@ -218,7 +218,7 @@ export default function AdminCandidates() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1">
                           <Award className="w-4 h-4 text-amber-500" />
-                          <span className="text-gray-600">{candidate._count?.skillBadges || 0}</span>
+                          <span className="text-gray-600">{candidate.skillBadges?.length ?? candidate._count?.skillBadges ?? 0}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
