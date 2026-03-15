@@ -115,19 +115,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Trusted By Section */}
-      <section className="py-10 border-y border-gray-200/40 bg-gray-50/50">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-8">
-            Trusted by innovative companies
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-            {['InnovateX', 'TechFlow', 'CloudScale', 'DataStream', 'NextGen'].map((company) => (
-              <span key={company} className="text-xl font-bold font-heading text-gray-400">{company}</span>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Features Section */}
       <section id="features" className="py-14 md:py-24 bg-white">
