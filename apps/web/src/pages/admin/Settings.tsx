@@ -5,8 +5,20 @@ import {
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 
+interface AdminSettings {
+  aiAutoApprove: boolean
+  aiAutoApproveThreshold: number
+  emailNotifications: boolean
+  slackNotifications: boolean
+  webhookUrl: string
+  matchScoreThreshold: number
+  requireHumanApproval: boolean
+  maxAssessmentRetries: number
+  assessmentExpirationDays: number
+}
+
 export default function AdminSettings() {
-  const [settings, setSettings] = useState(() => {
+  const [settings, setSettings] = useState<AdminSettings>(() => {
     try {
       const saved = localStorage.getItem('viraworkx_admin_settings')
       if (saved) return JSON.parse(saved)
