@@ -93,31 +93,42 @@ export const candidateApi = {
   uploadResume: (file: File) => {
     const formData = new FormData()
     formData.append('resume', file)
-    return api.post<{ resumeUrl: string; parsedData?: any }>('/candidates/me/resume', formData)
+    // Remove default Content-Type so browser sets multipart/form-data with correct boundary
+    return api.post<{ resumeUrl: string; parsedData?: any }>('/candidates/me/resume', formData, {
+      headers: { 'Content-Type': undefined },
+    })
   },
 
   uploadVideo: (file: File) => {
     const formData = new FormData()
     formData.append('video', file)
-    return api.post<{ videoUrl: string }>('/candidates/me/video', formData)
+    return api.post<{ videoUrl: string }>('/candidates/me/video', formData, {
+      headers: { 'Content-Type': undefined },
+    })
   },
 
   uploadPanCard: (file: File) => {
     const formData = new FormData()
     formData.append('document', file)
-    return api.post<{ panCardUrl: string }>('/candidates/me/pan-card', formData)
+    return api.post<{ panCardUrl: string }>('/candidates/me/pan-card', formData, {
+      headers: { 'Content-Type': undefined },
+    })
   },
 
   uploadAadhaarFront: (file: File) => {
     const formData = new FormData()
     formData.append('document', file)
-    return api.post<{ aadhaarFrontUrl: string }>('/candidates/me/aadhaar-front', formData)
+    return api.post<{ aadhaarFrontUrl: string }>('/candidates/me/aadhaar-front', formData, {
+      headers: { 'Content-Type': undefined },
+    })
   },
 
   uploadAadhaarBack: (file: File) => {
     const formData = new FormData()
     formData.append('document', file)
-    return api.post<{ aadhaarBackUrl: string }>('/candidates/me/aadhaar-back', formData)
+    return api.post<{ aadhaarBackUrl: string }>('/candidates/me/aadhaar-back', formData, {
+      headers: { 'Content-Type': undefined },
+    })
   },
 
   getSkillBadges: (candidateId: string) =>

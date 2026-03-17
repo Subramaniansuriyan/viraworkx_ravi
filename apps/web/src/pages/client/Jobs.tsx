@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { jobApi } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+import NotificationBell from '../../components/shared/NotificationBell'
 import {
   Briefcase,
   Plus,
@@ -18,7 +19,6 @@ import {
   Pause,
   Play,
   Zap,
-  Bell,
   ChevronDown,
   LogOut
 } from 'lucide-react'
@@ -120,16 +120,13 @@ export default function ClientJobs() {
               <nav className="hidden md:flex items-center gap-6">
                 <Link to="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</Link>
                 <Link to="/client/jobs" className="text-primary-600 font-medium">Jobs</Link>
-                <Link to="/client/candidates" className="text-gray-600 hover:text-gray-900">Candidates</Link>
-                <Link to="/client/interviews" className="text-gray-600 hover:text-gray-900">Interviews</Link>
+                <Link to="/client/contracts" className="text-gray-600 hover:text-gray-900">Contracts</Link>
+                <Link to="/client/billing" className="text-gray-600 hover:text-gray-900">Billing</Link>
               </nav>
             </div>
 
             <div className="flex items-center gap-4">
-              <button className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 relative transition-colors">
-                <Bell className="w-5 h-5 text-gray-500" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-medium">3</span>
-              </button>
+              <NotificationBell />
 
               <div className="relative group">
                 <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">

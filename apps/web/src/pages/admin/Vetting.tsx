@@ -65,16 +65,20 @@ export default function AdminVetting() {
   const [tierModal, setTierModal] = useState<{ appId: string; candidateName: string } | null>(null)
   const [selectedTier, setSelectedTier] = useState('Tier 1')
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['vettingPipeline'],
     queryFn: async () => {
       const res = await fetch(`${API_URL}/api/v1/applications?limit=200`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (!res.ok) throw new Error('Failed')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `HTTP ${res.status}`)
+      }
       return res.json()
     },
     refetchInterval: 30000,
+    enabled: !!token,
   })
 
   const advanceMutation = useMutation({
@@ -125,6 +129,12 @@ export default function AdminVetting() {
             Track candidates through the Phase 1 workflow: Applied → Vetted → Tiered → Deployed
           </p>
         </div>
+
+        {isError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">
+            Failed to load pipeline. Check your connection or try refreshing.
+          </div>
+        )}
 
         {/* Pipeline summary */}
         <div className="grid grid-cols-4 gap-4 mb-8">

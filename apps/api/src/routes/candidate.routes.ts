@@ -374,6 +374,16 @@ router.get('/me/profile', authenticateToken, async (req: AuthRequest, res: Respo
       return res.status(404).json({ error: 'Profile not found' })
     }
 
+    // Lazy score migration: recalculate for existing candidates with stale/hardcoded scores
+    const freshScore = calculateProfileScore(candidate)
+    if (freshScore !== candidate.profileScore) {
+      await prisma.candidate.update({
+        where: { userId: req.user.userId },
+        data: { profileScore: freshScore }
+      })
+      candidate.profileScore = freshScore
+    }
+
     res.json({ profile: candidate })
   } catch (error) {
     console.error('Error fetching profile:', error)
