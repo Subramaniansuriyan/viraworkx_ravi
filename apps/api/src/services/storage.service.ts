@@ -26,7 +26,6 @@ export async function uploadFile(
     const file = bucket.file(objectPath)
     await file.save(buffer, {
       contentType: mimeType,
-      public: true,
       resumable: false,
     })
     return `https://storage.googleapis.com/${GCS_BUCKET}/${objectPath}`
