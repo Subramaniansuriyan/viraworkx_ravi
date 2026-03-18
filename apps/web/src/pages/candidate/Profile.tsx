@@ -56,6 +56,8 @@ export default function CandidateProfile() {
     expectedSalaryMax: 0,
     panNumber: '',
     aadhaarNumber: '',
+    overlapHours: 0,
+    availability: '',
   })
   const [panError, setPanError] = useState('')
   const [aadhaarError, setAadhaarError] = useState('')
@@ -169,6 +171,8 @@ export default function CandidateProfile() {
         expectedSalaryMax: profile.expectedSalaryMax || 0,
         panNumber: profile.panNumber || '',
         aadhaarNumber: profile.aadhaarNumber || '',
+        overlapHours: profile.overlapHours || 0,
+        availability: profile.availability || '',
       })
       setPanError('')
       setAadhaarError('')
@@ -1052,6 +1056,38 @@ export default function CandidateProfile() {
                     placeholder="Max"
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   />
+                </div>
+              </div>
+
+              {/* Working Hours & Availability */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-900">Preferred Working Hours</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">US Timezone Overlap (hrs/day)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={24}
+                      value={editForm.overlapHours}
+                      onChange={(e) => setEditForm({ ...editForm, overlapHours: parseFloat(e.target.value) || 0 })}
+                      placeholder="e.g., 4"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Hours per day you can overlap with US (EST/PST)</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Timezone</label>
+                    <select
+                      value={['IST', 'UTC+5:30', 'flexible'].includes(editForm.availability) ? editForm.availability : 'IST'}
+                      onChange={(e) => setEditForm({ ...editForm, availability: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    >
+                      <option value="IST">IST — India Standard Time (UTC+5:30)</option>
+                      <option value="UTC+5:30">UTC+5:30 (explicit)</option>
+                      <option value="flexible">Flexible / Hybrid</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 

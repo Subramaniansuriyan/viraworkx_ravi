@@ -42,6 +42,8 @@ export interface Candidate {
   panCardUrl?: string
   aadhaarFrontUrl?: string
   aadhaarBackUrl?: string
+  overlapHours?: number
+  availability?: string
   createdAt: string
   updatedAt: string
 }

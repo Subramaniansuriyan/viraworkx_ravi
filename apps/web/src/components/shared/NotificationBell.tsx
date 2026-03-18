@@ -3,8 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Bell, Check, CheckCheck, X } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
-
 export default function NotificationBell() {
   const { accessToken: token } = useAuthStore()
   const [open, setOpen] = useState(false)
@@ -14,7 +12,7 @@ export default function NotificationBell() {
   const { data } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/notifications?limit=20`, {
+      const res = await fetch(`/api/v1/notifications?limit=20`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) return { notifications: [], unreadCount: 0 }
@@ -26,7 +24,7 @@ export default function NotificationBell() {
 
   const markReadMutation = useMutation({
     mutationFn: async (id: string) => {
-      await fetch(`${API_URL}/api/v1/notifications/${id}/read`, {
+      await fetch(`/api/v1/notifications/${id}/read`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -36,7 +34,7 @@ export default function NotificationBell() {
 
   const markAllReadMutation = useMutation({
     mutationFn: async () => {
-      await fetch(`${API_URL}/api/v1/notifications/read-all`, {
+      await fetch(`/api/v1/notifications/read-all`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       })

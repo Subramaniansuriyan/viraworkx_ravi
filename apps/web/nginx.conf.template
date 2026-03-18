@@ -5,6 +5,9 @@ server {
 
     resolver 8.8.8.8 valid=30s;
 
+    # Allow file uploads up to 20MB (resumes, KYC docs)
+    client_max_body_size 20m;
+
     location /api/ats/ {
         set $ai_engine "${AI_ENGINE_URL}";
         rewrite ^/api/ats/(.*)$ /api/$1 break;

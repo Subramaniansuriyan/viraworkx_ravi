@@ -36,6 +36,7 @@ import Billing from './pages/client/Billing'
 import CandidateAssessments from './pages/candidate/Assessments'
 import CandidateContracts from './pages/candidate/Contracts'
 import CandidateContractReview from './pages/candidate/ContractReview'
+import CandidateInterviews from './pages/candidate/Interviews'
 import Timesheet from './pages/timesheet/Timesheet'
 
 // Components
@@ -129,6 +130,16 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['candidate']}>
             <CandidateApplications />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Candidate interviews route */}
+      <Route
+        path="/interviews"
+        element={
+          <ProtectedRoute allowedTypes={['candidate']}>
+            <CandidateInterviews />
           </ProtectedRoute>
         }
       />

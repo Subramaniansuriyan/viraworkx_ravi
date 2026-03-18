@@ -74,6 +74,8 @@ const updateProfileSchema = z.object({
   willingToRelocate: z.boolean().optional(),
   panNumber: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Invalid PAN format (e.g., ABCDE1234F)').optional().nullable(),
   aadhaarNumber: z.string().regex(/^\d{12}$/, 'Aadhaar must be 12 digits').optional().nullable(),
+  overlapHours: z.number().min(0).max(24).optional().nullable(),
+  availability: z.string().max(500).optional().nullable(),
 })
 
 // Calculate profile score (0–100) based on filled fields

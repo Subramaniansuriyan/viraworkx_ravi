@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { candidateApi } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
 import {
   Briefcase,
   FileText,
@@ -39,12 +38,13 @@ export default function CandidateDashboard() {
   const { data: assessmentsData } = useQuery({
     queryKey: ['candidateAssessments'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/assessments`, {
+      const res = await fetch(`/api/v1/assessments`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error('Failed')
       return res.json()
     },
+    enabled: !!token,
   })
 
   const profile = profileData?.data?.profile
