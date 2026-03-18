@@ -6,11 +6,8 @@ import {
   CheckCircle,
   AlertCircle,
   ExternalLink,
-  Star,
 } from 'lucide-react'
 import CandidateLayout from '../../components/candidate/CandidateLayout'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   pending:   { label: 'Pending',      color: 'bg-gray-100 text-gray-700',   icon: Clock },
@@ -28,6 +25,21 @@ const BADGE_LEVEL_COLOR: Record<string, string> = {
   expert:       'bg-amber-100 text-amber-700',
 }
 
+const TIER_COLOR: Record<string, string> = {
+  'Tier 1': 'bg-amber-100 text-amber-800',
+  'Tier 2': 'bg-blue-100 text-blue-800',
+  'Tier 3': 'bg-gray-100 text-gray-700',
+}
+
+function getTier(score: number | null, maxScore: number | null): string | null {
+  if (score == null || !maxScore) return null
+  const pct = (score / maxScore) * 100
+  if (pct > 80) return 'Tier 1'
+  if (pct > 70) return 'Tier 2'
+  if (pct > 60) return 'Tier 3'
+  return null
+}
+
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
@@ -38,12 +50,13 @@ export default function Assessments() {
   const { data: assessmentsData, isLoading } = useQuery({
     queryKey: ['candidateAssessments'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/assessments`, {
+      const res = await fetch(`/api/v1/assessments`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error('Failed to fetch assessments')
       return res.json()
     },
+    enabled: !!token,
   })
 
   const assessments: any[] = assessmentsData?.assessments || []
@@ -109,12 +122,12 @@ export default function Assessments() {
                       </div>
                       <div className="min-w-0">
                         <h3 className="font-semibold text-gray-900 text-sm md:text-base">
-                          {assessment.job?.title
-                            ? `${assessment.job.title} — Skill Assessment`
+                          {assessment.application?.job?.title
+                            ? `${assessment.application.job.title} — Skill Assessment`
                             : 'Skill Assessment'}
                         </h3>
-                        {assessment.job?.client?.companyName && (
-                          <p className="text-sm text-gray-500 mt-0.5">{assessment.job.client.companyName}</p>
+                        {assessment.application?.job?.client?.companyName && (
+                          <p className="text-sm text-gray-500 mt-0.5">{assessment.application.job.client.companyName}</p>
                         )}
                         <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-2 text-xs md:text-sm text-gray-500">
                           {assessment.invitedAt && (
@@ -139,20 +152,12 @@ export default function Assessments() {
 
                         {assessment.status === 'completed' && (
                           <div className="mt-3 flex flex-wrap items-center gap-2 md:gap-3">
-                            {assessment.score != null && (
-                              <div className="flex items-center gap-1.5">
-                                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                                <span className="text-sm font-semibold text-gray-900">
-                                  {assessment.score}/{assessment.maxScore ?? 100}
-                                </span>
-                                {assessment.percentile != null && (
-                                  <span className="text-xs text-gray-500">
-                                    ({assessment.percentile}th percentile)
-                                  </span>
-                                )}
-                              </div>
+                            {getTier(assessment.score, assessment.maxScore) && (
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${TIER_COLOR[getTier(assessment.score, assessment.maxScore)!]}`}>
+                                {getTier(assessment.score, assessment.maxScore)}
+                              </span>
                             )}
-                            {assessment.candidate?.skillBadges?.map((badge: any) => (
+                            {assessment.skillBadges?.map((badge: any) => (
                               <span
                                 key={badge.id}
                                 className={`px-2.5 py-1 rounded-full text-xs font-medium ${BADGE_LEVEL_COLOR[badge.badgeLevel] || 'bg-gray-100 text-gray-700'}`}

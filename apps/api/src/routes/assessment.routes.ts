@@ -4,6 +4,7 @@ import prisma from '../config/database.js'
 import { imochaService, IMochaWebhookPayload } from '../services/imocha.service.js'
 import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
 import { socketService } from '../services/socket.service.js'
+import { emailService } from '../services/email.service.js'
 
 const router = Router()
 
@@ -152,9 +153,10 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         application: {
           select: {
             id: true,
-            job: { select: { id: true, title: true } }
+            job: { select: { id: true, title: true, client: { select: { companyName: true } } } }
           }
-        }
+        },
+        skillBadges: true,
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -471,6 +473,26 @@ router.post('/admin/allocate', authenticateToken, requireRole('admin'), async (r
       })
     }
 
+    // Check 90-day retake policy
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+    const recentCompleted = await prisma.assessment.findFirst({
+      where: {
+        candidateId,
+        imochaTestId: testId,
+        status: 'completed',
+        completedAt: { gte: ninetyDaysAgo }
+      }
+    })
+
+    if (recentCompleted) {
+      const retakeEligibleAt = new Date(recentCompleted.completedAt!.getTime() + 90 * 24 * 60 * 60 * 1000)
+      return res.status(409).json({
+        error: 'Retake not allowed within 90 days of previous completion',
+        completedAt: recentCompleted.completedAt,
+        retakeEligibleAt,
+      })
+    }
+
     // Calculate expiration
     const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
 
@@ -507,13 +529,24 @@ router.post('/admin/allocate', authenticateToken, requireRole('admin'), async (r
       }
     })
 
-    // Notify candidate
+    // Notify candidate via socket
     socketService.sendNotification(candidate.userId, {
       id: `assessment-${result.assessment.id}`,
       type: 'assessment_invite',
       title: 'Assessment Invitation',
       message: `You've been invited to complete a technical assessment on iMocha`
     })
+
+    // Send email notification (#23)
+    const appUrl = process.env.APP_URL || 'https://www.viraworkx.ai'
+    emailService.sendAssessmentInvite(candidate.user.email, {
+      candidateName: `${candidate.firstName} ${candidate.lastName}`,
+      jobTitle: 'Technical Skills Assessment',
+      companyName: 'ViraWorkx',
+      testName: testId,
+      testUrl: result.invitation.testUrl || `${appUrl}/assessments`,
+      expiresAt: expiresAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    }).catch(err => console.error('Failed to send assessment invite email:', err))
 
     res.json({
       message: 'Assessment allocated successfully',
