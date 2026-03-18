@@ -550,14 +550,19 @@ export default function CandidateProfile() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <a
-                              href={profile.resumeUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const res = await candidateApi.getDocumentUrl('resume')
+                                  window.open(res.data.url, '_blank', 'noopener,noreferrer')
+                                } catch {
+                                  setError('Failed to open resume. Please try again.')
+                                }
+                              }}
                               className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-1"
                             >
                               <ExternalLink className="w-4 h-4" /> View
-                            </a>
+                            </button>
                             <button
                               onClick={() => fileInputRef.current?.click()}
                               className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"

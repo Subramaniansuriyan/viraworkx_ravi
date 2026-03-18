@@ -38,3 +38,32 @@ export async function uploadFile(
   fs.writeFileSync(filePath, buffer)
   return `/${objectPath}`
 }
+
+/**
+ * Generate a short-lived signed URL for a private GCS object.
+ * storedUrl is the full GCS URL returned by uploadFile().
+ * Falls back to returning storedUrl as-is in local/dev mode.
+ */
+export async function generateSignedUrl(storedUrl: string, expiresInMinutes = 15): Promise<string> {
+  if (!GCS_BUCKET) {
+    return storedUrl
+  }
+
+  // Extract the object path from the full GCS URL
+  const prefix = `https://storage.googleapis.com/${GCS_BUCKET}/`
+  const objectPath = storedUrl.startsWith(prefix)
+    ? storedUrl.slice(prefix.length)
+    : storedUrl
+
+  const { Storage } = await import('@google-cloud/storage')
+  const storage = new Storage()
+  const file = storage.bucket(GCS_BUCKET).file(objectPath)
+
+  const [url] = await file.getSignedUrl({
+    action: 'read',
+    expires: Date.now() + expiresInMinutes * 60 * 1000,
+    version: 'v4',
+  })
+
+  return url
+}

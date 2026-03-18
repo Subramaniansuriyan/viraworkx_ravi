@@ -123,6 +123,9 @@ export const candidateApi = {
     })
   },
 
+  getDocumentUrl: (type: 'resume' | 'pan-card' | 'aadhaar-front' | 'aadhaar-back') =>
+    api.get<{ url: string; expiresAt: string }>(`/candidates/me/documents/${type}/url`),
+
   uploadAadhaarBack: (file: File) => {
     const formData = new FormData()
     formData.append('document', file)

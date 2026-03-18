@@ -5,7 +5,7 @@ import path from 'path'
 import prisma from '../config/database.js'
 import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
 import { getTierLevel } from '../config/imocha.js'
-import { uploadFile } from '../services/storage.service.js'
+import { uploadFile, generateSignedUrl } from '../services/storage.service.js'
 
 const router = Router()
 
@@ -438,6 +438,52 @@ router.put('/me/profile', authenticateToken, async (req: AuthRequest, res: Respo
     }
     console.error('Error updating profile:', error)
     res.status(500).json({ error: 'Failed to update profile' })
+  }
+})
+
+/**
+ * GET /api/v1/candidates/me/documents/:type/url
+ * Generate a short-lived signed URL for a candidate's private document
+ */
+router.get('/me/documents/:type/url', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user || req.user.userType !== 'candidate') {
+      return res.status(403).json({ error: 'Only candidates can access their documents' })
+    }
+
+    const typeToField: Record<string, string> = {
+      resume: 'resumeUrl',
+      'pan-card': 'panCardUrl',
+      'aadhaar-front': 'aadhaarFrontUrl',
+      'aadhaar-back': 'aadhaarBackUrl',
+    }
+
+    const docField = typeToField[req.params.type]
+    if (!docField) {
+      return res.status(400).json({ error: 'Invalid document type. Use: resume, pan-card, aadhaar-front, aadhaar-back' })
+    }
+
+    const candidate = await prisma.candidate.findUnique({
+      where: { userId: req.user.userId },
+      select: { resumeUrl: true, panCardUrl: true, aadhaarFrontUrl: true, aadhaarBackUrl: true },
+    })
+
+    if (!candidate) {
+      return res.status(404).json({ error: 'Profile not found' })
+    }
+
+    const storedUrl = (candidate as any)[docField] as string | null
+    if (!storedUrl) {
+      return res.status(404).json({ error: 'Document not uploaded yet' })
+    }
+
+    const url = await generateSignedUrl(storedUrl, 15)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+
+    res.json({ url, expiresAt })
+  } catch (error) {
+    console.error('Error generating signed URL:', error)
+    res.status(500).json({ error: 'Failed to generate document URL' })
   }
 })
 
