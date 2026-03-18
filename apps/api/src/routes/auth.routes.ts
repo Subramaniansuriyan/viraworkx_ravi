@@ -74,11 +74,9 @@ router.post('/register', async (req: Request, res: Response) => {
     }).catch(err => console.error('Failed to send welcome email:', err))
 
     res.status(201).json({
-      message: 'Registration successful',
+      message: 'Registration successful. Please check your email to verify your account.',
       user: result.user,
-      accessToken: result.tokens.accessToken,
-      refreshToken: result.tokens.refreshToken,
-      expiresIn: result.tokens.expiresIn,
+      requiresVerification: true,
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -124,9 +122,53 @@ router.post('/login', async (req: Request, res: Response) => {
         logSecurityEvent('failed_login', req, { email: req.body?.email })
         return res.status(401).json({ error: error.message })
       }
+      if (error.message === 'EMAIL_NOT_VERIFIED') {
+        return res.status(403).json({
+          error: 'Please verify your email address before logging in. Check your inbox for the verification link.',
+          code: 'EMAIL_NOT_VERIFIED',
+        })
+      }
       return res.status(500).json({ error: error.message })
     }
     res.status(500).json({ error: 'Login failed' })
+  }
+})
+
+// POST /api/v1/auth/verify-email
+router.post('/verify-email', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body
+    if (!token) {
+      return res.status(400).json({ error: 'Verification token is required' })
+    }
+    const result = await authService.verifyEmail(token)
+    res.json({
+      message: 'Email verified successfully',
+      user: result.user,
+      accessToken: result.tokens.accessToken,
+      refreshToken: result.tokens.refreshToken,
+      expiresIn: result.tokens.expiresIn,
+    })
+  } catch (error) {
+    if (error instanceof Error) {
+      return res.status(400).json({ error: error.message })
+    }
+    res.status(500).json({ error: 'Verification failed' })
+  }
+})
+
+// POST /api/v1/auth/resend-verification
+router.post('/resend-verification', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' })
+    }
+    await authService.resendVerification(email.toLowerCase().trim())
+    // Always return 200 to prevent email enumeration
+    res.json({ message: 'If that email exists and is unverified, a new verification link has been sent.' })
+  } catch {
+    res.json({ message: 'If that email exists and is unverified, a new verification link has been sent.' })
   }
 })
 

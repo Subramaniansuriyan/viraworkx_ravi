@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Zap, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
+import api from '../../services/api'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -11,18 +12,35 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [emailNotVerified, setEmailNotVerified] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resent, setResent] = useState(false)
 
   const from = (location.state as any)?.from?.pathname || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     clearError()
+    setEmailNotVerified(false)
 
     try {
       await login(email, password)
       navigate(from, { replace: true })
-    } catch {
-      // Error handled by store
+    } catch (err: any) {
+      if (err.message?.includes('verify your email') || err.message === 'EMAIL_NOT_VERIFIED') {
+        setEmailNotVerified(true)
+      }
+      // Other errors handled by store
+    }
+  }
+
+  const handleResend = async () => {
+    setResending(true)
+    try {
+      await api.post('/auth/resend-verification', { email })
+      setResent(true)
+    } finally {
+      setResending(false)
     }
   }
 
@@ -46,7 +64,25 @@ export default function Login() {
         {/* Login Form */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-xl shadow-gray-200/50 p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
+            {emailNotVerified && (
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                <p className="font-medium mb-1">Email not verified</p>
+                <p className="mb-2">Please check your inbox and click the verification link to log in.</p>
+                {resent ? (
+                  <p className="text-green-700 font-medium">Verification email resent.</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resending}
+                    className="text-amber-700 underline font-medium disabled:opacity-50"
+                  >
+                    {resending ? 'Sending...' : 'Resend verification email'}
+                  </button>
+                )}
+              </div>
+            )}
+            {error && !emailNotVerified && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>

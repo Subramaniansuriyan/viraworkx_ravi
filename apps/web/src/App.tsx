@@ -8,6 +8,7 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
+import VerifyEmail from './pages/auth/VerifyEmail'
 import CandidateProfile from './pages/candidate/Profile'
 import CandidateApplications from './pages/candidate/Applications'
 import CandidateDashboard from './pages/candidate/Dashboard'
@@ -79,6 +80,7 @@ export default function App() {
       />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
 
       {/* Public job routes */}
       <Route path="/jobs" element={<JobList />} />

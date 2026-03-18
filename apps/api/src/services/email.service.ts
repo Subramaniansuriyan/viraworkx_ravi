@@ -234,6 +234,39 @@ const templates = {
     text: `Hi ${data.candidateName},\n\nCongratulations! We're thrilled to extend you an offer for ${data.jobTitle} at ${data.companyName}!\n\n${data.salary ? `Compensation: ${data.salary}\n` : ''}${data.startDate ? `Proposed Start Date: ${data.startDate}\n` : ''}\n\nReview offer: ${APP_URL}/applications\n\nViraWorkx Team`
   }),
 
+  // Email Verification
+  emailVerification: (data: {
+    userName: string
+    verifyUrl: string
+  }) => ({
+    subject: 'Verify your ViraWorkx email address',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">ViraWorkx</h1>
+        </div>
+        <div style="padding: 30px; background: #f9fafb;">
+          <h2 style="color: #1f2937;">Hi ${data.userName},</h2>
+          <p style="color: #4b5563; line-height: 1.6;">
+            Thanks for signing up! Please verify your email address to activate your account.
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.verifyUrl}" style="background: #6366f1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Verify Email Address
+            </a>
+          </div>
+          <p style="color: #6b7280; font-size: 14px;">
+            This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.
+          </p>
+        </div>
+        <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
+          <p>ViraWorkx - AI-Powered Global Recruiting</p>
+        </div>
+      </div>
+    `,
+    text: `Hi ${data.userName},\n\nPlease verify your email address:\n${data.verifyUrl}\n\nThis link expires in 24 hours.\n\nViraWorkx Team`
+  }),
+
   // Password Reset
   passwordReset: (data: {
     userName: string
@@ -395,6 +428,13 @@ class EmailService {
    */
   async sendOfferExtended(to: string, data: Parameters<typeof templates.offerExtended>[0]) {
     return this.send(to, templates.offerExtended(data))
+  }
+
+  /**
+   * Send email verification link
+   */
+  async sendEmailVerification(to: string, data: Parameters<typeof templates.emailVerification>[0]) {
+    return this.send(to, templates.emailVerification(data))
   }
 
   /**

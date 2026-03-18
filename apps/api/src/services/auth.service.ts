@@ -38,7 +38,7 @@ export interface UserResponse {
 }
 
 class AuthService {
-  async register(input: RegisterInput): Promise<{ user: UserResponse; tokens: AuthTokens }> {
+  async register(input: RegisterInput): Promise<{ user: UserResponse; requiresVerification: true }> {
     const { email, password, userType, firstName, lastName, companyName } = input
 
     // Check if user exists
@@ -84,11 +84,12 @@ class AuthService {
       })
     }
 
-    const tokens = this.generateTokens(user.id, user.email, user.userType)
+    // Send email verification (do not issue tokens until verified)
+    await this.sendVerificationEmail(user.id, email, firstName || email.split('@')[0])
 
     return {
       user: this.formatUserResponse(user),
-      tokens
+      requiresVerification: true,
     }
   }
 
@@ -117,12 +118,74 @@ class AuthService {
       throw new Error('Invalid email or password')
     }
 
+    // Enforce email verification for accounts created after 2026-03-18
+    // Users registered before this date are grandfathered (auto-verified)
+    if (!user.emailVerified) {
+      const grandfatherDate = new Date('2026-03-18T00:00:00Z')
+      if (user.createdAt < grandfatherDate) {
+        await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } })
+      } else {
+        throw new Error('EMAIL_NOT_VERIFIED')
+      }
+    }
+
     const tokens = this.generateTokens(user.id, user.email, user.userType)
 
     return {
       user: this.formatUserResponse(user),
       tokens
     }
+  }
+
+  async verifyEmail(token: string): Promise<{ user: UserResponse; tokens: AuthTokens }> {
+    let decoded: { userId: string; email: string; purpose: string }
+    try {
+      decoded = jwt.verify(token, JWT_SECRET + '-verify') as typeof decoded
+    } catch {
+      throw new Error('Invalid or expired verification link')
+    }
+
+    if (decoded.purpose !== 'email-verify') {
+      throw new Error('Invalid verification token')
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: {
+        candidate: true,
+        clientUsers: { include: { client: true }, take: 1 }
+      }
+    })
+
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } })
+
+    const tokens = this.generateTokens(user.id, user.email, user.userType)
+    return { user: this.formatUserResponse(user), tokens }
+  }
+
+  async resendVerification(email: string): Promise<void> {
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user || user.emailVerified) return // Silently ignore unknown/already-verified
+
+    const firstName = (user as any).candidate?.firstName || email.split('@')[0]
+    await this.sendVerificationEmail(user.id, email, firstName)
+  }
+
+  private async sendVerificationEmail(userId: string, email: string, name: string): Promise<void> {
+    const appUrl = process.env.APP_URL || 'https://www.viraworkx.ai'
+    const token = jwt.sign(
+      { userId, email, purpose: 'email-verify' },
+      JWT_SECRET + '-verify',
+      { expiresIn: '24h' }
+    )
+    const verifyUrl = `${appUrl}/verify-email?token=${token}`
+    const { emailService } = await import('./email.service.js')
+    await emailService.sendEmailVerification(email, { userName: name, verifyUrl })
+      .catch(err => console.error('Failed to send verification email:', err))
   }
 
   async refreshToken(refreshToken: string): Promise<AuthTokens> {

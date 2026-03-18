@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Zap, Mail, Lock, Eye, EyeOff, User, Building2, AlertCircle, Check } from 'lucide-react'
+import { Zap, Mail, Lock, Eye, EyeOff, User, Building2, AlertCircle, Check, CheckCircle } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
+import api from '../../services/api'
 
 type UserType = 'candidate' | 'client'
 
@@ -20,6 +21,9 @@ export default function Register() {
   const [companyName, setCompanyName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [validationError, setValidationError] = useState('')
+  const [verificationSent, setVerificationSent] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
+  const [resending, setResending] = useState(false)
 
   const passwordRequirements = [
     { met: password.length >= 8, text: 'At least 8 characters' },
@@ -44,16 +48,60 @@ export default function Register() {
     }
 
     try {
-      await register({
+      const result = await register({
         email,
         password,
         userType,
         ...(userType === 'candidate' ? { firstName, lastName } : { companyName }),
       })
-      navigate('/', { replace: true })
+      if (result.requiresVerification) {
+        setRegisteredEmail(email)
+        setVerificationSent(true)
+      } else {
+        navigate('/', { replace: true })
+      }
     } catch {
       // Error handled by store
     }
+  }
+
+  if (verificationSent) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-8">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h2>
+            <p className="text-gray-600 mb-1">We sent a verification link to</p>
+            <p className="font-semibold text-gray-900 mb-6">{registeredEmail}</p>
+            <p className="text-sm text-gray-500 mb-6">
+              Click the link in the email to verify your account. The link expires in 24 hours.
+            </p>
+            <button
+              onClick={async () => {
+                setResending(true)
+                try {
+                  await api.post('/auth/resend-verification', { email: registeredEmail })
+                } finally {
+                  setResending(false)
+                }
+              }}
+              disabled={resending}
+              className="text-sm text-primary hover:text-primary-700 font-medium disabled:opacity-50"
+            >
+              {resending ? 'Sending...' : "Didn't receive it? Resend email"}
+            </button>
+            <div className="mt-6 pt-6 border-t">
+              <Link to="/login" className="text-sm text-gray-500 hover:text-primary transition-colors">
+                Back to sign in
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

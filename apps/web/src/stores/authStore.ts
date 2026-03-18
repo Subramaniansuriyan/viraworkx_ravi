@@ -23,7 +23,8 @@ interface AuthState {
 
   // Actions
   login: (email: string, password: string) => Promise<void>
-  register: (data: RegisterData) => Promise<void>
+  register: (data: RegisterData) => Promise<{ requiresVerification: boolean }>
+  verifyEmail: (token: string) => Promise<void>
   logout: () => void
   refreshAuth: () => Promise<boolean>
   clearError: () => void
@@ -77,8 +78,20 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null })
         try {
           const response = await api.post('/auth/register', data)
-          const { user, accessToken, refreshToken } = response.data
+          set({ isLoading: false, error: null })
+          return { requiresVerification: !!response.data.requiresVerification }
+        } catch (error: any) {
+          const message = error.response?.data?.error || 'Registration failed'
+          set({ isLoading: false, error: message })
+          throw new Error(message)
+        }
+      },
 
+      verifyEmail: async (token: string) => {
+        set({ isLoading: true, error: null })
+        try {
+          const response = await api.post('/auth/verify-email', { token })
+          const { user, accessToken, refreshToken } = response.data
           set({
             user,
             accessToken,
@@ -87,10 +100,9 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           })
-
           localStorage.setItem('token', accessToken)
         } catch (error: any) {
-          const message = error.response?.data?.error || 'Registration failed'
+          const message = error.response?.data?.error || 'Verification failed'
           set({ isLoading: false, error: message })
           throw new Error(message)
         }
