@@ -269,14 +269,18 @@ router.get('/job-matches', authenticateToken, async (req: AuthRequest, res: Resp
       return res.status(404).json({ error: 'Profile not found' })
     }
 
+    // Build filter: use skill/location matching when available, otherwise return recent active jobs
+    const hasFilters = candidate.skills.length > 0 || candidate.preferredLocations.length > 0
+    const whereClause: any = { status: 'active' }
+    if (hasFilters) {
+      whereClause.OR = [
+        ...(candidate.skills.length > 0 ? [{ skillsRequired: { hasSome: candidate.skills } }] : []),
+        ...(candidate.preferredLocations.length > 0 ? [{ location: { in: candidate.preferredLocations } }] : []),
+      ]
+    }
+
     const jobs = await prisma.job.findMany({
-      where: {
-        status: 'active',
-        OR: [
-          { skillsRequired: { hasSome: candidate.skills } },
-          { location: candidate.preferredLocations?.length ? { in: candidate.preferredLocations } : undefined }
-        ]
-      },
+      where: whereClause,
       include: {
         client: { select: { companyName: true, companyLogoUrl: true } }
       },
@@ -717,15 +721,18 @@ router.get('/me/job-matches', authenticateToken, async (req: AuthRequest, res: R
       return res.status(404).json({ error: 'Profile not found' })
     }
 
-    // Find jobs matching candidate skills
+    // Build filter: use skill/location matching when available, otherwise return recent active jobs
+    const hasFilters = candidate.skills.length > 0 || candidate.preferredLocations.length > 0
+    const whereClause: any = { status: 'active' }
+    if (hasFilters) {
+      whereClause.OR = [
+        ...(candidate.skills.length > 0 ? [{ skillsRequired: { hasSome: candidate.skills } }] : []),
+        ...(candidate.preferredLocations.length > 0 ? [{ location: { in: candidate.preferredLocations } }] : []),
+      ]
+    }
+
     const jobs = await prisma.job.findMany({
-      where: {
-        status: 'active',
-        OR: [
-          { skillsRequired: { hasSome: candidate.skills } },
-          { location: candidate.preferredLocations?.length ? { in: candidate.preferredLocations } : undefined }
-        ]
-      },
+      where: whereClause,
       include: {
         client: { select: { companyName: true, companyLogoUrl: true } }
       },

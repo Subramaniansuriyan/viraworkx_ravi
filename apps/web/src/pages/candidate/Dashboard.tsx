@@ -208,7 +208,7 @@ export default function CandidateDashboard() {
               {jobMatches.length === 0 ? (
                 <div className="p-8 text-center">
                   <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-4">Complete your profile to get job matches</p>
+                  <p className="text-gray-600 mb-4">No open positions available right now</p>
                   <Link
                     to="/profile"
                     className="text-primary-600 hover:underline"

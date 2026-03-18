@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Zap, LogOut, TrendingUp, User, Briefcase, FileText, Award,
-  Calendar, Menu, X
+  Calendar, Menu, X, Clock
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import NotificationBell from '../shared/NotificationBell'
@@ -19,6 +19,7 @@ const navItems = [
   { to: '/interviews', icon: Calendar, label: 'Interviews' },
   { to: '/assessments', icon: Award, label: 'Assessments' },
   { to: '/candidate/contracts', icon: FileText, label: 'Contracts' },
+  { to: '/timesheet', icon: Clock, label: 'Timesheet' },
 ]
 
 export default function CandidateLayout({ children }: CandidateLayoutProps) {
