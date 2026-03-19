@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../stores/authStore";
 
 // ─── DATA ───────────────────────────────────────────────────────────────────
 const INDIAN_HOLIDAYS_2025 = [
@@ -108,7 +110,12 @@ function getUSHoliday(iso: string) {
 
 // ─── COMPONENT ───────────────────────────────────────────────────────────────
 export default function ViraWorkXTimesheetV3() {
-  const [view, setView] = useState<"talent" | "client" | "admin">("talent");
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const userType = user?.userType || "candidate";
+  const initialView: "talent" | "client" | "admin" =
+    userType === "admin" ? "admin" : userType === "client" ? "client" : "talent";
+  const [view, setView] = useState<"talent" | "client" | "admin">(initialView);
   const [tab, setTab] = useState("weekly");
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [status, setStatus] = useState<"pending" | "submitted" | "approved" | "revision">("pending");
@@ -171,7 +178,7 @@ export default function ViraWorkXTimesheetV3() {
 
   const handleExport = (type: string) => {
     setShowExport(false);
-    setExportNotice(`${type} generated — download starting...`);
+    setExportNotice(`${type} export is coming soon.`);
     setTimeout(() => setExportNotice(""), 3000);
   };
 
@@ -212,6 +219,12 @@ export default function ViraWorkXTimesheetV3() {
         {/* ═══ TOP BAR ═══ */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button
+              onClick={() => navigate("/dashboard")}
+              style={{ background: "transparent", border: "1px solid #1e1c3a", borderRadius: 7, padding: "6px 12px", color: "#a78bfa", fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}
+            >
+              ← Dashboard
+            </button>
             <div style={{ width: 34, height: 34, borderRadius: 9, background: "linear-gradient(135deg,#7c3aed,#6d28d9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>⏱</div>
             <div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-.02em" }}>ViraWorkX Timesheet</div>
@@ -239,8 +252,8 @@ export default function ViraWorkXTimesheetV3() {
             <div className="pulse" style={{ width: 5, height: 5, borderRadius: 3, background: "#10b981" }} />
           </div>
 
-          {/* View Switcher */}
-          <div style={{ display: "flex", background: "#110f28", borderRadius: 9, padding: 2, border: "1px solid #1e1c3a" }}>
+          {/* View Switcher — only visible to admin users */}
+          {userType === "admin" && <div style={{ display: "flex", background: "#110f28", borderRadius: 9, padding: 2, border: "1px solid #1e1c3a" }}>
             {[{ id: "talent", icon: "👨‍💻", label: "Talent" }, { id: "client", icon: "🏢", label: "Client" }, { id: "admin", icon: "⚡", label: "Admin" }].map(v => (
               <button key={v.id} onClick={() => setView(v.id as any)} style={{
                 padding: "6px 14px", borderRadius: 7, border: "none", fontSize: 11, fontWeight: 600,
@@ -248,7 +261,7 @@ export default function ViraWorkXTimesheetV3() {
                 color: view === v.id ? "#fff" : "#6a679a",
               }}>{v.icon} {v.label}</button>
             ))}
-          </div>
+          </div>}
         </div>
 
         {/* ═══ CONTEXT CARD ═══ */}

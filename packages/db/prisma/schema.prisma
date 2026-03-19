@@ -201,6 +201,7 @@ model Assessment {
   expiresAt          DateTime?    @map("expires_at")
   imochaAttemptId    String?      @map("imocha_attempt_id")
   imochaInvitationId String?      @map("imocha_invitation_id")
+  invitationUrl      String?      @map("invitation_url")
   invitedAt          DateTime?    @map("invited_at")
   maxScore           Int?         @map("max_score")
   percentile         Int?
@@ -502,4 +503,12 @@ model CandidateNote {
 
   @@index([candidateId])
   @@map("candidate_notes")
+}
+
+model PlatformSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
 }

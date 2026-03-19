@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Save, Bell, Mail, Globe, Lock, Database, Cpu, ClipboardCheck,
-  ToggleLeft, ToggleRight
+  ToggleLeft, ToggleRight, CheckCircle
 } from 'lucide-react'
+import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
 
 interface AdminSettings {
@@ -17,34 +18,55 @@ interface AdminSettings {
   assessmentExpirationDays: number
 }
 
-export default function AdminSettings() {
-  const [settings, setSettings] = useState<AdminSettings>(() => {
-    try {
-      const saved = localStorage.getItem('viraworkx_admin_settings')
-      if (saved) return JSON.parse(saved)
-    } catch {}
-    return {
-      aiAutoApprove: false,
-      aiAutoApproveThreshold: 85,
-      emailNotifications: true,
-      slackNotifications: false,
-      webhookUrl: '',
-      matchScoreThreshold: 60,
-      requireHumanApproval: true,
-      maxAssessmentRetries: 2,
-      assessmentExpirationDays: 7,
-    }
-  })
+const DEFAULTS: AdminSettings = {
+  aiAutoApprove: false,
+  aiAutoApproveThreshold: 85,
+  emailNotifications: true,
+  slackNotifications: false,
+  webhookUrl: '',
+  matchScoreThreshold: 60,
+  requireHumanApproval: true,
+  maxAssessmentRetries: 2,
+  assessmentExpirationDays: 7,
+}
 
+export default function AdminSettings() {
+  const { accessToken: token } = useAuthStore()
+  const [settings, setSettings] = useState<AdminSettings>(DEFAULTS)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetch('/api/v1/settings/platform', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.settings) setSettings(data.settings)
+      })
+      .catch(() => setError('Failed to load settings'))
+      .finally(() => setLoading(false))
+  }, [token])
 
   const handleSave = async () => {
     setSaving(true)
+    setError('')
     try {
-      localStorage.setItem('viraworkx_admin_settings', JSON.stringify(settings))
+      const res = await fetch('/api/v1/settings/platform', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(settings),
+      })
+      if (!res.ok) throw new Error('Save failed')
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+    } catch {
+      setError('Failed to save settings. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -59,6 +81,16 @@ export default function AdminSettings() {
       )}
     </button>
   )
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="p-8 flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </AdminLayout>
+    )
+  }
 
   return (
     <AdminLayout>
@@ -75,12 +107,20 @@ export default function AdminSettings() {
           >
             {saving ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : saved ? (
+              <CheckCircle className="w-5 h-5" />
             ) : (
               <Save className="w-5 h-5" />
             )}
             {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
           </button>
         </div>
+
+        {error && (
+          <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* AI Settings */}
