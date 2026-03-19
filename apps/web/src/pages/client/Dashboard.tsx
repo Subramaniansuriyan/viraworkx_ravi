@@ -9,7 +9,7 @@ import { useAuthStore } from '../../stores/authStore'
 import NotificationBell from '../../components/shared/NotificationBell'
 import ClientLayout from '../../components/client/ClientLayout'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
+const API_URL = ''
 
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime()

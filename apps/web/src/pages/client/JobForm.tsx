@@ -15,7 +15,7 @@ import {
   Loader2,
 } from 'lucide-react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const API_URL = ''
 
 type EmploymentType = 'freelancer' | 'contractor'
 type RemotePolicy = 'remote' | 'hybrid' | 'onsite'

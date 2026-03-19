@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { candidateApi } from '../../services/api'
+import { candidateApi, jobApi } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 
 import {
@@ -13,6 +13,7 @@ import {
   ChevronRight,
   MapPin,
   Building2,
+  Bookmark,
 } from 'lucide-react'
 import NotificationBell from '../../components/shared/NotificationBell'
 import CandidateLayout from '../../components/candidate/CandidateLayout'
@@ -35,6 +36,11 @@ export default function CandidateDashboard() {
     queryFn: candidateApi.getJobMatches,
   })
 
+  const { data: savedJobsData } = useQuery({
+    queryKey: ['savedJobs'],
+    queryFn: jobApi.getSavedJobs,
+  })
+
   const { data: assessmentsData } = useQuery({
     queryKey: ['candidateAssessments'],
     queryFn: async () => {
@@ -51,6 +57,7 @@ export default function CandidateDashboard() {
   const applications = applicationsData?.data?.applications || []
   const jobMatches = jobMatchesData?.data?.jobs || []
   const matchScores = jobMatchesData?.data?.matchScores || {}
+  const savedJobs = savedJobsData?.data?.savedJobs || []
   const completedAssessments = (assessmentsData?.assessments || []).filter((a: any) => a.status === 'completed').length
 
   const getStageColor = (stage: string) => {
@@ -252,6 +259,45 @@ export default function CandidateDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Saved Jobs */}
+        {savedJobs.length > 0 && (
+          <div className="mt-8 bg-white rounded-xl shadow-sm">
+            <div className="p-6 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bookmark className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-semibold text-gray-900">Saved Jobs</h2>
+              </div>
+              <Link to="/jobs" className="text-primary text-sm hover:underline">
+                Browse more
+              </Link>
+            </div>
+            <div className="divide-y">
+              {savedJobs.slice(0, 5).map((job: any) => (
+                <Link key={job.id} to={`/jobs/${job.id}`} className="block p-4 hover:bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <Building2 className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{job.title}</p>
+                        <p className="text-sm text-gray-500">{job.client?.companyName}</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                  </div>
+                  {job.location && (
+                    <p className="text-sm text-gray-500 mt-2 ml-14 flex items-center">
+                      <MapPin className="w-3 h-3 mr-1" />
+                      {job.location}
+                    </p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Profile Completion */}
         {profile && (

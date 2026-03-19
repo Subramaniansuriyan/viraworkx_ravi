@@ -157,6 +157,8 @@ export const jobApi = {
   getApplications: (id: string) => api.get<{ applications: Application[] }>(`/jobs/${id}/applications`),
   apply: (jobId: string, data?: { coverLetter?: string }) =>
     api.post<{ application: Application }>(`/jobs/${jobId}/apply`, data),
+  saveJob: (id: string) => api.post<{ saved: boolean }>(`/jobs/${id}/save`),
+  getSavedJobs: () => api.get<{ savedJobs: Job[] }>('/jobs/saved/list'),
 }
 
 // Application API

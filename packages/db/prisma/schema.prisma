@@ -85,6 +85,7 @@ model Candidate {
   user               User              @relation(fields: [userId], references: [id])
   emailLogs          EmailLog[]
   pipelineHistory    PipelineHistory[]
+  savedJobs          SavedJob[]
   skillBadges        SkillBadge[]
 
   @@map("candidates")
@@ -156,9 +157,22 @@ model Job {
   skillsPreferred   String[]      @map("skills_preferred")
   visibility        String?       @default("public")
   applications      Application[]
+  savedBy           SavedJob[]
   client            Client        @relation(fields: [clientId], references: [id])
 
   @@map("jobs")
+}
+
+model SavedJob {
+  id          String    @id @default(uuid())
+  candidateId String    @map("candidate_id")
+  jobId       String    @map("job_id")
+  savedAt     DateTime  @default(now()) @map("saved_at")
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, jobId])
+  @@map("saved_jobs")
 }
 
 model Application {

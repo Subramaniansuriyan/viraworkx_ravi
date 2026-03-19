@@ -7,7 +7,7 @@ import {
 import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const API_URL = ''
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-700',

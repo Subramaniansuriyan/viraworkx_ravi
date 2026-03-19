@@ -469,4 +469,62 @@ router.get('/:id/candidates', authenticateToken, requireRole('client', 'admin'),
   }
 })
 
+/**
+ * POST /api/v1/jobs/:id/save
+ * Save or unsave a job (candidate only) — toggles
+ */
+router.post('/:id/save', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.userType !== 'candidate') {
+      return res.status(403).json({ error: 'Only candidates can save jobs' })
+    }
+    const candidate = await prisma.candidate.findUnique({ where: { userId: req.user.userId } })
+    if (!candidate) return res.status(404).json({ error: 'Candidate profile not found' })
+
+    const existing = await prisma.savedJob.findUnique({
+      where: { candidateId_jobId: { candidateId: candidate.id, jobId: req.params.id } }
+    })
+
+    if (existing) {
+      await prisma.savedJob.delete({ where: { id: existing.id } })
+      res.json({ saved: false })
+    } else {
+      await prisma.savedJob.create({ data: { candidateId: candidate.id, jobId: req.params.id } })
+      res.json({ saved: true })
+    }
+  } catch (error) {
+    console.error('Error toggling saved job:', error)
+    res.status(500).json({ error: 'Failed to save job' })
+  }
+})
+
+/**
+ * GET /api/v1/jobs/saved
+ * Get all saved jobs for current candidate
+ */
+router.get('/saved/list', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.userType !== 'candidate') {
+      return res.status(403).json({ error: 'Only candidates can view saved jobs' })
+    }
+    const candidate = await prisma.candidate.findUnique({ where: { userId: req.user.userId } })
+    if (!candidate) return res.status(404).json({ error: 'Candidate profile not found' })
+
+    const savedJobs = await prisma.savedJob.findMany({
+      where: { candidateId: candidate.id },
+      include: {
+        job: {
+          include: { client: { select: { companyName: true, companyLogoUrl: true } } }
+        }
+      },
+      orderBy: { savedAt: 'desc' }
+    })
+
+    res.json({ savedJobs: savedJobs.map(s => ({ ...s.job, savedAt: s.savedAt })) })
+  } catch (error) {
+    console.error('Error fetching saved jobs:', error)
+    res.status(500).json({ error: 'Failed to fetch saved jobs' })
+  }
+})
+
 export default router

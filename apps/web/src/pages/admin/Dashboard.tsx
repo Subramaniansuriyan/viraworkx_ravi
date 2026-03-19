@@ -7,7 +7,7 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import NotificationBell from '../../components/shared/NotificationBell'
 import { useAuthStore } from '../../stores/authStore'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const API_URL = ''
 
 export default function AdminDashboard() {
   const { accessToken: token } = useAuthStore()

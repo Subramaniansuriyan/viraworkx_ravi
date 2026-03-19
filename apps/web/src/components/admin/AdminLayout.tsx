@@ -9,7 +9,7 @@ import {
 import { useAuthStore } from '../../stores/authStore'
 import NotificationBell from '../shared/NotificationBell'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const API_URL = ''
 
 interface AdminLayoutProps {
   children: React.ReactNode

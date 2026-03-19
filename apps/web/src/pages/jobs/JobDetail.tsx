@@ -27,6 +27,8 @@ export default function JobDetail() {
   const { isAuthenticated, user } = useAuthStore()
   const [coverLetter, setCoverLetter] = useState('')
   const [showApplyModal, setShowApplyModal] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['job', id],
@@ -99,6 +101,19 @@ export default function JobDetail() {
     applyMutation.mutate({ coverLetter: coverLetter || undefined })
   }
 
+  const handleSave = async () => {
+    if (!isAuthenticated || user?.userType !== 'candidate') return
+    setSaving(true)
+    try {
+      const res = await jobApi.saveJob(id!)
+      setSaved(res.data.saved)
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -113,9 +128,16 @@ export default function JobDetail() {
               <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
                 <Share2 className="w-5 h-5" />
               </button>
-              <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                <Bookmark className="w-5 h-5" />
-              </button>
+              {isAuthenticated && user?.userType === 'candidate' && (
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className={`p-2 rounded-lg hover:bg-gray-100 transition-colors ${saved ? 'text-primary' : 'text-gray-400 hover:text-gray-600'}`}
+                  title={saved ? 'Remove from saved' : 'Save job'}
+                >
+                  <Bookmark className={`w-5 h-5 ${saved ? 'fill-current' : ''}`} />
+                </button>
+              )}
             </div>
           </div>
         </div>

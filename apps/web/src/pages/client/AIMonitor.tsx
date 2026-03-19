@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import NotificationBell from '../../components/shared/NotificationBell'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const API_URL = ''
 
 function makeAiApi(token: string) {
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
