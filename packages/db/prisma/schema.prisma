@@ -188,6 +188,7 @@ model Application {
   createdAt       DateTime          @default(now()) @map("created_at")
   matchDetails    Json?             @map("match_details")
   notes           String?
+  assessmentTier  String?           @map("assessment_tier")
   referrerId      String?           @map("referrer_id")
   rejectionReason String?           @map("rejection_reason")
   source          String?

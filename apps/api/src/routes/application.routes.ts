@@ -39,6 +39,17 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       if (candidate) {
         where.candidateId = candidate.id
       }
+    } else if (req.user?.userType === 'client') {
+      // Clients only see applications for their own jobs
+      const clientUser = await prisma.clientUser.findFirst({
+        where: { userId: req.user.userId },
+        select: { clientId: true }
+      })
+      if (clientUser) {
+        where.job = { clientId: clientUser.clientId }
+      }
+      if (jobId) where.jobId = jobId
+      if (candidateId) where.candidateId = candidateId
     } else {
       if (jobId) where.jobId = jobId
       if (candidateId) where.candidateId = candidateId
@@ -163,7 +174,7 @@ router.put('/:id', authenticateToken, requireRole('client', 'admin'), async (req
  */
 router.post('/:id/advance', authenticateToken, requireRole('client', 'admin'), async (req: AuthRequest, res: Response) => {
   try {
-    const { stage, notes } = req.body
+    const { stage, notes, assessmentTier } = req.body
 
     const application = await prisma.application.findUnique({
       where: { id: req.params.id }
@@ -188,6 +199,7 @@ router.post('/:id/advance', authenticateToken, requireRole('client', 'admin'), a
       data: {
         stage,
         notes: notes || application.notes,
+        ...(assessmentTier !== undefined && { assessmentTier }),
         stageUpdatedAt: new Date(),
         updatedAt: new Date()
       },

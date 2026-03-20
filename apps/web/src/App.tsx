@@ -32,6 +32,7 @@ import AuditLog from './pages/admin/AuditLog'
 import AdminSettings from './pages/admin/Settings'
 import ContractTemplates from './pages/admin/ContractTemplates'
 import ClientContracts from './pages/client/Contracts'
+import TieredCandidates from './pages/client/TieredCandidates'
 import ClientContractReview from './pages/client/ContractReview'
 import Billing from './pages/client/Billing'
 import CandidateAssessments from './pages/candidate/Assessments'
@@ -291,6 +292,15 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['admin']}>
             <AdminSettings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/client/candidates"
+        element={
+          <ProtectedRoute allowedTypes={['client', 'admin']}>
+            <TieredCandidates />
           </ProtectedRoute>
         }
       />

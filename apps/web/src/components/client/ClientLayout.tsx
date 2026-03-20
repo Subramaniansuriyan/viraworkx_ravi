@@ -15,7 +15,7 @@ const navItems = [
   { to: '/dashboard', icon: TrendingUp, label: 'Dashboard' },
   { to: '/client/jobs', icon: Briefcase, label: 'My Jobs' },
   { to: '/client/jobs/new', icon: Plus, label: 'Post New Job' },
-  { to: '/jobs', icon: Users, label: 'Browse Candidates' },
+  { to: '/client/candidates', icon: Users, label: 'Tiered Candidates' },
   { to: '/client/contracts', icon: FileText, label: 'Contracts' },
   { to: '/client/billing', icon: CreditCard, label: 'Billing' },
 ]

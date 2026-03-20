@@ -217,10 +217,10 @@ export default function AdminVetting() {
                                 {app.candidate.experienceYears} yrs exp
                               </div>
                             )}
-                            {app.candidate?.assessmentTier && (
+                            {app.assessmentTier && (
                               <div className="flex items-center gap-1 text-xs font-bold text-amber-700">
                                 <Award className="w-3 h-3" />
-                                {app.candidate.assessmentTier}
+                                {app.assessmentTier}
                               </div>
                             )}
                           </div>

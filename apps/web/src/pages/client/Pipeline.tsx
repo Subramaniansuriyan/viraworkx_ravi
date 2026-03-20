@@ -221,14 +221,22 @@ export default function Pipeline() {
                             </div>
                           </div>
 
-                          {app.matchScore && (
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-sm text-gray-500">Match:</span>
-                              <span className={`text-sm font-semibold ${app.matchScore >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
-                                {app.matchScore}%
+                          <div className="flex items-center gap-2 mb-3 flex-wrap">
+                            {app.matchScore && (
+                              <>
+                                <span className="text-sm text-gray-500">Match:</span>
+                                <span className={`text-sm font-semibold ${app.matchScore >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
+                                  {app.matchScore}%
+                                </span>
+                              </>
+                            )}
+                            {app.assessmentTier && (
+                              <span className="ml-auto px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-full flex items-center gap-1">
+                                <Award className="w-3 h-3" />
+                                {app.assessmentTier}
                               </span>
-                            </div>
-                          )}
+                            )}
+                          </div>
 
                           {app.candidate?.skills?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-3">
