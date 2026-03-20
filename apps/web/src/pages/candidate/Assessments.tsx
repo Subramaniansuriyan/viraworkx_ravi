@@ -150,6 +150,19 @@ export default function Assessments() {
                           )}
                         </div>
 
+                        {assessment.status === 'completed' && assessment.completedAt && (() => {
+                          const retakeDate = new Date(assessment.completedAt)
+                          retakeDate.setDate(retakeDate.getDate() + 90)
+                          const eligible = retakeDate <= new Date()
+                          return (
+                            <p className="text-xs text-gray-400 mt-1">
+                              {eligible
+                                ? 'Eligible to retake — contact ViraWorkx to request'
+                                : `Retake eligible after ${retakeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                            </p>
+                          )
+                        })()}
+
                         {assessment.status === 'completed' && (
                           <div className="mt-3 flex flex-wrap items-center gap-2 md:gap-3">
                             {getTier(assessment.score, assessment.maxScore) && (

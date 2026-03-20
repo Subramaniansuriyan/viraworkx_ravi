@@ -42,6 +42,8 @@ import CandidateAssessments from './pages/candidate/Assessments'
 import CandidateContracts from './pages/candidate/Contracts'
 import CandidateContractReview from './pages/candidate/ContractReview'
 import CandidateInterviews from './pages/candidate/Interviews'
+import CandidateNotifications from './pages/candidate/Notifications'
+import CandidateEarnings from './pages/candidate/Earnings'
 import Timesheet from './pages/timesheet/Timesheet'
 
 // Components
@@ -338,6 +340,26 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['client', 'admin']}>
             <Billing />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Candidate notifications */}
+      <Route
+        path="/candidate/notifications"
+        element={
+          <ProtectedRoute allowedTypes={['candidate']}>
+            <CandidateNotifications />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Candidate earnings */}
+      <Route
+        path="/candidate/earnings"
+        element={
+          <ProtectedRoute allowedTypes={['candidate']}>
+            <CandidateEarnings />
           </ProtectedRoute>
         }
       />

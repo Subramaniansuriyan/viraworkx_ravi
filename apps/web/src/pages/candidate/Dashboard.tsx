@@ -58,7 +58,29 @@ export default function CandidateDashboard() {
   const jobMatches = jobMatchesData?.data?.jobs || []
   const matchScores = jobMatchesData?.data?.matchScores || {}
   const savedJobs = savedJobsData?.data?.savedJobs || []
-  const completedAssessments = (assessmentsData?.assessments || []).filter((a: any) => a.status === 'completed').length
+  const allAssessments: any[] = assessmentsData?.assessments || []
+  const completedAssessments = allAssessments.filter((a: any) => a.status === 'completed').length
+
+  const getTier = (score: number | null, maxScore: number | null): string | null => {
+    if (score == null || !maxScore) return null
+    const pct = (score / maxScore) * 100
+    if (pct > 80) return 'Tier 1'
+    if (pct > 70) return 'Tier 2'
+    if (pct > 60) return 'Tier 3'
+    return null
+  }
+
+  const overallTier = allAssessments
+    .filter((a: any) => a.status === 'completed' && a.score != null)
+    .map((a: any) => ({ tier: getTier(a.score, a.maxScore), score: (a.score / a.maxScore) * 100 }))
+    .filter(x => x.tier)
+    .sort((a, b) => b.score - a.score)[0]?.tier || null
+
+  const TIER_STYLES: Record<string, string> = {
+    'Tier 1': 'bg-amber-100 text-amber-800 border-amber-200',
+    'Tier 2': 'bg-blue-100 text-blue-800 border-blue-200',
+    'Tier 3': 'bg-gray-100 text-gray-700 border-gray-200',
+  }
 
   const getStageColor = (stage: string) => {
     switch (stage) {
@@ -150,11 +172,18 @@ export default function CandidateDashboard() {
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                 <Award className="w-6 h-6 text-purple-600" />
               </div>
-              <span className="text-2xl font-bold text-gray-900">
-                {profile?.skillBadges?.length || 0}
-              </span>
+              {overallTier ? (
+                <span className={`px-3 py-1 rounded-full text-sm font-bold border ${TIER_STYLES[overallTier]}`}>
+                  {overallTier}
+                </span>
+              ) : (
+                <span className="text-sm text-gray-400">—</span>
+              )}
             </div>
-            <p className="text-gray-600">Skill Badges</p>
+            <p className="text-gray-600">Your Tier</p>
+            {!overallTier && (
+              <p className="text-xs text-gray-400 mt-1">Complete an assessment</p>
+            )}
           </div>
         </div>
 

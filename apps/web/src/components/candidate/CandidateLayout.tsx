@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Zap, LogOut, TrendingUp, User, Briefcase, FileText, Award,
-  Calendar, Menu, X, Clock
+  Calendar, Menu, X, Clock, Bell, DollarSign
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { useAuthStore as useAuth } from '../../stores/authStore'
 import { useAuthStore } from '../../stores/authStore'
 import NotificationBell from '../shared/NotificationBell'
 
@@ -19,13 +21,29 @@ const navItems = [
   { to: '/interviews', icon: Calendar, label: 'Interviews' },
   { to: '/assessments', icon: Award, label: 'Assessments' },
   { to: '/candidate/contracts', icon: FileText, label: 'Contracts' },
+  { to: '/candidate/earnings', icon: DollarSign, label: 'Earnings' },
   { to: '/timesheet', icon: Clock, label: 'Timesheet' },
+  { to: '/candidate/notifications', icon: Bell, label: 'Notifications' },
 ]
 
 export default function CandidateLayout({ children }: CandidateLayoutProps) {
-  const { user, logout } = useAuthStore()
+  const { user, logout, accessToken: token } = useAuthStore()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const { data: notifData } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) return { unreadCount: 0 }
+      return res.json()
+    },
+    enabled: !!token,
+    refetchInterval: 30000,
+  })
+  const unreadCount: number = notifData?.unreadCount || 0
 
   useEffect(() => {
     setSidebarOpen(false)
@@ -82,7 +100,12 @@ export default function CandidateLayout({ children }: CandidateLayoutProps) {
                 }`}
               >
                 <Icon className="w-5 h-5 mr-3 shrink-0" />
-                <span className="truncate">{label}</span>
+                <span className="truncate flex-1">{label}</span>
+                {to === '/candidate/notifications' && unreadCount > 0 && (
+                  <span className="ml-auto bg-primary text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </Link>
             </li>
           ))}
