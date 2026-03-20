@@ -139,6 +139,22 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
       return res.status(404).json({ error: 'Interview not found' })
     }
 
+    // Candidates can only view their own interviews
+    if (req.user?.userType === 'candidate') {
+      const candidate = await prisma.candidate.findUnique({ where: { userId: req.user.userId } })
+      if (!candidate || interview.application.candidateId !== candidate.id) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+    }
+
+    // Clients can only view interviews for their own jobs
+    if (req.user?.userType === 'client') {
+      const clientUser = await prisma.clientUser.findFirst({ where: { userId: req.user.userId } })
+      if (!clientUser || interview.application.job.clientId !== clientUser.clientId) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+    }
+
     res.json({ interview })
   } catch (error) {
     console.error('Error fetching interview:', error)

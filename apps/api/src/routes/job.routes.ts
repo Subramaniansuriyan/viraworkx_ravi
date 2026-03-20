@@ -40,9 +40,15 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
     const where: any = {}
 
-    // Public users only see active jobs
+    // Public users and candidates only see active jobs
     if (!req.user || req.user.userType === 'candidate') {
       where.status = 'active'
+    } else if (req.user.userType === 'client') {
+      // Clients only see their own company's jobs
+      const clientUser = await prisma.clientUser.findFirst({ where: { userId: req.user.userId } })
+      if (!clientUser) return res.status(403).json({ error: 'Client not found' })
+      where.clientId = clientUser.clientId
+      if (status) where.status = status
     } else if (status) {
       where.status = status
     }
@@ -149,9 +155,17 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Job not found' })
     }
 
-    // Check if job is accessible
+    // Candidates and public only see active jobs
     if (job.status !== 'active' && (!req.user || req.user.userType === 'candidate')) {
       return res.status(404).json({ error: 'Job not found' })
+    }
+
+    // Clients can only access their own company's jobs
+    if (req.user?.userType === 'client') {
+      const clientUser = await prisma.clientUser.findFirst({ where: { userId: req.user.userId } })
+      if (!clientUser || job.clientId !== clientUser.clientId) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
     }
 
     res.json({ job })
@@ -439,6 +453,15 @@ router.get('/:id/applications', authenticateToken, requireRole('client', 'admin'
   try {
     const { stage, limit = '50', offset = '0' } = req.query
 
+    // Clients can only view applications for their own jobs
+    if (req.user?.userType === 'client') {
+      const clientUser = await prisma.clientUser.findFirst({ where: { userId: req.user.userId } })
+      const job = await prisma.job.findUnique({ where: { id: req.params.id } })
+      if (!clientUser || !job || job.clientId !== clientUser.clientId) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+    }
+
     const where: any = { jobId: req.params.id }
     if (stage) where.stage = stage
 
@@ -484,6 +507,14 @@ router.get('/:id/candidates', authenticateToken, requireRole('client', 'admin'),
 
     if (!job) {
       return res.status(404).json({ error: 'Job not found' })
+    }
+
+    // Clients can only view candidates for their own jobs
+    if (req.user?.userType === 'client') {
+      const clientUser = await prisma.clientUser.findFirst({ where: { userId: req.user.userId } })
+      if (!clientUser || job.clientId !== clientUser.clientId) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
     }
 
     // Find candidates with matching skills

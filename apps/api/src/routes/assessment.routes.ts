@@ -200,6 +200,25 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
       return res.status(404).json({ error: 'Assessment not found' })
     }
 
+    // Candidates can only view their own assessments
+    if (req.user?.userType === 'candidate') {
+      const candidate = await prisma.candidate.findUnique({ where: { userId: req.user.userId } })
+      if (!candidate || assessment.candidateId !== candidate.id) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+    }
+
+    // Clients can only view assessments for candidates who applied to their jobs
+    if (req.user?.userType === 'client') {
+      const clientUser = await prisma.clientUser.findFirst({ where: { userId: req.user.userId } })
+      const linkedApp = await prisma.application.findFirst({
+        where: { id: assessment.applicationId ?? undefined, job: { clientId: clientUser?.clientId } }
+      })
+      if (!clientUser || !linkedApp) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+    }
+
     res.json({ assessment })
   } catch (error) {
     console.error('Error fetching assessment:', error)
@@ -228,6 +247,25 @@ router.get('/:id/report', authenticateToken, async (req: AuthRequest, res: Respo
 
     if (!assessment) {
       return res.status(404).json({ error: 'Assessment not found' })
+    }
+
+    // Candidates can only view their own assessment report
+    if (req.user?.userType === 'candidate') {
+      const candidate = await prisma.candidate.findUnique({ where: { userId: req.user.userId } })
+      if (!candidate || assessment.candidateId !== candidate.id) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+    }
+
+    // Clients can only view reports for assessments linked to their jobs
+    if (req.user?.userType === 'client') {
+      const clientUser = await prisma.clientUser.findFirst({ where: { userId: req.user.userId } })
+      const linkedApp = await prisma.application.findFirst({
+        where: { id: assessment.applicationId ?? undefined, job: { clientId: clientUser?.clientId } }
+      })
+      if (!clientUser || !linkedApp) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
     }
 
     if (assessment.status !== 'completed') {

@@ -136,13 +136,19 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
       return res.status(404).json({ error: 'Application not found' })
     }
 
-    // Check access
+    // Candidates can only see their own applications
     if (req.user?.userType === 'candidate') {
-      const candidate = await prisma.candidate.findUnique({
-        where: { userId: req.user.userId }
-      })
+      const candidate = await prisma.candidate.findUnique({ where: { userId: req.user.userId } })
       if (candidate?.id !== application.candidateId) {
         return res.status(403).json({ error: 'Access denied' })
+      }
+    }
+
+    // Clients can only see applications for their own jobs
+    if (req.user?.userType === 'client') {
+      const clientUser = await prisma.clientUser.findFirst({ where: { userId: req.user.userId } })
+      if (!clientUser || application.job.clientId !== clientUser.clientId) {
+        return res.status(403).json({ error: 'Forbidden' })
       }
     }
 
