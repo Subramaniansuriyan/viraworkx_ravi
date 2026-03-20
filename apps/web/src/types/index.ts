@@ -247,7 +247,7 @@ export interface ContractSignature {
   id: string
   contractId: string
   userId: string
-  signerRole: 'client' | 'viraworkx'
+  signerRole: 'client' | 'viraworkx' | 'candidate'
   signedName?: string
   signatureImage?: string
   signedAt?: string
