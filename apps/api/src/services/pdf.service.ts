@@ -12,7 +12,7 @@ interface GenerateContractPdfParams {
 interface EmbedSignatureParams {
   existingPdfBytes: Buffer
   signatureImagePng: Buffer
-  signerRole: 'viraworkx' | 'client'
+  signerRole: 'viraworkx' | 'client' | 'candidate'
   signedName: string
   signedDate: string
 }
@@ -193,8 +193,11 @@ class PdfService {
     const margin = 60
     const contentWidth = (pageWidth - margin * 2) / 2 - 20
 
-    // Position: left for viraworkx, right for client
-    const baseX = params.signerRole === 'viraworkx' ? margin : pageWidth / 2 + 20
+    // Position: left for viraworkx, center for client, right for candidate
+    const colWidth = (pageWidth - margin * 2) / 3
+    const baseX = params.signerRole === 'viraworkx' ? margin
+      : params.signerRole === 'client' ? margin + colWidth
+      : margin + colWidth * 2
 
     // Read the stored horizontal rule Y from metadata
     const sigBlockMeta = pdfDoc.getSubject()

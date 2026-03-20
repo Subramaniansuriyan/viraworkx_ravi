@@ -18,7 +18,7 @@ interface SignContractInput {
   userId: string
   signerRole: 'client' | 'viraworkx' | 'candidate'
   signedName: string
-  signatureImage: string // base64 PNG data URL
+  signatureImage?: string // base64 PNG data URL (optional for candidates)
   ipAddress?: string
   userAgent?: string
 }
@@ -275,11 +275,7 @@ class ContractService {
       throw new Error('You have already signed this contract')
     }
 
-    // Decode base64 signature image to Buffer
-    const base64Data = input.signatureImage.replace(/^data:image\/png;base64,/, '')
-    const signatureImageBuffer = Buffer.from(base64Data, 'base64')
-
-    // Embed signature into the PDF
+    // Embed signature image into PDF if provided (required for client/admin, optional for candidate)
     const currentPdf = contract.pdfData
     if (!currentPdf) {
       throw new Error('Contract PDF not found')
@@ -291,30 +287,37 @@ class ContractService {
       day: 'numeric',
     })
 
-    const updatedPdf = await pdfService.embedSignatureInPdf({
-      existingPdfBytes: Buffer.from(currentPdf),
-      signatureImagePng: signatureImageBuffer,
-      signerRole: input.signerRole,
-      signedName: input.signedName,
-      signedDate,
-    })
+    let signatureImageBuffer: Buffer | undefined
+    let pdfToStore: Buffer = Buffer.from(currentPdf)
+
+    if (input.signatureImage) {
+      const base64Data = input.signatureImage.replace(/^data:image\/png;base64,/, '')
+      signatureImageBuffer = Buffer.from(base64Data, 'base64')
+      pdfToStore = await pdfService.embedSignatureInPdf({
+        existingPdfBytes: Buffer.from(currentPdf),
+        signatureImagePng: signatureImageBuffer,
+        signerRole: input.signerRole,
+        signedName: input.signedName,
+        signedDate,
+      })
+    }
 
     // Record the signature and update PDF
     await prisma.contractSignature.update({
       where: { id: signatureRecord.id },
       data: {
         signedName: input.signedName,
-        signatureImage: signatureImageBuffer,
+        ...(signatureImageBuffer && { signatureImage: signatureImageBuffer }),
         signedAt: new Date(),
         ipAddress: input.ipAddress,
         userAgent: input.userAgent,
       },
     })
 
-    // Update contract PDF with the new signature embedded
+    // Update contract PDF
     await prisma.contract.update({
       where: { id: input.contractId },
-      data: { pdfData: updatedPdf },
+      data: { pdfData: pdfToStore },
     })
 
     // Check if both parties have signed

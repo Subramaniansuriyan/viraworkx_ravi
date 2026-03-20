@@ -229,7 +229,8 @@ router.post('/:id/sign', async (req: AuthRequest, res) => {
     if (!signedName) {
       return res.status(400).json({ error: 'signedName is required' })
     }
-    if (!signatureImage) {
+    // signatureImage is optional for candidates (typed name is their signature)
+    if (!signatureImage && req.user.userType !== 'candidate') {
       return res.status(400).json({ error: 'signatureImage is required' })
     }
 
