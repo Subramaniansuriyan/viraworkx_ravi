@@ -218,13 +218,13 @@ jobs:
             --set-secrets="DATABASE_URL=viraworkx-database-url:latest" \
             --set-env-vars="NODE_ENV=production" \
             --command="node" \
-            --args="apps/api/ensure-schema.mjs" \
+            --args="packages/db/ensure-schema.mjs" \
             --quiet 2>/dev/null || \
           gcloud run jobs update viraworkx-migrate \
             --image=$IMAGE:${{ github.sha }} \
             --region=${{ env.GCP_REGION }} \
             --command="node" \
-            --args="apps/api/ensure-schema.mjs" \
+            --args="packages/db/ensure-schema.mjs" \
             --quiet
 
           gcloud run jobs execute viraworkx-migrate \
