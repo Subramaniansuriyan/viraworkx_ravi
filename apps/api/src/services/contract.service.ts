@@ -16,7 +16,7 @@ interface GenerateContractInput {
 interface SignContractInput {
   contractId: string
   userId: string
-  signerRole: 'client' | 'viraworkx'
+  signerRole: 'client' | 'viraworkx' | 'candidate'
   signedName: string
   signatureImage: string // base64 PNG data URL
   ipAddress?: string
@@ -141,11 +141,12 @@ class ContractService {
         },
       })
 
-      // Create signature placeholders for ViraWorkx and Client
+      // Create signature placeholders for ViraWorkx, Client, and Candidate
       await tx.contractSignature.createMany({
         data: [
           { contractId: c.id, userId: viraworkxSignerId, signerRole: 'viraworkx' },
           { contractId: c.id, userId: clientOwnerId, signerRole: 'client' },
+          { contractId: c.id, userId: application.candidate.user.id, signerRole: 'candidate' },
         ],
       })
 

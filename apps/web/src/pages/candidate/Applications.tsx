@@ -181,12 +181,6 @@ export default function Applications() {
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-4 shrink-0">
-                      {application.matchScore && (
-                        <div className="hidden md:block text-right">
-                          <p className="text-xs text-gray-500">Match</p>
-                          <p className="text-lg font-semibold text-green-600">{application.matchScore}%</p>
-                        </div>
-                      )}
                       <span className={`px-2 md:px-4 py-1 md:py-2 rounded-lg text-xs md:text-sm font-medium flex items-center gap-1 md:gap-2 ${getStageColor(application.stage)}`}>
                         {getStageIcon(application.stage)}
                         <span className="hidden sm:inline">{formatStage(application.stage)}</span>

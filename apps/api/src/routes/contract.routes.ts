@@ -117,8 +117,25 @@ router.get('/', async (req: AuthRequest, res) => {
 
 router.get('/:id', async (req: AuthRequest, res) => {
   try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' })
     const contract = await contractService.getContractById(req.params.id)
     if (!contract) return res.status(404).json({ error: 'Contract not found' })
+
+    // Access control: candidates can only see their own contracts
+    if (req.user.userType === 'candidate') {
+      const candidate = await prisma.candidate.findUnique({ where: { userId: req.user.userId } })
+      if (!candidate || contract.candidateId !== candidate.id) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+    }
+    // Clients can only see contracts belonging to their company
+    if (req.user.userType === 'client') {
+      const clientUser = await prisma.clientUser.findFirst({ where: { userId: req.user.userId } })
+      if (!clientUser || contract.clientId !== clientUser.clientId) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+    }
+
     res.json({ contract })
   } catch (error) {
     console.error('Error fetching contract:', error)
@@ -129,6 +146,25 @@ router.get('/:id', async (req: AuthRequest, res) => {
 // PDF download endpoint
 router.get('/:id/pdf', async (req: AuthRequest, res) => {
   try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' })
+
+    // Access control: same as GET /:id
+    const contract = await contractService.getContractById(req.params.id)
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+
+    if (req.user.userType === 'candidate') {
+      const candidate = await prisma.candidate.findUnique({ where: { userId: req.user.userId } })
+      if (!candidate || contract.candidateId !== candidate.id) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+    }
+    if (req.user.userType === 'client') {
+      const clientUser = await prisma.clientUser.findFirst({ where: { userId: req.user.userId } })
+      if (!clientUser || contract.clientId !== clientUser.clientId) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+    }
+
     const pdfBuffer = await contractService.getContractPdf(req.params.id)
     if (!pdfBuffer) {
       return res.status(404).json({ error: 'Contract PDF not found' })
@@ -198,13 +234,15 @@ router.post('/:id/sign', async (req: AuthRequest, res) => {
     }
 
     // Determine signer role from user type
-    let signerRole: 'client' | 'viraworkx'
+    let signerRole: 'client' | 'viraworkx' | 'candidate'
     if (req.user.userType === 'client') {
       signerRole = 'client'
     } else if (req.user.userType === 'admin') {
       signerRole = 'viraworkx'
+    } else if (req.user.userType === 'candidate') {
+      signerRole = 'candidate'
     } else {
-      return res.status(403).json({ error: 'Only clients and admins can sign contracts' })
+      return res.status(403).json({ error: 'Unauthorized to sign contracts' })
     }
 
     const contract = await contractService.signContract({

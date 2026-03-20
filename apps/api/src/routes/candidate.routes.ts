@@ -686,9 +686,23 @@ router.get('/me/applications', authenticateToken, async (req: AuthRequest, res: 
 
     const applications = await prisma.application.findMany({
       where: { candidateId: candidate.id },
-      include: {
+      select: {
+        id: true,
+        stage: true,
+        appliedAt: true,
+        stageUpdatedAt: true,
+        source: true,
         job: {
-          include: {
+          select: {
+            id: true,
+            title: true,
+            location: true,
+            employmentType: true,
+            remotePolicy: true,
+            salaryMin: true,
+            salaryMax: true,
+            salaryCurrency: true,
+            status: true,
             client: { select: { companyName: true, companyLogoUrl: true } }
           }
         }
