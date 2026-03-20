@@ -40,47 +40,36 @@ const US_HOLIDAYS_2025 = [
 ];
 
 const FULL_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const weekDates = ["Feb 10", "Feb 11", "Feb 12", "Feb 13", "Feb 14", "Feb 15", "Feb 16"];
-const weekISO = ["2025-02-10", "2025-02-11", "2025-02-12", "2025-02-13", "2025-02-14", "2025-02-15", "2025-02-16"];
 
-const initialEntries = [
-  { day: 0, startTime: "18:30", endTime: "03:00", hours: 8.0, overtime: 0, breakMins: 30, commits: 4, task: "API integration – Payment gateway module", blocker: "", project: "PayScale Finance", leaveType: "" },
-  { day: 1, startTime: "18:30", endTime: "03:00", hours: 8.0, overtime: 0, breakMins: 30, commits: 6, task: "Unit tests for auth module – 90% coverage", blocker: "", project: "PayScale Finance", leaveType: "" },
-  { day: 2, startTime: "19:00", endTime: "03:30", hours: 8.0, overtime: 0.5, breakMins: 0, commits: 3, task: "Bug fixes – Dashboard charts rendering issue", blocker: "Waiting on design specs from client", project: "PayScale Finance", leaveType: "" },
-  { day: 3, startTime: "18:30", endTime: "02:00", hours: 7.0, overtime: 0, breakMins: 30, commits: 5, task: "Code review & PR merge – Auth module", blocker: "", project: "PayScale Finance", leaveType: "" },
-  { day: 4, startTime: "18:00", endTime: "03:30", hours: 8.0, overtime: 1.0, breakMins: 0, commits: 2, task: "Sprint planning + DB migration scripts", blocker: "", project: "PayScale Finance", leaveType: "" },
-  { day: 5, startTime: "", endTime: "", hours: 0, overtime: 0, breakMins: 0, commits: 0, task: "", blocker: "", project: "", leaveType: "" },
-  { day: 6, startTime: "", endTime: "", hours: 0, overtime: 0, breakMins: 0, commits: 0, task: "", blocker: "", project: "", leaveType: "" },
-];
+function getCurrentWeekDates() {
+  const today = new Date();
+  const day = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+  const dates: string[] = [];
+  const isos: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push(d.toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+    isos.push(d.toISOString().split("T")[0]);
+  }
+  return { dates, isos };
+}
 
-const monthlyWeeks = [
-  { week: "Feb 3–9", regular: 40, overtime: 1.5, status: "approved", approvedAt: "Feb 10, 9:14 AM EST", leaves: 0 },
-  { week: "Feb 10–16", regular: 39, overtime: 1.5, status: "submitted", approvedAt: null, leaves: 0 },
-  { week: "Feb 17–23", regular: 0, overtime: 0, status: "upcoming", approvedAt: null, leaves: 0 },
-  { week: "Feb 24–28", regular: 0, overtime: 0, status: "upcoming", approvedAt: null, leaves: 0 },
-];
+const { dates: weekDates, isos: weekISO } = getCurrentWeekDates();
 
-const allTalents = [
-  { id: 1, name: "Priya Venkatesh", tier: 1, score: 92, role: "Full-Stack Engineer", client: "PayScale Finance", project: "Core API", thisWeek: 40, contracted: 40, status: "approved" },
-  { id: 2, name: "Arjun Krishnamurthy", tier: 1, score: 88, role: "Backend Engineer", client: "TechFlow AI", project: "ML Pipeline", thisWeek: 38, contracted: 40, status: "submitted" },
-  { id: 3, name: "Kavitha Rajan", tier: 2, score: 76, role: "Frontend Engineer", client: "MedConnect", project: "Patient Portal", thisWeek: 0, contracted: 40, status: "pending" },
-  { id: 4, name: "Deepak Suresh", tier: 1, score: 85, role: "DevOps Engineer", client: "MedConnect", project: "Infra", thisWeek: 42, contracted: 40, status: "approved" },
-  { id: 5, name: "Meera Nair", tier: 2, score: 74, role: "QA Engineer", client: "EduSpark", project: "Test Suite", thisWeek: 0, contracted: 20, status: "pending" },
-];
+const initialEntries = Array.from({ length: 7 }, (_, i) => ({
+  day: i, startTime: "", endTime: "", hours: 0, overtime: 0, breakMins: 0, commits: 0, task: "", blocker: "", project: "", leaveType: "",
+}));
 
-const auditLog = [
-  { time: "Feb 16, 11:30 PM IST", user: "Priya V.", action: "Submitted timesheet", detail: "Week Feb 10–16 · 39h regular + 1.5h OT" },
-  { time: "Feb 16, 11:28 PM IST", user: "Priya V.", action: "Edited entry", detail: "Friday: hours 7.5h → 8h, added overtime 1h" },
-  { time: "Feb 15, 10:00 PM IST", user: "Arjun K.", action: "Submitted timesheet", detail: "Week Feb 10–16 · 38h regular" },
-  { time: "Feb 15, 9:14 AM EST", user: "John (Acme)", action: "Approved timesheet", detail: "Week Feb 3–9 · Priya V. approved" },
-  { time: "Feb 14, 8:00 AM EST", user: "System", action: "Auto-approval triggered", detail: "72h SLA expired · Arjun K. Week Feb 3–9 auto-approved" },
-  { time: "Feb 13, 11:00 PM IST", user: "Kavitha R.", action: "Submitted timesheet", detail: "Week Feb 3–9 · 38h regular" },
-  { time: "Feb 10, 9:14 AM EST", user: "John (Acme)", action: "Approved timesheet", detail: "Week Feb 3–9 · Arjun K. approved" },
-];
+const monthlyWeeks: { week: string; regular: number; overtime: number; status: string; approvedAt: string | null; leaves: number }[] = [];
 
-const disputes = [
-  { id: 1, talent: "Kavitha R.", client: "MedConnect", week: "Feb 3–9", issue: "Client disputes 4h on Wednesday – says work wasn't delivered", status: "open", raiser: "Client", raisedAt: "Feb 12, 3:00 PM EST" },
-];
+const allTalents: { id: number; name: string; tier: number; score: number; role: string; client: string; project: string; thisWeek: number; contracted: number; status: string }[] = [];
+
+const auditLog: { time: string; user: string; action: string; detail: string }[] = [];
+
+const disputes: { id: number; talent: string; client: string; week: string; issue: string; status: string; raiser: string; raisedAt: string }[] = [];
 
 const LEAVE_TYPES = ["Sick Leave", "Personal Leave", "Planned PTO", "Worked on Holiday"];
 
@@ -268,9 +257,9 @@ export default function ViraWorkXTimesheetV3() {
         <div style={{ ...card(), padding: "14px 18px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <div>
             <div style={{ fontSize: 11, color: "#6a679a", marginBottom: 2 }}>Week of</div>
-            <div style={{ fontSize: 19, fontWeight: 700, color: "#fff", letterSpacing: "-.02em" }}>Feb 10 – 16, 2025</div>
-            {view === "talent" && <div style={{ fontSize: 11, color: "#6a679a", marginTop: 2 }}>Project: PayScale Finance · Contracted 40h/wk</div>}
-            {view === "client" && <div style={{ fontSize: 11, color: "#6a679a", marginTop: 2 }}>Talent: Priya Venkatesh · Full-Stack Engineer</div>}
+            <div style={{ fontSize: 19, fontWeight: 700, color: "#fff", letterSpacing: "-.02em" }}>{weekDates[0]} – {weekDates[6]}, {new Date().getFullYear()}</div>
+            {view === "talent" && <div style={{ fontSize: 11, color: "#6a679a", marginTop: 2 }}>Contracted 40h/wk</div>}
+            {view === "client" && <div style={{ fontSize: 11, color: "#6a679a", marginTop: 2 }}>Talent timesheet review</div>}
             {view === "admin" && <div style={{ fontSize: 11, color: "#6a679a", marginTop: 2 }}>ViraWorkX Admin · All Talent Overview</div>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -790,13 +779,14 @@ export default function ViraWorkXTimesheetV3() {
           <div className="fade">
             <div style={{ ...card(), overflow: "hidden" }}>
               <div style={{ padding: "12px 18px", background: "#13102e", borderBottom: "1px solid #1e1c3a" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>February 2025</div>
-                <div style={{ fontSize: 11, color: "#6a679a" }}>{view === "talent" ? "Priya Venkatesh · PayScale Finance" : "Talent: Priya Venkatesh"}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "150px 1fr 1fr 1fr 80px 120px", padding: "10px 18px", background: "#0c0a1a", borderBottom: "1px solid #1e1c3a", fontSize: 10, color: "#4a4868", fontWeight: 600 }}>
                 <div>Week</div><div style={{ textAlign: "center" }}>Regular</div><div style={{ textAlign: "center" }}>Overtime</div><div style={{ textAlign: "center" }}>Total</div><div style={{ textAlign: "center" }}>Leaves</div><div style={{ textAlign: "center" }}>Status</div>
               </div>
-              {monthlyWeeks.map((r, i) => (
+              {monthlyWeeks.length === 0 ? (
+                <div style={{ padding: 30, textAlign: "center", color: "#3d3b5a", fontSize: 13 }}>No timesheet data for this month yet.</div>
+              ) : monthlyWeeks.map((r, i) => (
                 <div key={i} style={{ display: "grid", gridTemplateColumns: "150px 1fr 1fr 1fr 80px 120px", padding: "12px 18px", borderBottom: "1px solid #12102a", alignItems: "center" }}>
                   <div style={{ fontSize: 12, fontWeight: 500, color: "#c4c1e0" }}>{r.week}</div>
                   <div style={{ textAlign: "center", ...mono, fontSize: 13, color: "#d4d0f0" }}>{r.regular > 0 ? `${r.regular}h` : "—"}</div>
@@ -810,14 +800,6 @@ export default function ViraWorkXTimesheetV3() {
                   </div>
                 </div>
               ))}
-              <div style={{ display: "grid", gridTemplateColumns: "150px 1fr 1fr 1fr 80px 120px", padding: "12px 18px", background: "#13102e" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>Month Total</div>
-                <div style={{ textAlign: "center", ...mono, fontSize: 13, fontWeight: 700, color: "#6ee7b7" }}>79h</div>
-                <div style={{ textAlign: "center", ...mono, fontSize: 13, fontWeight: 700, color: "#fbbf24" }}>+3h</div>
-                <div style={{ textAlign: "center", ...mono, fontSize: 14, fontWeight: 700, color: "#a78bfa" }}>82h</div>
-                <div style={{ textAlign: "center", fontSize: 11, color: "#f472b6" }}>0d</div>
-                <div />
-              </div>
             </div>
           </div>
         )}
@@ -829,10 +811,10 @@ export default function ViraWorkXTimesheetV3() {
               <div style={{ ...card(), padding: 18 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 12 }}>Leave Balances — 2025</div>
                 {[
-                  { type: "Sick Leave", used: 2, total: 12, color: "#ef4444" },
-                  { type: "Personal Leave", used: 1, total: 6, color: "#f59e0b" },
-                  { type: "Planned PTO", used: 3, total: 15, color: "#60a5fa" },
-                  { type: "Indian Holidays", used: 1, total: INDIAN_HOLIDAYS_2025.filter(h => h.type === "national").length, color: "#a78bfa" },
+                  { type: "Sick Leave", used: 0, total: 12, color: "#ef4444" },
+                  { type: "Personal Leave", used: 0, total: 6, color: "#f59e0b" },
+                  { type: "Planned PTO", used: 0, total: 15, color: "#60a5fa" },
+                  { type: "Indian Holidays", used: 0, total: INDIAN_HOLIDAYS_2025.filter(h => h.type === "national").length, color: "#a78bfa" },
                 ].map((l, i) => (
                   <div key={i} style={{ marginBottom: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
@@ -875,45 +857,9 @@ export default function ViraWorkXTimesheetV3() {
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 12 }}>
                   {view === "client" ? "Invoice Summary" : "Earnings Summary"}
                 </div>
-                {view === "client" ? (
-                  <>
-                    {[
-                      { l: "Regular Hours (79h × $45/hr)", v: "$3,555.00", c: "#6ee7b7" },
-                      { l: "Overtime (3h × $67.50/hr)", v: "$202.50", c: "#fbbf24" },
-                    ].map((r, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #1e1c3a" }}>
-                        <span style={{ fontSize: 12, color: "#a09dc0" }}>{r.l}</span>
-                        <span style={{ fontSize: 13, ...mono, fontWeight: 600, color: r.c }}>{r.v}</span>
-                      </div>
-                    ))}
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0" }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Total Due</span>
-                      <span style={{ fontSize: 16, ...mono, fontWeight: 700, color: "#a78bfa" }}>$3,757.50</span>
-                    </div>
-                    <div style={{ padding: "8px 12px", borderRadius: 7, background: "#0c0a1a", fontSize: 10, color: "#6a679a" }}>Net-15 payment terms · No hidden fees · Rate is all-inclusive</div>
-                  </>
-                ) : (
-                  <>
-                    {[
-                      { l: "Regular Hours (79h × $45/hr)", v: "$3,555.00", c: "#6ee7b7" },
-                      { l: "Overtime (3h × $67.50/hr)", v: "$202.50", c: "#fbbf24" },
-                      { l: "Gross Total", v: "$3,757.50", c: "#d4d0f0" },
-                      { l: "Platform Fee (10%)", v: "−$375.75", c: "#ef4444" },
-                    ].map((r, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #1e1c3a" }}>
-                        <span style={{ fontSize: 12, color: "#a09dc0" }}>{r.l}</span>
-                        <span style={{ fontSize: 13, ...mono, fontWeight: 600, color: r.c }}>{r.v}</span>
-                      </div>
-                    ))}
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0" }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Your Net Payout</span>
-                      <span style={{ fontSize: 16, ...mono, fontWeight: 700, color: "#10b981" }}>$3,381.75</span>
-                    </div>
-                    <div style={{ padding: "8px 12px", borderRadius: 7, background: "#0c0a1a", fontSize: 10, color: "#6a679a" }}>
-                      INR payout via Skydo: ~₹2,82,080 at ₹83.42/USD · FIRA certificate issued
-                    </div>
-                  </>
-                )}
+                <div style={{ padding: 30, textAlign: "center", color: "#3d3b5a", fontSize: 13 }}>
+                  No billing data available. Billing summary will appear once timesheets are approved.
+                </div>
               </div>
 
               <div style={{ ...card(), padding: 18 }}>
