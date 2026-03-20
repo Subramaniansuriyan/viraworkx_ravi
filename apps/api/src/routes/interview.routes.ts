@@ -235,7 +235,7 @@ router.post('/', authenticateToken, requireRole('client', 'admin'), async (req: 
         candidateName,
         jobTitle,
         companyName,
-        interviewType: interview.interviewType,
+        interviewType: interview.interviewType || 'video',
         scheduledAt: interview.scheduledAt.toISOString(),
         timezone: interview.timezone || 'UTC',
         meetingUrl: interview.meetingUrl || undefined,
