@@ -330,7 +330,7 @@ class ContractService {
       // Copy final PDF to pdfSignedData
       await prisma.contract.update({
         where: { id: input.contractId },
-        data: { pdfSignedData: updatedPdf },
+        data: { pdfSignedData: pdfToStore },
       })
       await this.activateContract(input.contractId)
     }
