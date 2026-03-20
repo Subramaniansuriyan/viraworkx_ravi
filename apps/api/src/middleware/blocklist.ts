@@ -48,7 +48,12 @@ function cleanExpired() {
 // Periodic cleanup every 5 minutes
 setInterval(cleanExpired, 5 * 60 * 1000).unref()
 
+// Paths that must never be blocked (uptime checks, health probes)
+const EXEMPT_PATHS = ['/health', '/favicon.ico']
+
 export function checkBlocklist(req: Request, res: Response, next: NextFunction) {
+  if (EXEMPT_PATHS.includes(req.path)) return next()
+
   const ip = req.ip || req.socket.remoteAddress || 'unknown'
   const entry = blockedIPs.get(ip)
 
