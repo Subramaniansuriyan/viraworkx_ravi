@@ -27,7 +27,7 @@ const STAGE_ORDER = [
  */
 router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { jobId, candidateId, stage, limit = '50', offset = '0' } = req.query
+    const { jobId, candidateId, stage, search, limit = '50', offset = '0' } = req.query
 
     const where: any = {}
 
@@ -57,6 +57,15 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
     if (stage) {
       where.stage = stage
+    }
+
+    if (search) {
+      where.candidate = {
+        OR: [
+          { firstName: { contains: search as string, mode: 'insensitive' } },
+          { lastName: { contains: search as string, mode: 'insensitive' } },
+        ]
+      }
     }
 
     const applications = await prisma.application.findMany({

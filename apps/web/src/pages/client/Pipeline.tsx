@@ -38,6 +38,13 @@ export default function Pipeline() {
   const { user, logout } = useAuthStore()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null)
+  const [scheduleModal, setScheduleModal] = useState<any>(null)
+  const [scheduleForm, setScheduleForm] = useState({
+    scheduledAt: '',
+    durationMinutes: 60,
+    meetingUrl: '',
+    timezone: 'Asia/Kolkata',
+  })
 
   // Fetch job details
   const { data: jobData } = useQuery({
@@ -71,6 +78,25 @@ export default function Pipeline() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pipeline', id] })
       setSelectedCandidate(null)
+    },
+  })
+
+  const { accessToken: token } = useAuthStore()
+
+  const scheduleMutation = useMutation({
+    mutationFn: async (body: any) => {
+      const res = await fetch('/api/v1/interviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) throw new Error('Failed to schedule interview')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pipeline', id] })
+      setScheduleModal(null)
+      setScheduleForm({ scheduledAt: '', durationMinutes: 60, meetingUrl: '', timezone: 'Asia/Kolkata' })
     },
   })
 
@@ -472,7 +498,10 @@ export default function Pipeline() {
                   <Mail className="w-5 h-5" />
                   Email
                 </button>
-                <button className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setScheduleModal(selectedCandidate)}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 flex items-center justify-center gap-2"
+                >
                   <Calendar className="w-5 h-5" />
                   Schedule
                 </button>
@@ -489,6 +518,106 @@ export default function Pipeline() {
                   View Resume
                 </a>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Interview Modal */}
+      {scheduleModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setScheduleModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md m-4 overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Schedule Interview</h2>
+                <p className="text-sm text-gray-500">
+                  {scheduleModal.candidate?.firstName} {scheduleModal.candidate?.lastName}
+                </p>
+              </div>
+              <button onClick={() => setScheduleModal(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time *</label>
+                <input
+                  type="datetime-local"
+                  value={scheduleForm.scheduledAt}
+                  onChange={(e) => setScheduleForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
+                  <input
+                    type="number"
+                    min={15}
+                    max={480}
+                    value={scheduleForm.durationMinutes}
+                    onChange={(e) => setScheduleForm((f) => ({ ...f, durationMinutes: parseInt(e.target.value) }))}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+                  <select
+                    value={scheduleForm.timezone}
+                    onChange={(e) => setScheduleForm((f) => ({ ...f, timezone: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  >
+                    <option value="Asia/Kolkata">IST (India)</option>
+                    <option value="America/New_York">EST (US East)</option>
+                    <option value="America/Chicago">CST (US Central)</option>
+                    <option value="America/Los_Angeles">PST (US West)</option>
+                    <option value="UTC">UTC</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Meeting URL (optional)</label>
+                <input
+                  type="url"
+                  placeholder="https://zoom.us/j/..."
+                  value={scheduleForm.meetingUrl}
+                  onChange={(e) => setScheduleForm((f) => ({ ...f, meetingUrl: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+
+              {scheduleMutation.isError && (
+                <p className="text-sm text-red-600">Failed to schedule. Please try again.</p>
+              )}
+            </div>
+
+            <div className="flex gap-3 p-6 border-t bg-gray-50">
+              <button
+                onClick={() => setScheduleModal(null)}
+                className="flex-1 py-2 border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() =>
+                  scheduleMutation.mutate({
+                    applicationId: scheduleModal.id,
+                    interviewType: 'video',
+                    scheduledAt: new Date(scheduleForm.scheduledAt).toISOString(),
+                    durationMinutes: scheduleForm.durationMinutes,
+                    meetingUrl: scheduleForm.meetingUrl || undefined,
+                    timezone: scheduleForm.timezone,
+                  })
+                }
+                disabled={!scheduleForm.scheduledAt || scheduleMutation.isPending}
+                className="flex-1 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50"
+              >
+                {scheduleMutation.isPending ? 'Scheduling...' : 'Confirm Schedule'}
+              </button>
             </div>
           </div>
         </div>
