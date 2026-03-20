@@ -13,6 +13,9 @@ export interface RegisterInput {
   firstName?: string
   lastName?: string
   companyName?: string
+  companyWebsite?: string
+  industry?: string
+  contactRole?: string
 }
 
 export interface LoginInput {
@@ -39,7 +42,7 @@ export interface UserResponse {
 
 class AuthService {
   async register(input: RegisterInput): Promise<{ user: UserResponse; requiresVerification: true }> {
-    const { email, password, userType, firstName, lastName, companyName } = input
+    const { email, password, userType, firstName, lastName, companyName, companyWebsite, industry } = input
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({ where: { email } })
@@ -73,7 +76,11 @@ class AuthService {
     // If client, create client record and link via client_users
     if (userType === 'client' && companyName) {
       const client = await prisma.client.create({
-        data: { companyName }
+        data: {
+          companyName,
+          ...(companyWebsite && { companyWebsite }),
+          ...(industry && { industry }),
+        }
       })
       await prisma.clientUser.create({
         data: {

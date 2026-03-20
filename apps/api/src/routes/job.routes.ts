@@ -27,7 +27,7 @@ const createJobSchema = z.object({
 })
 
 const updateJobSchema = createJobSchema.partial().extend({
-  status: z.enum(['draft', 'active', 'paused', 'closed', 'filled']).optional(),
+  status: z.enum(['draft', 'active', 'paused', 'closed', 'filled', 'pending_approval']).optional(),
 })
 
 /**
@@ -556,6 +556,45 @@ router.post('/:id/save', authenticateToken, async (req: AuthRequest, res: Respon
   } catch (error) {
     console.error('Error toggling saved job:', error)
     res.status(500).json({ error: 'Failed to save job' })
+  }
+})
+
+/**
+ * POST /api/v1/jobs/:id/submit-for-review
+ * Client submits a draft job for ops approval (sets status to pending_approval)
+ */
+router.post('/:id/submit-for-review', authenticateToken, requireRole('client', 'admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const job = await prisma.job.findUnique({ where: { id: req.params.id } })
+
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' })
+    }
+
+    // Verify client owns this job
+    if (req.user?.userType === 'client') {
+      const clientUser = await prisma.clientUser.findFirst({
+        where: { userId: req.user.userId }
+      })
+      if (!clientUser || clientUser.clientId !== job.clientId) {
+        return res.status(403).json({ error: 'Access denied' })
+      }
+    }
+
+    if (job.status !== 'draft') {
+      return res.status(400).json({ error: 'Only draft jobs can be submitted for review' })
+    }
+
+    const updated = await prisma.job.update({
+      where: { id: req.params.id },
+      data: { status: 'pending_approval', updatedAt: new Date() },
+      include: { client: { select: { companyName: true } }, _count: { select: { applications: true } } }
+    })
+
+    res.json({ job: updated })
+  } catch (error) {
+    console.error('Error submitting job for review:', error)
+    res.status(500).json({ error: 'Failed to submit job for review' })
   }
 })
 

@@ -19,7 +19,16 @@ export default function Register() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [companyName, setCompanyName] = useState('')
+  const [companyWebsite, setCompanyWebsite] = useState('')
+  const [industry, setIndustry] = useState('')
+  const [contactRole, setContactRole] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+
+  const PERSONAL_EMAIL_DOMAINS = new Set([
+    'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com',
+    'icloud.com', 'aol.com', 'protonmail.com', 'ymail.com', 'msn.com',
+    'yahoo.co.uk', 'yahoo.co.in', 'googlemail.com', 'me.com',
+  ])
   const [validationError, setValidationError] = useState('')
   const [verificationSent, setVerificationSent] = useState(false)
   const [registeredEmail, setRegisteredEmail] = useState('')
@@ -47,12 +56,22 @@ export default function Register() {
       return
     }
 
+    if (userType === 'client') {
+      const domain = email.split('@')[1]?.toLowerCase()
+      if (domain && PERSONAL_EMAIL_DOMAINS.has(domain)) {
+        setValidationError('Please use your company email address to register as an employer.')
+        return
+      }
+    }
+
     try {
       const result = await register({
         email,
         password,
         userType,
-        ...(userType === 'candidate' ? { firstName, lastName } : { companyName }),
+        ...(userType === 'candidate'
+          ? { firstName, lastName }
+          : { companyName, ...(companyWebsite && { companyWebsite }), ...(industry && { industry }), ...(contactRole && { contactRole }) }),
       })
       if (result.requiresVerification) {
         setRegisteredEmail(email)
@@ -191,20 +210,69 @@ export default function Register() {
                 </div>
               </div>
             ) : (
-              <div>
-                <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
-                  Company name
-                </label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Company name *
+                  </label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      id="companyName"
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      required
+                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+                      placeholder="Acme Inc."
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-2">
+                      Industry
+                    </label>
+                    <select
+                      id="industry"
+                      value={industry}
+                      onChange={(e) => setIndustry(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+                    >
+                      <option value="">Select...</option>
+                      <option value="technology">Technology</option>
+                      <option value="fintech">Fintech</option>
+                      <option value="healthtech">Healthtech</option>
+                      <option value="ecommerce">E-Commerce</option>
+                      <option value="saas">SaaS</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="contactRole" className="block text-sm font-medium text-gray-700 mb-2">
+                      Your role
+                    </label>
+                    <input
+                      id="contactRole"
+                      type="text"
+                      value={contactRole}
+                      onChange={(e) => setContactRole(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+                      placeholder="e.g. CTO, HR Manager"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="companyWebsite" className="block text-sm font-medium text-gray-700 mb-2">
+                    Company website
+                  </label>
                   <input
-                    id="companyName"
-                    type="text"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    required
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
-                    placeholder="Acme Inc."
+                    id="companyWebsite"
+                    type="url"
+                    value={companyWebsite}
+                    onChange={(e) => setCompanyWebsite(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+                    placeholder="https://acme.com"
                   />
                 </div>
               </div>

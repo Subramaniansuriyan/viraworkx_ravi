@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Users, Briefcase, Clock, Video, Bot, FileText,
   Plus, Search,
-  ChevronRight, Building2, MapPin, TrendingUp,
+  ChevronRight, Building2, MapPin, TrendingUp, Mail,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import NotificationBell from '../../components/shared/NotificationBell'
@@ -172,6 +172,36 @@ export default function ClientDashboard() {
               <p className="text-xs text-gray-400 mt-4 text-center">
                 ViraWorkx AI handles screening & scheduling for you
               </p>
+            </div>
+
+            {/* Need Help */}
+            <div className="bg-primary/5 rounded-xl border border-primary/20 p-4 md:p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Need Help?</h3>
+                  <p className="text-xs text-gray-500">Contact ViraWorkx</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Our team is here to support your hiring. Reach out anytime for help with jobs, candidates, or billing.
+              </p>
+              <a
+                href="mailto:support@viraworkx.ai"
+                className="block w-full text-center px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                support@viraworkx.ai
+              </a>
+              <a
+                href="https://wa.me/message/viraworkx"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center px-4 py-2 mt-2 border border-primary/30 text-primary rounded-lg text-sm font-medium hover:bg-primary/5 transition-colors"
+              >
+                WhatsApp Us
+              </a>
             </div>
 
             {/* Active Jobs */}

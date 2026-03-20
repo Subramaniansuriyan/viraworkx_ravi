@@ -16,6 +16,9 @@ const registerSchema = z.object({
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
   companyName: z.string().min(1).optional(),
+  companyWebsite: z.string().url().optional().or(z.literal('')),
+  industry: z.string().optional(),
+  contactRole: z.string().optional(),
 }).refine(data => {
   if (data.userType === 'candidate') {
     return data.firstName && data.lastName
@@ -32,6 +35,13 @@ const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
 })
+
+// Personal email domains — blocked for client (employer) registrations
+const PERSONAL_EMAIL_DOMAINS = new Set([
+  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com',
+  'icloud.com', 'aol.com', 'protonmail.com', 'ymail.com', 'msn.com',
+  'yahoo.co.uk', 'yahoo.co.in', 'googlemail.com', 'me.com',
+])
 
 // Common disposable/throwaway email domains
 const BLOCKED_DOMAINS = new Set([
@@ -59,6 +69,16 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(400).json({
         error: 'Please use a valid work or personal email address. Disposable email addresses are not allowed.'
       })
+    }
+
+    // Block personal email domains for client (employer) registrations
+    if (input.userType === 'client') {
+      const domain = input.email.split('@')[1]?.toLowerCase()
+      if (domain && PERSONAL_EMAIL_DOMAINS.has(domain)) {
+        return res.status(400).json({
+          error: 'Please use your company email address to register as an employer.'
+        })
+      }
     }
 
     const result = await authService.register(input)

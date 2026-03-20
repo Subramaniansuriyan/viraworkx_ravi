@@ -210,6 +210,37 @@ export default function Billing() {
           })}
         </div>
 
+        {/* Payment Terms */}
+        <div className="mb-8 bg-slate-900/80 rounded-2xl border border-slate-800/50 p-6">
+          <h3 className="text-lg font-semibold mb-4">Payment Terms</h3>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+              <p className="text-sm text-slate-400 mb-1">Billing Cycle</p>
+              <p className="font-semibold text-white">Biweekly</p>
+              <p className="text-xs text-slate-500 mt-1">Invoiced every two weeks based on active placements</p>
+            </div>
+            <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+              <p className="text-sm text-slate-400 mb-1">Payment Due</p>
+              <p className="font-semibold text-white">Net 7</p>
+              <p className="text-xs text-slate-500 mt-1">Payment due within 7 days of invoice date</p>
+            </div>
+            <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+              <p className="text-sm text-slate-400 mb-1">Timesheet Submission</p>
+              <p className="font-semibold text-white">Every Friday by 6 PM IST</p>
+              <p className="text-xs text-slate-500 mt-1">Contractors submit timesheets; client approval required</p>
+            </div>
+            <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+              <p className="text-sm text-slate-400 mb-1">Currency</p>
+              <p className="font-semibold text-white">USD</p>
+              <p className="text-xs text-slate-500 mt-1">All invoices billed in US dollars</p>
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 mt-4">
+            Questions about billing? Contact{' '}
+            <a href="mailto:billing@viraworkx.ai" className="text-blue-400 hover:underline">billing@viraworkx.ai</a>
+          </p>
+        </div>
+
         {/* Payment History */}
         <h3 className="text-lg font-semibold mb-4">Payment History</h3>
         {invoices.length === 0 ? (

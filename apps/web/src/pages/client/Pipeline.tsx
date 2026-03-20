@@ -39,6 +39,14 @@ export default function Pipeline() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null)
   const [scheduleModal, setScheduleModal] = useState<any>(null)
+  const [feedbackModal, setFeedbackModal] = useState<any>(null)
+  const [feedbackForm, setFeedbackForm] = useState({
+    overallRating: 3,
+    recommendation: 'undecided' as const,
+    strengths: '',
+    concerns: '',
+    notes: '',
+  })
   const [scheduleForm, setScheduleForm] = useState({
     scheduledAt: '',
     durationMinutes: 60,
@@ -82,6 +90,30 @@ export default function Pipeline() {
   })
 
   const { accessToken: token } = useAuthStore()
+
+  const feedbackMutation = useMutation({
+    mutationFn: async ({ appId, feedback }: { appId: string; feedback: any }) => {
+      // Find the most recent interview for this application
+      const res = await fetch(`/api/v1/interviews?applicationId=${appId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Failed to load interviews')
+      const data = await res.json()
+      const interview = data.interviews?.[0]
+      if (!interview) throw new Error('No interview found')
+      const fbRes = await fetch(`/api/v1/interviews/${interview.id}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(feedback),
+      })
+      if (!fbRes.ok) throw new Error('Failed to submit feedback')
+      return fbRes.json()
+    },
+    onSuccess: () => {
+      setFeedbackModal(null)
+      setFeedbackForm({ overallRating: 3, recommendation: 'undecided', strengths: '', concerns: '', notes: '' })
+    },
+  })
 
   const scheduleMutation = useMutation({
     mutationFn: async (body: any) => {
@@ -248,14 +280,6 @@ export default function Pipeline() {
                           </div>
 
                           <div className="flex items-center gap-2 mb-3 flex-wrap">
-                            {app.matchScore && (
-                              <>
-                                <span className="text-sm text-gray-500">Match:</span>
-                                <span className={`text-sm font-semibold ${app.matchScore >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
-                                  {app.matchScore}%
-                                </span>
-                              </>
-                            )}
                             {app.assessmentTier && (
                               <span className="ml-auto px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-full flex items-center gap-1">
                                 <Award className="w-3 h-3" />
@@ -287,6 +311,18 @@ export default function Pipeline() {
                               {new Date(app.appliedAt).toLocaleDateString()}
                             </p>
                             <div className="flex gap-1">
+                              {stage.key === 'interview' && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setFeedbackModal(app)
+                                  }}
+                                  className="p-1.5 hover:bg-blue-50 rounded text-blue-600"
+                                  title="Leave Feedback"
+                                >
+                                  <MessageSquare className="w-4 h-4" />
+                                </button>
+                              )}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -393,16 +429,10 @@ export default function Pipeline() {
                 </div>
               </div>
 
-              {/* Match Score */}
-              {selectedCandidate.matchScore && (
-                <div className="bg-green-50 rounded-xl p-4 mb-6">
-                  <div className="flex items-center justify-between">
-                    <span className="text-green-700 font-medium">AI Match Score</span>
-                    <span className="text-2xl font-bold text-green-600">{selectedCandidate.matchScore}%</span>
-                  </div>
-                  {selectedCandidate.aiSummary && (
-                    <p className="text-sm text-green-700 mt-2">{selectedCandidate.aiSummary}</p>
-                  )}
+              {/* AI Summary (no score exposed to client) */}
+              {selectedCandidate.aiSummary && (
+                <div className="bg-blue-50 rounded-xl p-4 mb-6">
+                  <p className="text-sm text-blue-700">{selectedCandidate.aiSummary}</p>
                 </div>
               )}
 
@@ -518,6 +548,108 @@ export default function Pipeline() {
                   View Resume
                 </a>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interview Feedback Modal */}
+      {feedbackModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setFeedbackModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md m-4 overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Interview Feedback</h2>
+                <p className="text-sm text-gray-500">
+                  {feedbackModal.candidate?.firstName} {feedbackModal.candidate?.lastName}
+                </p>
+              </div>
+              <button onClick={() => setFeedbackModal(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Overall Rating</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setFeedbackForm((f) => ({ ...f, overallRating: r }))}
+                      className={`w-10 h-10 rounded-lg font-semibold text-sm transition-colors ${
+                        feedbackForm.overallRating === r
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Recommendation</label>
+                <select
+                  value={feedbackForm.recommendation}
+                  onChange={(e) => setFeedbackForm((f) => ({ ...f, recommendation: e.target.value as any }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="strong_hire">Strong Hire</option>
+                  <option value="hire">Hire</option>
+                  <option value="undecided">Undecided</option>
+                  <option value="no_hire">No Hire</option>
+                  <option value="strong_no_hire">Strong No Hire</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Strengths</label>
+                <textarea
+                  rows={2}
+                  placeholder="What did the candidate do well?"
+                  value={feedbackForm.strengths}
+                  onChange={(e) => setFeedbackForm((f) => ({ ...f, strengths: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Concerns</label>
+                <textarea
+                  rows={2}
+                  placeholder="Any concerns or gaps?"
+                  value={feedbackForm.concerns}
+                  onChange={(e) => setFeedbackForm((f) => ({ ...f, concerns: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  rows={2}
+                  placeholder="Additional notes..."
+                  value={feedbackForm.notes}
+                  onChange={(e) => setFeedbackForm((f) => ({ ...f, notes: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                />
+              </div>
+              {feedbackMutation.isError && (
+                <p className="text-sm text-red-600">Failed to submit feedback. Please try again.</p>
+              )}
+            </div>
+            <div className="flex gap-3 p-6 border-t bg-gray-50">
+              <button
+                onClick={() => setFeedbackModal(null)}
+                className="flex-1 py-2 border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => feedbackMutation.mutate({ appId: feedbackModal.id, feedback: feedbackForm })}
+                disabled={feedbackMutation.isPending}
+                className="flex-1 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50"
+              >
+                {feedbackMutation.isPending ? 'Submitting...' : 'Submit Feedback'}
+              </button>
             </div>
           </div>
         </div>

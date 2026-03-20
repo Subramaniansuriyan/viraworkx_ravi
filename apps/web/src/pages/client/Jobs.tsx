@@ -20,7 +20,9 @@ import {
   Play,
   Zap,
   ChevronDown,
-  LogOut
+  LogOut,
+  Copy,
+  ArrowRight
 } from 'lucide-react'
 
 export default function ClientJobs() {
@@ -57,6 +59,32 @@ export default function ClientJobs() {
     },
   })
 
+  const submitForReviewMutation = useMutation({
+    mutationFn: (id: string) => jobApi.submitForReview(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client-jobs'] })
+    },
+  })
+
+  const duplicateMutation = useMutation({
+    mutationFn: (job: any) => jobApi.create({
+      title: `${job.title} (Copy)`,
+      description: job.description,
+      requirements: job.requirements,
+      responsibilities: job.responsibilities,
+      employmentType: job.employmentType,
+      location: job.location,
+      remotePolicy: job.remotePolicy,
+      salaryMin: job.salaryMin,
+      salaryMax: job.salaryMax,
+      skillsRequired: job.skillsRequired,
+      department: job.department,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client-jobs'] })
+    },
+  })
+
   const jobs = data?.data?.jobs || []
 
   const filteredJobs = jobs.filter((job: any) =>
@@ -69,8 +97,10 @@ export default function ClientJobs() {
         return 'bg-green-100 text-green-800'
       case 'draft':
         return 'bg-gray-100 text-gray-800'
-      case 'paused':
+      case 'pending_approval':
         return 'bg-yellow-100 text-yellow-800'
+      case 'paused':
+        return 'bg-orange-100 text-orange-800'
       case 'closed':
         return 'bg-red-100 text-red-800'
       case 'filled':
@@ -97,9 +127,16 @@ export default function ClientJobs() {
   const handleToggleStatus = (job: any) => {
     if (job.status === 'active') {
       closeMutation.mutate(job.id)
-    } else if (job.status === 'draft' || job.status === 'paused') {
+    } else if (job.status === 'draft') {
+      submitForReviewMutation.mutate(job.id)
+    } else if (job.status === 'paused') {
       publishMutation.mutate(job.id)
     }
+    setOpenMenu(null)
+  }
+
+  const handleDuplicate = (job: any) => {
+    duplicateMutation.mutate(job)
     setOpenMenu(null)
   }
 
@@ -193,6 +230,7 @@ export default function ClientJobs() {
               <option value="">All Status</option>
               <option value="active">Active</option>
               <option value="draft">Draft</option>
+              <option value="pending_approval">Pending Review</option>
               <option value="paused">Paused</option>
               <option value="closed">Closed</option>
               <option value="filled">Filled</option>
@@ -330,12 +368,24 @@ export default function ClientJobs() {
                                   <Pause className="w-4 h-4 mr-2" />
                                   Close Job
                                 </>
-                              ) : (
+                              ) : job.status === 'draft' ? (
+                                <>
+                                  <ArrowRight className="w-4 h-4 mr-2" />
+                                  Submit for Review
+                                </>
+                              ) : job.status === 'paused' ? (
                                 <>
                                   <Play className="w-4 h-4 mr-2" />
                                   Publish Job
                                 </>
-                              )}
+                              ) : null}
+                            </button>
+                            <button
+                              onClick={() => handleDuplicate(job)}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              <Copy className="w-4 h-4 mr-2" />
+                              Duplicate
                             </button>
                             <button
                               onClick={() => handleDelete(job.id)}

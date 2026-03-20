@@ -159,6 +159,7 @@ export const jobApi = {
     api.post<{ application: Application }>(`/jobs/${jobId}/apply`, data),
   saveJob: (id: string) => api.post<{ saved: boolean }>(`/jobs/${id}/save`),
   getSavedJobs: () => api.get<{ savedJobs: Job[] }>('/jobs/saved/list'),
+  submitForReview: (id: string) => api.post<{ job: Job }>(`/jobs/${id}/submit-for-review`),
 }
 
 // Application API

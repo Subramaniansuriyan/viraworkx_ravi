@@ -158,15 +158,6 @@ export default function TieredCandidates() {
                   </div>
                 </div>
 
-                {app.matchScore && (
-                  <div className="text-right shrink-0">
-                    <p className={`text-sm font-semibold ${app.matchScore >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
-                      {app.matchScore}%
-                    </p>
-                    <p className="text-xs text-gray-400">match</p>
-                  </div>
-                )}
-
                 <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
               </Link>
             ))}
