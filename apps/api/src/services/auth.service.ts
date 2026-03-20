@@ -329,12 +329,12 @@ class AuthService {
   private formatUserResponse(user: any): UserResponse {
     let profile: UserResponse['profile'] = undefined
 
-    if (user.candidate) {
+    if (user.userType === 'candidate' && user.candidate) {
       profile = {
         firstName: user.candidate.firstName,
         lastName: user.candidate.lastName,
       }
-    } else if (user.clientUsers?.length > 0) {
+    } else if (user.userType === 'client' && user.clientUsers?.length > 0) {
       profile = {
         companyName: user.clientUsers[0].client.companyName,
       }
