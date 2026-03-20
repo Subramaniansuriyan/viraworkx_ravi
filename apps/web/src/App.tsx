@@ -23,6 +23,7 @@ import TestAllocation from './pages/admin/TestAllocation'
 import AdminVetting from './pages/admin/Vetting'
 import AdminClients from './pages/admin/Clients'
 import AdminCandidates from './pages/admin/Candidates'
+import AdminCandidateDetail from './pages/admin/CandidateDetail'
 import AdminJobs from './pages/admin/Jobs'
 import AdminApplications from './pages/admin/Applications'
 import AdminInterviews from './pages/admin/Interviews'
@@ -236,6 +237,14 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['admin']}>
             <AdminCandidates />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/candidates/:id"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminCandidateDetail />
           </ProtectedRoute>
         }
       />

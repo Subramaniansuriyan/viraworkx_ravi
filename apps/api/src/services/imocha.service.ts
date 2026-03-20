@@ -146,6 +146,22 @@ class IMochaService {
    * Get available tests from iMocha
    */
   async getTests(category?: string): Promise<IMochaTest[]> {
+    if (!this.isConfigured) {
+      // Return mock tests for development
+      const mockTests: IMochaTest[] = [
+        { id: 'mock-js-001', name: 'JavaScript Fundamentals', category: 'Programming', duration: 45, skills: ['JavaScript', 'ES6', 'DOM'], difficulty: 'intermediate' },
+        { id: 'mock-react-002', name: 'React & Frontend Development', category: 'Programming', duration: 60, skills: ['React', 'TypeScript', 'CSS'], difficulty: 'intermediate' },
+        { id: 'mock-node-003', name: 'Node.js & Backend', category: 'Programming', duration: 60, skills: ['Node.js', 'Express', 'REST API'], difficulty: 'intermediate' },
+        { id: 'mock-py-004', name: 'Python Programming', category: 'Programming', duration: 45, skills: ['Python', 'OOP', 'Data Structures'], difficulty: 'beginner' },
+        { id: 'mock-sql-005', name: 'SQL & Database Design', category: 'Database', duration: 30, skills: ['SQL', 'PostgreSQL', 'Database Design'], difficulty: 'intermediate' },
+        { id: 'mock-java-006', name: 'Java Development', category: 'Programming', duration: 60, skills: ['Java', 'OOP', 'Spring'], difficulty: 'intermediate' },
+        { id: 'mock-comm-007', name: 'English Communication', category: 'Communication', duration: 30, skills: ['Communication', 'Writing', 'Grammar'], difficulty: 'beginner' },
+        { id: 'mock-cs-008', name: 'Computer Science Fundamentals', category: 'Core', duration: 45, skills: ['Algorithms', 'Data Structures', 'Problem Solving'], difficulty: 'intermediate' },
+      ]
+      if (category) return mockTests.filter(t => t.category === category)
+      return mockTests
+    }
+
     try {
       const response = await this.client.get('/tests', {
         params: { category }

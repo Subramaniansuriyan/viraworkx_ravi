@@ -3,6 +3,7 @@ import { z } from 'zod'
 import prisma from '../config/database.js'
 import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
 import { socketService } from '../services/socket.service.js'
+import { emailService } from '../services/email.service.js'
 
 const router = Router()
 
@@ -179,7 +180,7 @@ router.post('/', authenticateToken, requireRole('client', 'admin'), async (req: 
       include: {
         application: {
           include: {
-            job: { select: { title: true } },
+            job: { select: { title: true, client: { select: { companyName: true } } } },
             candidate: { include: { user: { select: { email: true } } } }
           }
         }
@@ -222,6 +223,23 @@ router.post('/', authenticateToken, requireRole('client', 'admin'), async (req: 
         interview.scheduledAt.toISOString(),
         candidateUserId
       )
+    }
+
+    // Send interview scheduled email to candidate
+    const candidateEmail = interview.application?.candidate?.user?.email
+    const candidateName = `${interview.application?.candidate?.firstName} ${interview.application?.candidate?.lastName}`
+    const jobTitle = interview.application?.job?.title || 'Position'
+    const companyName = (interview.application?.job as any)?.client?.companyName || 'Company'
+    if (candidateEmail) {
+      emailService.sendInterviewScheduled(candidateEmail, {
+        candidateName,
+        jobTitle,
+        companyName,
+        interviewType: interview.interviewType,
+        scheduledAt: interview.scheduledAt.toISOString(),
+        timezone: interview.timezone || 'UTC',
+        meetingUrl: interview.meetingUrl || undefined,
+      }).catch(err => console.error('Failed to send interview email:', err))
     }
 
     res.status(201).json({ interview })

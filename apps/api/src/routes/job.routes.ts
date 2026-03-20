@@ -110,6 +110,28 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 /**
+ * GET /api/v1/jobs/pending-approval
+ * Jobs submitted by clients awaiting admin approval (draft jobs with a clientId)
+ */
+router.get('/pending-approval', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const jobs = await prisma.job.findMany({
+      where: { status: 'draft', clientId: { not: undefined } },
+      include: {
+        client: { select: { id: true, companyName: true } },
+        _count: { select: { applications: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    })
+    res.json({ jobs })
+  } catch (error) {
+    console.error('Error fetching pending jobs:', error)
+    res.status(500).json({ error: 'Failed to fetch pending jobs' })
+  }
+})
+
+/**
  * GET /api/v1/jobs/:id
  * Get job by ID
  */
@@ -298,6 +320,45 @@ router.post('/:id/close', authenticateToken, requireRole('client', 'admin'), asy
   } catch (error) {
     console.error('Error closing job:', error)
     res.status(500).json({ error: 'Failed to close job' })
+  }
+})
+
+/**
+ * POST /api/v1/jobs/:id/approve
+ * Approve a pending job (admin only) - publishes it
+ */
+router.post('/:id/approve', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const job = await prisma.job.findUnique({ where: { id: req.params.id } })
+    if (!job) return res.status(404).json({ error: 'Job not found' })
+
+    const updated = await prisma.job.update({
+      where: { id: req.params.id },
+      data: { status: 'active', postedAt: new Date(), updatedAt: new Date() },
+      include: { client: { select: { companyName: true } } }
+    })
+    res.json({ job: updated })
+  } catch (error) {
+    console.error('Error approving job:', error)
+    res.status(500).json({ error: 'Failed to approve job' })
+  }
+})
+
+/**
+ * POST /api/v1/jobs/:id/reject-approval
+ * Reject a pending job (admin only) - keeps it as draft
+ */
+router.post('/:id/reject-approval', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { reason } = req.body
+    const updated = await prisma.job.update({
+      where: { id: req.params.id },
+      data: { status: 'draft', updatedAt: new Date() }
+    })
+    res.json({ job: updated, reason })
+  } catch (error) {
+    console.error('Error rejecting job:', error)
+    res.status(500).json({ error: 'Failed to reject job' })
   }
 })
 

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Briefcase, Search, ChevronLeft, ChevronRight, ExternalLink, Building2
+  Briefcase, Search, ChevronLeft, ChevronRight, ExternalLink, Building2,
+  PlayCircle, XCircle
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -25,10 +26,39 @@ const REMOTE_LABELS: Record<string, string> = {
 
 export default function AdminJobs() {
   const { accessToken: token } = useAuthStore()
+  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
   const limit = 15
+
+  const publishMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      const res = await fetch(`${API_URL}/api/v1/jobs/${jobId}/publish`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Failed to publish')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminJobs'] })
+    },
+  })
+
+  const closeMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      const res = await fetch(`${API_URL}/api/v1/jobs/${jobId}/close`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Failed to close')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminJobs'] })
+    },
+  })
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminJobs', page, searchQuery, statusFilter],
@@ -158,13 +188,35 @@ export default function AdminJobs() {
                         {job.postedAt ? formatDate(job.postedAt) : job.createdAt ? formatDate(job.createdAt) : '-'}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Link
-                          to={`/client/jobs/${job.id}/pipeline`}
-                          className="inline-flex items-center gap-1 p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg"
-                          title="View Pipeline"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Link>
+                        <div className="flex items-center justify-end gap-1">
+                          {job.status === 'draft' && (
+                            <button
+                              onClick={() => publishMutation.mutate(job.id)}
+                              disabled={publishMutation.isPending}
+                              title="Publish Job"
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg disabled:opacity-50"
+                            >
+                              <PlayCircle className="w-4 h-4" />
+                            </button>
+                          )}
+                          {job.status === 'active' && (
+                            <button
+                              onClick={() => closeMutation.mutate(job.id)}
+                              disabled={closeMutation.isPending}
+                              title="Close Job"
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          )}
+                          <Link
+                            to={`/client/jobs/${job.id}/pipeline`}
+                            className="inline-flex items-center gap-1 p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg"
+                            title="View Pipeline"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}

@@ -64,6 +64,8 @@ export default function AdminVetting() {
   const queryClient = useQueryClient()
   const [tierModal, setTierModal] = useState<{ appId: string; candidateName: string } | null>(null)
   const [selectedTier, setSelectedTier] = useState('Tier 1')
+  const [rejectModal, setRejectModal] = useState<{ appId: string; candidateName: string } | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['vettingPipeline'],
@@ -94,6 +96,23 @@ export default function AdminVetting() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vettingPipeline'] })
       setTierModal(null)
+    },
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({ appId, reason }: { appId: string; reason: string }) => {
+      const res = await fetch(`${API_URL}/api/v1/applications/${appId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reason }),
+      })
+      if (!res.ok) throw new Error('Failed to reject')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vettingPipeline'] })
+      setRejectModal(null)
+      setRejectReason('')
     },
   })
 
@@ -234,16 +253,24 @@ export default function AdminVetting() {
                             </div>
                           )}
 
-                          {col.nextLabel && (
+                          <div className="flex gap-2 mt-2">
                             <button
-                              onClick={() => handleAdvance(app, col)}
-                              disabled={advanceMutation.isPending}
-                              className="w-full flex items-center justify-center gap-1 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                              onClick={(e) => { e.stopPropagation(); setRejectModal({ appId: app.id, candidateName: `${app.candidate?.firstName} ${app.candidate?.lastName}` }) }}
+                              className="flex-1 py-1.5 text-xs font-medium border border-red-200 text-red-600 rounded-lg hover:bg-red-50"
                             >
-                              {col.nextLabel}
-                              <ArrowRight className="w-3 h-3" />
+                              Reject
                             </button>
-                          )}
+                            {col.nextLabel && (
+                              <button
+                                onClick={() => handleAdvance(app, col)}
+                                disabled={advanceMutation.isPending}
+                                className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                              >
+                                {col.nextLabel}
+                                <ArrowRight className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
                           {col.key === 'deployed' && (
                             <div className="flex items-center gap-1 text-xs text-green-600 font-medium justify-center py-1">
                               <CheckCircle className="w-3 h-3" /> Active with client
@@ -322,6 +349,36 @@ export default function AdminVetting() {
                 className="flex-1 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50"
               >
                 {advanceMutation.isPending ? 'Saving...' : 'Confirm Tier'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {rejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setRejectModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm m-4 p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Reject Candidate</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Rejecting <span className="font-medium text-gray-900">{rejectModal.candidateName}</span>
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Reason for rejection (optional)"
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-200 focus:border-red-400 mb-4"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setRejectModal(null)} className="flex-1 py-2 border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50">
+                Cancel
+              </button>
+              <button
+                onClick={() => rejectMutation.mutate({ appId: rejectModal.appId, reason: rejectReason })}
+                disabled={rejectMutation.isPending}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50"
+              >
+                {rejectMutation.isPending ? 'Rejecting...' : 'Confirm Reject'}
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Users, Search, MoreVertical, MapPin, ChevronLeft, ChevronRight, Award,
@@ -14,6 +15,7 @@ const INVITE_EMPTY = { firstName: '', lastName: '', email: '', phone: '' }
 export default function AdminCandidates() {
   const { accessToken: token } = useAuthStore()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
   const [showInvite, setShowInvite] = useState(false)
@@ -275,7 +277,7 @@ export default function AdminCandidates() {
                               <button
                                 onClick={() => {
                                   setOpenMenuId(null)
-                                  window.open(`/admin/candidates/${candidate.id}`, '_blank')
+                                  navigate(`/admin/candidates/${candidate.id}`)
                                 }}
                                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                               >

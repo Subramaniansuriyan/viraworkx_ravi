@@ -311,7 +311,9 @@ router.post('/:id/reject', authenticateToken, requireRole('client', 'admin'), as
         jobTitle: application.job?.title || 'Position',
         companyName: (application.job as any)?.client?.companyName || 'Company',
         status: 'Application Update',
-        message: 'Thank you for your interest. After careful consideration, we have decided to move forward with other candidates. We encourage you to apply for future positions that match your skills.'
+        message: reason
+          ? `Thank you for your interest. After careful review, we were unable to move forward at this time. Reason: ${reason}`
+          : 'Thank you for your interest. After careful consideration, we have decided to move forward with other candidates. We encourage you to apply for future positions.'
       }).catch(err => console.error('Failed to send rejection email:', err))
     }
 

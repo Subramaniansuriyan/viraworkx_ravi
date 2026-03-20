@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Bot, TrendingUp, Building2, CheckCircle, AlertTriangle, Activity
+  Bot, TrendingUp, Building2, CheckCircle, AlertTriangle, Activity,
+  Users, Briefcase, UserCheck
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import NotificationBell from '../../components/shared/NotificationBell'
@@ -36,38 +37,50 @@ export default function AdminDashboard() {
     refetchInterval: 10000,
   })
 
+  const { data: overviewData } = useQuery({
+    queryKey: ['adminOverview'],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/api/v1/analytics/overview`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) return {}
+      return res.json()
+    },
+    refetchInterval: 60000,
+  })
+  const overview = overviewData || {}
+
   const stats = statsData?.stats || {}
   const pendingActions = pendingData?.actions || []
 
   const dashboardStats = [
     {
-      label: 'Pending Reviews',
-      value: stats.pending_approvals || 0,
-      icon: AlertTriangle,
-      bgColor: 'bg-yellow-100',
-      iconColor: 'text-yellow-600',
-      urgent: (stats.pending_approvals || 0) > 0,
+      label: 'Total Candidates',
+      value: overview.totalCandidates || 0,
+      icon: Users,
+      bgColor: 'bg-blue-100',
+      iconColor: 'text-blue-600',
     },
     {
-      label: 'Total AI Actions',
-      value: stats.total_actions || 0,
-      icon: Bot,
-      bgColor: 'bg-purple-100',
-      iconColor: 'text-purple-600',
-    },
-    {
-      label: 'Completed',
-      value: stats.by_status?.completed || 0,
-      icon: CheckCircle,
+      label: 'Active Clients',
+      value: overview.totalClients || 0,
+      icon: Building2,
       bgColor: 'bg-green-100',
       iconColor: 'text-green-600',
     },
     {
-      label: 'Avg Match Score',
-      value: `${stats.average_match_score || 0}%`,
-      icon: TrendingUp,
-      bgColor: 'bg-blue-100',
-      iconColor: 'text-blue-600',
+      label: 'Open Jobs',
+      value: overview.activeJobs || 0,
+      icon: Briefcase,
+      bgColor: 'bg-purple-100',
+      iconColor: 'text-purple-600',
+    },
+    {
+      label: 'Placements',
+      value: overview.totalPlacements || 0,
+      icon: UserCheck,
+      bgColor: 'bg-amber-100',
+      iconColor: 'text-amber-600',
     },
   ]
 
@@ -106,9 +119,7 @@ export default function AdminDashboard() {
           {dashboardStats.map((stat, i) => (
             <div
               key={i}
-              className={`bg-white rounded-xl p-6 shadow-sm border ${
-                stat.urgent ? 'border-yellow-300 ring-2 ring-yellow-100' : 'border-gray-100'
-              }`}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
