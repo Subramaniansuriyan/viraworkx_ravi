@@ -119,6 +119,11 @@ class AuthService {
       throw new Error('Invalid email or password')
     }
 
+    // Admin accounts must use a @viraworkx.ai email
+    if (user.userType === 'admin' && !email.toLowerCase().endsWith('@viraworkx.ai')) {
+      throw new Error('Invalid email or password')
+    }
+
     // Verify password — guard against null hash (e.g. OAuth-only accounts)
     if (!user.passwordHash) {
       throw new Error('Invalid email or password')
