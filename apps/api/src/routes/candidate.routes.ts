@@ -828,4 +828,29 @@ router.post('/invite', authenticateToken, requireRole('admin'), async (req: Auth
   }
 })
 
+/**
+ * POST /api/v1/candidates/:id/kyc-approve
+ * Approve or reject KYC documents for a candidate (admin only)
+ */
+router.post('/:id/kyc-approve', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { approved, notes } = req.body
+
+    const candidate = await prisma.candidate.update({
+      where: { id: req.params.id },
+      data: {
+        kycApproved: approved !== false,
+        kycApprovedAt: approved !== false ? new Date() : null,
+        kycNotes: notes || null,
+        updatedAt: new Date()
+      }
+    })
+
+    res.json({ candidate: { id: candidate.id, kycApproved: candidate.kycApproved, kycApprovedAt: candidate.kycApprovedAt, kycNotes: candidate.kycNotes } })
+  } catch (error) {
+    console.error('Error updating KYC status:', error)
+    res.status(500).json({ error: 'Failed to update KYC status' })
+  }
+})
+
 export default router

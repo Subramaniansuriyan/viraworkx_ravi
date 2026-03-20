@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Zap, LogOut, Bot, Activity, Shield, Eye, ClipboardCheck,
   Building2, Users, Briefcase, BarChart3, FileText, Layers, Target,
-  GitBranch, Video, Menu, X
+  GitBranch, Video, Menu, X, CheckSquare
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import NotificationBell from '../shared/NotificationBell'
@@ -57,8 +57,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     refetchInterval: 30000,
   })
 
+  const { data: pendingJobsData } = useQuery({
+    queryKey: ['pendingJobApprovalCount'],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/api/v1/jobs/pending-approval`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      return res.json()
+    },
+    refetchInterval: 60000,
+  })
+
   const pendingApprovals = statsData?.stats?.pending_approvals || 0
   const pendingAllocation = pendingAllocData?.candidates?.length || 0
+  const pendingJobApprovals = pendingJobsData?.jobs?.length || 0
 
   const getUserInitials = () => {
     if (user?.profile?.firstName && user?.profile?.lastName) {
@@ -135,6 +147,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </p>
         <ul className="space-y-1 mb-6">
           <NavLink to="/admin/vetting" icon={GitBranch} label="Vetting Pipeline" />
+          <NavLink to="/admin/job-approvals" icon={CheckSquare} label="Job Approvals" badge={pendingJobApprovals} />
           <NavLink to="/admin/clients" icon={Building2} label="Clients" />
           <NavLink to="/admin/candidates" icon={Users} label="Candidates" />
           <NavLink to="/admin/jobs" icon={Briefcase} label="Jobs" />

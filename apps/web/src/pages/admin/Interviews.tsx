@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Video, Plus, Search, ChevronLeft, ChevronRight, X, ExternalLink,
-  CheckCircle, XCircle, Clock, Calendar, Users, Building2
+  CheckCircle, XCircle, Clock, Calendar, Users, Building2, MessageSquare, Star
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -32,6 +32,14 @@ const EMPTY_FORM = {
   meetingProvider: '',
 }
 
+const EMPTY_FEEDBACK = {
+  overallRating: 3,
+  recommendation: 'hire' as string,
+  strengths: '',
+  concerns: '',
+  notes: '',
+}
+
 export default function AdminInterviews() {
   const { accessToken: token } = useAuthStore()
   const queryClient = useQueryClient()
@@ -40,6 +48,9 @@ export default function AdminInterviews() {
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [appSearch, setAppSearch] = useState('')
+  const [feedbackModal, setFeedbackModal] = useState<{ id: string; candidateName: string } | null>(null)
+  const [feedbackForm, setFeedbackForm] = useState(EMPTY_FEEDBACK)
+  const [viewFeedbackId, setViewFeedbackId] = useState<string | null>(null)
   const limit = 20
 
   const { data, isLoading, error } = useQuery({
@@ -101,6 +112,34 @@ export default function AdminInterviews() {
       return res.json()
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminInterviews'] }),
+  })
+
+  const feedbackMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof EMPTY_FEEDBACK }) => {
+      const res = await fetch(`${API_URL}/api/v1/interviews/${id}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error('Failed to submit feedback')
+      return res.json()
+    },
+    onSuccess: () => {
+      setFeedbackModal(null)
+      setFeedbackForm(EMPTY_FEEDBACK)
+    },
+  })
+
+  const { data: viewFeedbackData } = useQuery({
+    queryKey: ['interviewFeedback', viewFeedbackId],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/api/v1/interviews/${viewFeedbackId}/feedback`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) return { feedback: [] }
+      return res.json()
+    },
+    enabled: !!viewFeedbackId,
   })
 
   const interviews = data?.interviews || []
@@ -252,6 +291,29 @@ export default function AdminInterviews() {
                                 <ExternalLink className="w-4 h-4" />
                               </a>
                             )}
+                            {iv.status === 'completed' && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setFeedbackModal({
+                                      id: iv.id,
+                                      candidateName: `${candidate?.firstName} ${candidate?.lastName}`
+                                    })
+                                  }}
+                                  className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg"
+                                  title="Add Feedback"
+                                >
+                                  <MessageSquare className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => setViewFeedbackId(iv.id)}
+                                  className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg"
+                                  title="View Feedback"
+                                >
+                                  <Star className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
                             {['scheduled', 'confirmed', 'rescheduled'].includes(iv.status) && (
                               <button
                                 onClick={() => cancelMutation.mutate(iv.id)}
@@ -297,6 +359,150 @@ export default function AdminInterviews() {
           )}
         </div>
       </div>
+
+      {/* Add Feedback Modal */}
+      {feedbackModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setFeedbackModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg m-4 overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Submit Feedback</h2>
+                <p className="text-sm text-gray-500">{feedbackModal.candidateName}</p>
+              </div>
+              <button onClick={() => setFeedbackModal(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Overall Rating</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setFeedbackForm((f) => ({ ...f, overallRating: r }))}
+                      className={`w-10 h-10 rounded-lg font-medium text-sm transition-colors ${
+                        feedbackForm.overallRating === r
+                          ? 'bg-amber-500 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                  <span className="ml-2 text-sm text-gray-500 self-center">
+                    {feedbackForm.overallRating === 1 ? 'Poor' : feedbackForm.overallRating === 2 ? 'Below Average' : feedbackForm.overallRating === 3 ? 'Average' : feedbackForm.overallRating === 4 ? 'Good' : 'Excellent'}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Recommendation</label>
+                <select
+                  value={feedbackForm.recommendation}
+                  onChange={(e) => setFeedbackForm((f) => ({ ...f, recommendation: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="strong_hire">Strong Hire</option>
+                  <option value="hire">Hire</option>
+                  <option value="undecided">Undecided</option>
+                  <option value="no_hire">No Hire</option>
+                  <option value="strong_no_hire">Strong No Hire</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Strengths</label>
+                <textarea
+                  value={feedbackForm.strengths}
+                  onChange={(e) => setFeedbackForm((f) => ({ ...f, strengths: e.target.value }))}
+                  rows={2}
+                  placeholder="What stood out positively..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Concerns</label>
+                <textarea
+                  value={feedbackForm.concerns}
+                  onChange={(e) => setFeedbackForm((f) => ({ ...f, concerns: e.target.value }))}
+                  rows={2}
+                  placeholder="Areas of concern or gaps..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>
+                <textarea
+                  value={feedbackForm.notes}
+                  onChange={(e) => setFeedbackForm((f) => ({ ...f, notes: e.target.value }))}
+                  rows={2}
+                  placeholder="Any other observations..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 p-6 border-t bg-gray-50">
+              <button
+                onClick={() => setFeedbackModal(null)}
+                className="flex-1 py-2 border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => feedbackMutation.mutate({ id: feedbackModal.id, data: feedbackForm })}
+                disabled={feedbackMutation.isPending}
+                className="flex-1 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50"
+              >
+                {feedbackMutation.isPending ? 'Submitting...' : 'Submit Feedback'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Feedback Modal */}
+      {viewFeedbackId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setViewFeedbackId(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg m-4 overflow-y-auto max-h-[80vh]">
+            <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">Interview Feedback</h2>
+              <button onClick={() => setViewFeedbackId(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6">
+              {!viewFeedbackData?.feedback?.length ? (
+                <p className="text-gray-400 text-center py-8">No feedback submitted yet</p>
+              ) : (
+                <div className="space-y-4">
+                  {viewFeedbackData.feedback.map((fb: any) => (
+                    <div key={fb.id} className="border border-gray-200 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          {[1,2,3,4,5].map((r) => (
+                            <div key={r} className={`w-6 h-6 rounded text-xs flex items-center justify-center font-medium ${r <= fb.overallRating ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-400'}`}>{r}</div>
+                          ))}
+                        </div>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
+                          fb.recommendation.includes('strong_hire') ? 'bg-green-100 text-green-700' :
+                          fb.recommendation === 'hire' ? 'bg-blue-100 text-blue-700' :
+                          fb.recommendation.includes('no_hire') ? 'bg-red-100 text-red-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>{fb.recommendation.replace(/_/g, ' ')}</span>
+                      </div>
+                      {fb.strengths && <p className="text-sm text-gray-700 mb-2"><span className="font-medium text-green-700">Strengths:</span> {fb.strengths}</p>}
+                      {fb.concerns && <p className="text-sm text-gray-700 mb-2"><span className="font-medium text-red-600">Concerns:</span> {fb.concerns}</p>}
+                      {fb.notes && <p className="text-sm text-gray-500">{fb.notes}</p>}
+                      <p className="text-xs text-gray-400 mt-2">{new Date(fb.submittedAt).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Interview Modal */}
       {showCreate && (

@@ -31,6 +31,8 @@ import AdminAnalytics from './pages/admin/Analytics'
 import AdminUsers from './pages/admin/Users'
 import AuditLog from './pages/admin/AuditLog'
 import AdminSettings from './pages/admin/Settings'
+import AdminJobApproval from './pages/admin/JobApproval'
+import AdminClientDetail from './pages/admin/ClientDetail'
 import ContractTemplates from './pages/admin/ContractTemplates'
 import ClientContracts from './pages/client/Contracts'
 import TieredCandidates from './pages/client/TieredCandidates'
@@ -354,6 +356,26 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['candidate']}>
             <CandidateContractReview />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin job approval queue */}
+      <Route
+        path="/admin/job-approvals"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminJobApproval />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin client detail */}
+      <Route
+        path="/admin/clients/:id"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminClientDetail />
           </ProtectedRoute>
         }
       />

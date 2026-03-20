@@ -335,6 +335,80 @@ router.delete('/:id/users/:userId', authenticateToken, requireRole('client', 'ad
 })
 
 /**
+ * GET /api/v1/clients/:id/detail
+ * Get full client detail for admin
+ */
+router.get('/:id/detail', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const clientId = req.params.id
+
+    const client = await prisma.client.findUnique({
+      where: { id: clientId },
+      include: {
+        clientUsers: {
+          include: {
+            user: { select: { id: true, email: true, userType: true, createdAt: true } }
+          }
+        },
+        jobs: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            createdAt: true,
+            postedAt: true,
+            _count: { select: { applications: true } }
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+        contracts: {
+          select: { id: true, title: true, status: true, createdAt: true },
+          take: 10
+        }
+      }
+    })
+
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' })
+    }
+
+    const totalApplications = await prisma.application.count({
+      where: { job: { clientId } }
+    })
+
+    res.json({ client, totalApplications })
+  } catch (error) {
+    console.error('Error fetching client detail:', error)
+    res.status(500).json({ error: 'Failed to fetch client detail' })
+  }
+})
+
+/**
+ * POST /api/v1/clients/:id/verify
+ * Verify or unverify a client company (admin only)
+ */
+router.post('/:id/verify', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { verified, notes } = req.body
+
+    const client = await prisma.client.update({
+      where: { id: req.params.id },
+      data: {
+        verified: verified !== false,
+        verifiedAt: verified !== false ? new Date() : null,
+        verificationNotes: notes || null,
+        updatedAt: new Date()
+      }
+    })
+
+    res.json({ client })
+  } catch (error) {
+    console.error('Error verifying client:', error)
+    res.status(500).json({ error: 'Failed to verify client' })
+  }
+})
+
+/**
  * GET /api/v1/clients/me/dashboard
  * Get current client's dashboard (no clientId needed — resolved from token)
  */

@@ -34,6 +34,7 @@ import contractRoutes from './routes/contract.routes.js'
 import paymentRoutes from './routes/payment.routes.js'
 import userRoutes from './routes/users.routes.js'
 import settingsRoutes from './routes/settings.routes.js'
+import communicationRoutes from './routes/communication.routes.js'
 
 import { authenticateToken, AuthRequest } from './middleware/auth.js'
 import { requireActiveSubscription } from './middleware/subscription.js'
@@ -208,6 +209,9 @@ app.use('/api/v1/users', userRoutes)
 
 // Settings routes (admin)
 app.use('/api/v1/settings', settingsRoutes)
+
+// Communication log routes (admin)
+app.use('/api/v1/communications', communicationRoutes)
 
 // Me routes (convenience endpoints for current user)
 app.get('/api/v1/me/profile', authenticateToken, async (req: AuthRequest, res) => {

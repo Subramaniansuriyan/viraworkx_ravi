@@ -27,6 +27,7 @@ model User {
   interviewParticipants InterviewParticipant[]
   notifications         Notification[]
   pipelineChanges       PipelineHistory[]
+  communicationLogs     CommunicationLog[]
 
   @@map("users")
 }
@@ -74,40 +75,48 @@ model Candidate {
   overallScore       Float?            @map("overall_score")
   overlapHours       Float?            @map("overlap_hours")
   psychometricScore  Float?            @map("psychometric_score")
-  referredBy         String?           @map("referred_by")
+  referredBy         String?            @map("referred_by")
   source             String?
-  tags               String[]          @default([])
+  tags               String[]           @default([])
   tier               String?
   university         String?
+  kycApproved        Boolean?           @default(false) @map("kyc_approved")
+  kycApprovedAt      DateTime?          @map("kyc_approved_at")
+  kycNotes           String?            @map("kyc_notes")
   applications       Application[]
   assessments        Assessment[]
   candidateNotes     CandidateNote[]
-  user               User              @relation(fields: [userId], references: [id])
+  user               User               @relation(fields: [userId], references: [id])
   emailLogs          EmailLog[]
   pipelineHistory    PipelineHistory[]
   savedJobs          SavedJob[]
   skillBadges        SkillBadge[]
+  communicationLogs  CommunicationLog[]
 
   @@map("candidates")
 }
 
 model Client {
-  id                   String        @id @default(uuid())
-  companyName          String        @map("company_name")
+  id                   String             @id @default(uuid())
+  companyName          String             @map("company_name")
   industry             String?
-  planTier             String        @default("startup") @map("plan_tier")
-  createdAt            DateTime      @default(now()) @map("created_at")
-  updatedAt            DateTime      @updatedAt @map("updated_at")
-  companyLogoUrl       String?       @map("company_logo_url")
-  companySize          String?       @map("company_size")
-  companyWebsite       String?       @map("company_website")
+  planTier             String             @default("startup") @map("plan_tier")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+  companyLogoUrl       String?            @map("company_logo_url")
+  companySize          String?            @map("company_size")
+  companyWebsite       String?            @map("company_website")
   description          String?
-  headquartersLocation String?       @map("headquarters_location")
-  settingsJson         Json?         @map("settings_json")
+  headquartersLocation String?            @map("headquarters_location")
+  settingsJson         Json?              @map("settings_json")
+  verified             Boolean            @default(false)
+  verifiedAt           DateTime?          @map("verified_at")
+  verificationNotes    String?            @map("verification_notes")
   clientUsers          ClientUser[]
   contracts            Contract[]
   jobs                 Job[]
   subscription         Subscription?
+  communicationLogs    CommunicationLog[]
 
   @@map("clients")
 }
@@ -526,4 +535,24 @@ model PlatformSetting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("platform_settings")
+}
+
+model CommunicationLog {
+  id          String     @id @default(cuid())
+  candidateId String?    @map("candidate_id")
+  clientId    String?    @map("client_id")
+  userId      String     @map("user_id")
+  type        String
+  subject     String?
+  body        String
+  direction   String     @default("outbound")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  candidate Candidate? @relation(fields: [candidateId], references: [id])
+  client    Client?    @relation(fields: [clientId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
+
+  @@index([candidateId])
+  @@index([clientId])
+  @@map("communication_logs")
 }

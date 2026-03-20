@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import {
   Building2, Users, Briefcase, Search, MoreVertical,
-  Globe, ChevronLeft, ChevronRight
+  Globe, ChevronLeft, ChevronRight, Eye
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -11,6 +12,7 @@ const API_URL = ''
 
 export default function AdminClients() {
   const { accessToken: token } = useAuthStore()
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTier, setSelectedTier] = useState<string>('')
   const [page, setPage] = useState(1)
@@ -159,8 +161,12 @@ export default function AdminClients() {
                               <Globe className="w-4 h-4" />
                             </a>
                           )}
-                          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
-                            <MoreVertical className="w-4 h-4" />
+                          <button
+                            onClick={() => navigate(`/admin/clients/${client.id}`)}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                            title="View client detail"
+                          >
+                            <Eye className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
