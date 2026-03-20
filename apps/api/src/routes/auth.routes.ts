@@ -150,7 +150,9 @@ router.post('/login', async (req: Request, res: Response) => {
       }
       return res.status(500).json({ error: error.message })
     }
-    res.status(500).json({ error: 'Login failed' })
+    const msg = typeof error === 'string' ? error : JSON.stringify(error)
+    console.error('Login error (non-Error throw):', msg)
+    res.status(500).json({ error: 'Login failed', detail: msg })
   }
 })
 

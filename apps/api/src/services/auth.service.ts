@@ -119,7 +119,10 @@ class AuthService {
       throw new Error('Invalid email or password')
     }
 
-    // Verify password
+    // Verify password — guard against null hash (e.g. OAuth-only accounts)
+    if (!user.passwordHash) {
+      throw new Error('Invalid email or password')
+    }
     const isValid = await bcrypt.compare(password, user.passwordHash)
     if (!isValid) {
       throw new Error('Invalid email or password')
