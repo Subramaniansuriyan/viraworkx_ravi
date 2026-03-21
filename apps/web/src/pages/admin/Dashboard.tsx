@@ -2,11 +2,12 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   Bot, TrendingUp, Building2, CheckCircle, AlertTriangle, Activity,
-  Users, Briefcase, UserCheck
+  Users, Briefcase, UserCheck, Clock, Target
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import NotificationBell from '../../components/shared/NotificationBell'
 import { useAuthStore } from '../../stores/authStore'
+import api from '../../services/api'
 
 const API_URL = ''
 
@@ -50,8 +51,55 @@ export default function AdminDashboard() {
   })
   const overview = overviewData || {}
 
+  const { data: invitesData } = useQuery({
+    queryKey: ['activeInvites'],
+    queryFn: async () => {
+      const res = await api.get('/assessments/admin/active-invites')
+      return res.data
+    },
+    refetchInterval: 60000,
+  })
+
   const stats = statsData?.stats || {}
   const pendingActions = pendingData?.actions || []
+  const allInvites: any[] = invitesData?.assessments || []
+
+  const inviteStats = {
+    invited:   allInvites.filter(i => i.status === 'invited').length,
+    started:   allInvites.filter(i => i.status === 'started').length,
+    completed: allInvites.filter(i => i.status === 'completed').length,
+    expired:   allInvites.filter(i => i.status === 'expired').length,
+  }
+
+  function timeRemaining(inv: any): string {
+    if (inv.status === 'completed') return 'Completed'
+    if (inv.status === 'expired' || inv.status === 'cancelled') return inv.status.charAt(0).toUpperCase() + inv.status.slice(1)
+    if (!inv.expiresAt) return '—'
+    const diff = new Date(inv.expiresAt).getTime() - Date.now()
+    if (diff <= 0) return 'Expired'
+    const hrs = Math.floor(diff / 3600000)
+    if (hrs < 24) return `${hrs}h left`
+    return `${Math.floor(hrs / 24)}d left`
+  }
+
+  function timeRemainingColor(inv: any): string {
+    if (inv.status === 'completed') return 'text-green-600'
+    if (inv.status === 'expired' || inv.status === 'cancelled') return 'text-red-500'
+    if (!inv.expiresAt) return 'text-gray-400'
+    const diff = new Date(inv.expiresAt).getTime() - Date.now()
+    if (diff <= 0) return 'text-red-500'
+    if (diff < 86400000) return 'text-orange-500'
+    return 'text-blue-600'
+  }
+
+  const STATUS_BADGE: Record<string, string> = {
+    invited:   'bg-blue-100 text-blue-700',
+    started:   'bg-yellow-100 text-yellow-700',
+    completed: 'bg-green-100 text-green-700',
+    expired:   'bg-red-100 text-red-600',
+    cancelled: 'bg-gray-100 text-gray-500',
+    pending:   'bg-gray-100 text-gray-500',
+  }
 
   const dashboardStats = [
     {
@@ -215,6 +263,84 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Assessment Invite Tracker */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-8">
+          <div className="p-6 border-b flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                <Target className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Assessment Invite Tracker</h2>
+                <p className="text-sm text-gray-500">Recent invites — sent time, expiry, and status</p>
+              </div>
+            </div>
+            <Link to="/admin/test-allocation" className="text-primary text-sm font-medium hover:underline">
+              View all
+            </Link>
+          </div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-4 divide-x border-b">
+            {[
+              { label: 'Invite Sent',  value: inviteStats.invited,   color: 'text-blue-600' },
+              { label: 'In Progress',  value: inviteStats.started,   color: 'text-yellow-600' },
+              { label: 'Completed',    value: inviteStats.completed, color: 'text-green-600' },
+              { label: 'Expired',      value: inviteStats.expired,   color: 'text-red-500' },
+            ].map((s) => (
+              <div key={s.label} className="p-4 text-center">
+                <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Recent invites */}
+          <div className="divide-y max-h-72 overflow-y-auto">
+            {allInvites.length === 0 ? (
+              <div className="p-8 text-center">
+                <Clock className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                <p className="text-sm text-gray-400">No assessment invites sent yet</p>
+              </div>
+            ) : (
+              allInvites.slice(0, 5).map((inv: any) => (
+                <div key={inv.id} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 text-sm truncate">{inv.candidateName}</p>
+                    <p className="text-xs text-gray-400 truncate">{inv.testName || inv.testId}</p>
+                  </div>
+                  <div className="flex items-center gap-4 ml-4 shrink-0">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-xs text-gray-500">Sent</p>
+                      <p className="text-xs text-gray-700">
+                        {new Date(inv.invitedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </p>
+                    </div>
+                    <div className="text-right hidden sm:block">
+                      <p className="text-xs text-gray-500">Expires</p>
+                      <p className="text-xs text-gray-700">
+                        {inv.expiresAt
+                          ? new Date(inv.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                          : '—'}
+                      </p>
+                    </div>
+                    <span className={`text-xs font-semibold ${timeRemainingColor(inv)} flex items-center gap-1 w-20 justify-end`}>
+                      <Clock className="w-3 h-3 shrink-0" />
+                      {timeRemaining(inv)}
+                    </span>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_BADGE[inv.status] || 'bg-gray-100 text-gray-500'} w-24 text-center`}>
+                      {inv.status === 'invited' ? 'Invite Sent'
+                        : inv.status === 'started' ? 'In Progress'
+                        : inv.status === 'completed' ? 'Completed'
+                        : inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
