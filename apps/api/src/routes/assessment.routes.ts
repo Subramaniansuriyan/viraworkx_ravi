@@ -635,4 +635,49 @@ router.get('/admin/allocation-history', authenticateToken, requireRole('admin'),
   }
 })
 
+/**
+ * GET /api/v1/assessments/admin/active-invites
+ * Returns all sent assessment invites with full timing data for the admin tracker.
+ */
+router.get('/admin/active-invites', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const assessments = await prisma.assessment.findMany({
+      where: { invitedAt: { not: null } },
+      orderBy: { invitedAt: 'desc' },
+      take: 200,
+      include: {
+        candidate: {
+          select: {
+            firstName: true,
+            lastName: true,
+            user: { select: { email: true } }
+          }
+        }
+      }
+    })
+
+    res.json({
+      assessments: assessments.map(a => ({
+        id: a.id,
+        candidateId: a.candidateId,
+        candidateName: a.candidate ? `${a.candidate.firstName} ${a.candidate.lastName}` : 'Unknown',
+        candidateEmail: (a.candidate as any)?.user?.email || '',
+        testId: a.imochaTestId,
+        testName: a.testName,
+        status: a.status,
+        invitedAt: a.invitedAt,
+        expiresAt: a.expiresAt,
+        startedAt: a.startedAt,
+        completedAt: a.completedAt,
+        score: a.score,
+        maxScore: a.maxScore,
+        invitationUrl: (a as any).invitationUrl,
+      }))
+    })
+  } catch (error) {
+    console.error('Error fetching active invites:', error)
+    res.status(500).json({ error: 'Failed to fetch active invites' })
+  }
+})
+
 export default router
