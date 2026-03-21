@@ -429,4 +429,58 @@ router.get('/pipeline/:jobId', authenticateToken, requireRole('client', 'admin')
   }
 })
 
+/**
+ * POST /api/v1/applications/admin/enroll
+ * Admin manually enrolls a candidate into a job's pipeline (HITL workflow).
+ */
+router.post('/admin/enroll', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { candidateId, jobId, notes } = req.body
+    if (!candidateId || !jobId) {
+      return res.status(400).json({ error: 'candidateId and jobId are required' })
+    }
+
+    const [candidate, job] = await Promise.all([
+      prisma.candidate.findUnique({ where: { id: candidateId } }),
+      prisma.job.findUnique({ where: { id: jobId } }),
+    ])
+    if (!candidate) return res.status(404).json({ error: 'Candidate not found' })
+    if (!job) return res.status(404).json({ error: 'Job not found' })
+
+    // Prevent duplicate applications
+    const existing = await prisma.application.findUnique({
+      where: { candidateId_jobId: { candidateId, jobId } },
+    })
+    if (existing) {
+      return res.status(409).json({ error: 'Candidate already in pipeline for this job' })
+    }
+
+    // Simple match score based on skill overlap
+    const candidateSkills = (candidate.skills || []).map((s: string) => s.toLowerCase())
+    const jobSkills = (job.skillsRequired || []).map((s: string) => s.toLowerCase())
+    const overlap = candidateSkills.filter((s: string) => jobSkills.includes(s)).length
+    const matchScore = jobSkills.length > 0 ? Math.round((overlap / jobSkills.length) * 100) : 0
+
+    const application = await prisma.application.create({
+      data: {
+        candidateId,
+        jobId,
+        stage: 'new',
+        source: 'admin',
+        matchScore,
+        notes: notes || null,
+      },
+      include: {
+        candidate: { include: { user: { select: { email: true } } } },
+        job: { include: { client: { select: { companyName: true } } } },
+      },
+    })
+
+    res.status(201).json({ application })
+  } catch (error) {
+    console.error('Error enrolling candidate:', error)
+    res.status(500).json({ error: 'Failed to enroll candidate' })
+  }
+})
+
 export default router

@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Users, ChevronRight, MapPin, Briefcase, Star, Award,
-  CheckCircle, AlertTriangle, Bot, ArrowRight
+  CheckCircle, AlertTriangle, Bot, ArrowRight, Plus, X, Search
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
+import api from '../../services/api'
 
 const API_URL = ''
 
@@ -66,6 +67,12 @@ export default function AdminVetting() {
   const [selectedTier, setSelectedTier] = useState('Tier 1')
   const [rejectModal, setRejectModal] = useState<{ appId: string; candidateName: string } | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [enrollOpen, setEnrollOpen] = useState(false)
+  const [enrollCandidateId, setEnrollCandidateId] = useState('')
+  const [enrollJobId, setEnrollJobId] = useState('')
+  const [enrollNotes, setEnrollNotes] = useState('')
+  const [candidateSearch, setCandidateSearch] = useState('')
+  const [jobSearch, setJobSearch] = useState('')
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['vettingPipeline'],
@@ -81,6 +88,40 @@ export default function AdminVetting() {
     },
     refetchInterval: 30000,
     enabled: !!token,
+  })
+
+  const { data: candidatesData } = useQuery({
+    queryKey: ['allCandidates'],
+    queryFn: async () => {
+      const res = await api.get('/candidates?limit=200')
+      return res.data
+    },
+    enabled: enrollOpen,
+  })
+
+  const { data: jobsData } = useQuery({
+    queryKey: ['allJobs'],
+    queryFn: async () => {
+      const res = await api.get('/jobs?limit=200')
+      return res.data
+    },
+    enabled: enrollOpen,
+  })
+
+  const enrollMutation = useMutation({
+    mutationFn: async (data: { candidateId: string; jobId: string; notes: string }) => {
+      const res = await api.post('/applications/admin/enroll', data)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vettingPipeline'] })
+      setEnrollOpen(false)
+      setEnrollCandidateId('')
+      setEnrollJobId('')
+      setEnrollNotes('')
+      setCandidateSearch('')
+      setJobSearch('')
+    },
   })
 
   const advanceMutation = useMutation({
@@ -142,11 +183,20 @@ export default function AdminVetting() {
   return (
     <AdminLayout>
       <div className="p-4 md:p-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Vetting Pipeline</h1>
-          <p className="text-gray-600">
-            Track candidates through the Phase 1 workflow: Applied → Vetted → Tiered → Deployed
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Vetting Pipeline</h1>
+            <p className="text-gray-600">
+              Track candidates through the Phase 1 workflow: Applied → Vetted → Tiered → Deployed
+            </p>
+          </div>
+          <button
+            onClick={() => setEnrollOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-700"
+          >
+            <Plus className="w-4 h-4" />
+            Enroll Candidate
+          </button>
         </div>
 
         {isError && (
@@ -384,6 +434,142 @@ export default function AdminVetting() {
           </div>
         </div>
       )}
+      {/* Enroll Candidate Modal */}
+      {enrollOpen && (() => {
+        const allCandidates: any[] = candidatesData?.candidates || []
+        const allJobs: any[] = jobsData?.jobs || []
+        const filteredCandidates = allCandidates.filter(c =>
+          !candidateSearch.trim() ||
+          `${c.firstName} ${c.lastName} ${c.email}`.toLowerCase().includes(candidateSearch.toLowerCase())
+        )
+        const filteredJobs = allJobs.filter(j =>
+          !jobSearch.trim() ||
+          `${j.title} ${j.client?.companyName || ''}`.toLowerCase().includes(jobSearch.toLowerCase())
+        )
+        const selectedCandidate = allCandidates.find(c => c.id === enrollCandidateId)
+        const selectedJob = allJobs.find(j => j.id === enrollJobId)
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setEnrollOpen(false)} />
+            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg m-4 flex flex-col max-h-[90vh]">
+              <div className="flex items-center justify-between p-6 border-b shrink-0">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Enroll Candidate</h2>
+                  <p className="text-sm text-gray-500">Manually add a candidate to the pipeline</p>
+                </div>
+                <button onClick={() => setEnrollOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5 overflow-y-auto">
+                {/* Candidate picker */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Candidate</label>
+                  <div className="relative mb-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search candidates..."
+                      value={candidateSearch}
+                      onChange={e => setCandidateSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                  </div>
+                  <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                    {filteredCandidates.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4">No candidates found</p>
+                    ) : filteredCandidates.map((c: any) => (
+                      <div
+                        key={c.id}
+                        onClick={() => setEnrollCandidateId(c.id)}
+                        className={`px-4 py-2.5 cursor-pointer hover:bg-gray-50 border-b last:border-0 ${enrollCandidateId === c.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
+                      >
+                        <p className="text-sm font-medium text-gray-900">{c.firstName} {c.lastName}</p>
+                        <p className="text-xs text-gray-400">{c.email}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {selectedCandidate && (
+                    <p className="text-xs text-primary font-medium mt-1">
+                      Selected: {selectedCandidate.firstName} {selectedCandidate.lastName}
+                    </p>
+                  )}
+                </div>
+
+                {/* Job picker */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Job</label>
+                  <div className="relative mb-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search jobs..."
+                      value={jobSearch}
+                      onChange={e => setJobSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                  </div>
+                  <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                    {filteredJobs.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4">No jobs found</p>
+                    ) : filteredJobs.map((j: any) => (
+                      <div
+                        key={j.id}
+                        onClick={() => setEnrollJobId(j.id)}
+                        className={`px-4 py-2.5 cursor-pointer hover:bg-gray-50 border-b last:border-0 ${enrollJobId === j.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
+                      >
+                        <p className="text-sm font-medium text-gray-900">{j.title}</p>
+                        <p className="text-xs text-gray-400">{j.client?.companyName || ''} · {j.location || 'Remote'}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {selectedJob && (
+                    <p className="text-xs text-primary font-medium mt-1">
+                      Selected: {selectedJob.title}
+                    </p>
+                  )}
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes (optional)</label>
+                  <textarea
+                    value={enrollNotes}
+                    onChange={e => setEnrollNotes(e.target.value)}
+                    placeholder="e.g. Referred by client, strong match for backend role..."
+                    rows={2}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                  />
+                </div>
+
+                {enrollMutation.isError && (
+                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                    {(enrollMutation.error as any)?.response?.data?.error || 'Failed to enroll candidate'}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50 shrink-0">
+                <button onClick={() => setEnrollOpen(false)} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium">
+                  Cancel
+                </button>
+                <button
+                  onClick={() => enrollMutation.mutate({ candidateId: enrollCandidateId, jobId: enrollJobId, notes: enrollNotes })}
+                  disabled={!enrollCandidateId || !enrollJobId || enrollMutation.isPending}
+                  className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {enrollMutation.isPending ? (
+                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Enrolling...</>
+                  ) : (
+                    <><Plus className="w-4 h-4" />Add to Pipeline</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </AdminLayout>
   )
 }
