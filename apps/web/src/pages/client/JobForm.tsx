@@ -83,7 +83,7 @@ export default function JobForm() {
     mutationFn: (data: any) => jobApi.create(data),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['client-jobs'] })
-      navigate(`/client/jobs/${response.data.job.id}`)
+      navigate('/client/jobs')
     },
   })
 
