@@ -38,6 +38,7 @@ import ClientContracts from './pages/client/Contracts'
 import TieredCandidates from './pages/client/TieredCandidates'
 import ClientContractReview from './pages/client/ContractReview'
 import Billing from './pages/client/Billing'
+import ClientProfile from './pages/client/Profile'
 import CandidateAssessments from './pages/candidate/Assessments'
 import CandidateContracts from './pages/candidate/Contracts'
 import CandidateContractReview from './pages/candidate/ContractReview'
@@ -340,6 +341,14 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['client', 'admin']}>
             <Billing />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/client/profile"
+        element={
+          <ProtectedRoute allowedTypes={['client']}>
+            <ClientProfile />
           </ProtectedRoute>
         }
       />

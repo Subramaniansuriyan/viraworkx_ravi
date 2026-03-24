@@ -34,7 +34,7 @@ const updateJobSchema = createJobSchema.partial().extend({
  * GET /api/v1/jobs
  * List all jobs (public for active, all for clients)
  */
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { status, skills, location, remotePolicy, employmentType, limit = '20', offset = '0' } = req.query
 

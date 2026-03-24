@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Zap, LogOut, TrendingUp, Briefcase, Plus, FileText, CreditCard,
-  Menu, X, Users
+  Menu, X, Users, Building2
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import NotificationBell from '../shared/NotificationBell'
@@ -18,6 +18,7 @@ const navItems = [
   { to: '/client/candidates', icon: Users, label: 'Tiered Candidates' },
   { to: '/client/contracts', icon: FileText, label: 'Contracts' },
   { to: '/client/billing', icon: CreditCard, label: 'Billing' },
+  { to: '/client/profile', icon: Building2, label: 'Company Profile' },
 ]
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
