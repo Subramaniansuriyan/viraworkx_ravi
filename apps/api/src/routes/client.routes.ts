@@ -22,6 +22,30 @@ const inviteUserSchema = z.object({
 })
 
 /**
+ * GET /api/v1/clients/me
+ * Get current client's profile (resolved from token)
+ */
+router.get('/me', authenticateToken, requireRole('client'), async (req: AuthRequest, res: Response) => {
+  try {
+    const clientUser = await prisma.clientUser.findFirst({
+      where: { userId: req.user!.userId },
+      include: {
+        client: {
+          include: {
+            _count: { select: { jobs: true, clientUsers: true } }
+          }
+        }
+      }
+    })
+    if (!clientUser) return res.status(404).json({ error: 'No client associated with this account' })
+    res.json({ client: clientUser.client })
+  } catch (error) {
+    console.error('Error fetching client profile:', error)
+    res.status(500).json({ error: 'Failed to fetch client profile' })
+  }
+})
+
+/**
  * GET /api/v1/clients/:id
  * Get client profile
  */
@@ -405,30 +429,6 @@ router.post('/:id/verify', authenticateToken, requireRole('admin'), async (req: 
   } catch (error) {
     console.error('Error verifying client:', error)
     res.status(500).json({ error: 'Failed to verify client' })
-  }
-})
-
-/**
- * GET /api/v1/clients/me
- * Get current client's profile (resolved from token)
- */
-router.get('/me', authenticateToken, requireRole('client'), async (req: AuthRequest, res: Response) => {
-  try {
-    const clientUser = await prisma.clientUser.findFirst({
-      where: { userId: req.user!.userId },
-      include: {
-        client: {
-          include: {
-            _count: { select: { jobs: true, clientUsers: true } }
-          }
-        }
-      }
-    })
-    if (!clientUser) return res.status(404).json({ error: 'No client associated with this account' })
-    res.json({ client: clientUser.client })
-  } catch (error) {
-    console.error('Error fetching client profile:', error)
-    res.status(500).json({ error: 'Failed to fetch client profile' })
   }
 })
 
