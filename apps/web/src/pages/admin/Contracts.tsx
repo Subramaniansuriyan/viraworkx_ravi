@@ -128,9 +128,10 @@ export default function AdminContracts() {
     .filter((c) => {
       if (!search.trim()) return true
       const q = search.toLowerCase()
-      const candidateName =
-        `${c.application.candidate.firstName} ${c.application.candidate.lastName}`.toLowerCase()
-      const company = c.application.job.client.companyName.toLowerCase()
+      const candidateName = c.application
+        ? `${c.application.candidate?.firstName ?? ''} ${c.application.candidate?.lastName ?? ''}`.toLowerCase()
+        : ''
+      const company = c.application?.job?.client?.companyName?.toLowerCase() ?? ''
       return candidateName.includes(q) || company.includes(q)
     })
     // Sort: candidate-signed first, then by createdAt desc
@@ -232,7 +233,9 @@ export default function AdminContracts() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filtered.map((contract) => {
-                    const candidateName = `${contract.application.candidate.firstName} ${contract.application.candidate.lastName}`
+                    const candidateName = contract.application
+                      ? `${contract.application.candidate?.firstName ?? ''} ${contract.application.candidate?.lastName ?? ''}`.trim()
+                      : 'Unknown Candidate'
                     const createdDate = new Date(contract.createdAt).toLocaleDateString('en-US', {
                       year: 'numeric', month: 'short', day: 'numeric',
                     })
@@ -258,10 +261,10 @@ export default function AdminContracts() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                          {contract.application.job.title}
+                          {contract.application?.job?.title ?? '—'}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                          {contract.application.job.client.companyName}
+                          {contract.application?.job?.client?.companyName ?? '—'}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <StatusBadge status={contract.status} />
