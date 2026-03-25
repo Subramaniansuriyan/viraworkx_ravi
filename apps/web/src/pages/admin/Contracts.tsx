@@ -238,7 +238,7 @@ export default function AdminContracts() {
                     })
                     const candidateSig = contract.signatures.find((s) => s.signerRole === 'candidate')
                     const clientSig = contract.signatures.find((s) => s.signerRole === 'client')
-                    const adminSig = contract.signatures.find((s) => s.signerRole === 'admin')
+                    const adminSig = contract.signatures.find((s) => s.signerRole === 'viraworkx' || s.signerRole === 'admin')
                     const candidateSigned = !!(candidateSig?.signedAt)
 
                     return (
