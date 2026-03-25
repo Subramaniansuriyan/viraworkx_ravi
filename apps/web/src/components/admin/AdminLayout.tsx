@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Zap, LogOut, Bot, Activity, Shield, Eye, ClipboardCheck,
   Building2, Users, Briefcase, BarChart3, FileText, Layers, Target,
-  GitBranch, Video, Menu, X, CheckSquare
+  GitBranch, Video, Menu, X, CheckSquare, FileCheck
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import NotificationBell from '../shared/NotificationBell'
@@ -153,6 +153,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <NavLink to="/admin/jobs" icon={Briefcase} label="Jobs" />
           <NavLink to="/admin/applications" icon={Layers} label="Applications" />
           <NavLink to="/admin/interviews" icon={Video} label="Interviews" />
+          <NavLink to="/admin/contracts" icon={FileCheck} label="Contracts" />
           <NavLink to="/admin/users" icon={Shield} label="User Management" />
         </ul>
 

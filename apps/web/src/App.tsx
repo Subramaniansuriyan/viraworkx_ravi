@@ -34,6 +34,7 @@ import AdminSettings from './pages/admin/Settings'
 import AdminJobApproval from './pages/admin/JobApproval'
 import AdminClientDetail from './pages/admin/ClientDetail'
 import ContractTemplates from './pages/admin/ContractTemplates'
+import AdminContracts from './pages/admin/Contracts'
 import ClientContracts from './pages/client/Contracts'
 import TieredCandidates from './pages/client/TieredCandidates'
 import ClientContractReview from './pages/client/ContractReview'
@@ -407,6 +408,16 @@ export default function App() {
         element={
           <ProtectedRoute allowedTypes={['admin']}>
             <AdminClientDetail />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin contracts */}
+      <Route
+        path="/admin/contracts"
+        element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminContracts />
           </ProtectedRoute>
         }
       />

@@ -21,7 +21,7 @@ export default function TieredCandidates() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['tieredCandidates'],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/applications?stage=shortlisted&limit=200`, {
+      const res = await fetch(`/api/v1/applications?limit=200`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error('Failed to load')
@@ -102,7 +102,7 @@ export default function TieredCandidates() {
           <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
             <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-600 font-medium mb-2">
-              {applications.length === 0 ? 'No tiered candidates yet' : 'No candidates match your filters'}
+              {applications.length === 0 ? 'No candidates in your pipeline yet' : 'No candidates match your filters'}
             </p>
             <p className="text-sm text-gray-400">
               {applications.length === 0

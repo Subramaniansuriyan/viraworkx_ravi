@@ -85,6 +85,12 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
           where: { status: { notIn: ['cancelled'] } },
           orderBy: { scheduledAt: 'desc' },
           take: 1
+        },
+        assessments: {
+          where: { status: 'completed' },
+          orderBy: { completedAt: 'desc' },
+          take: 1,
+          select: { score: true, maxScore: true }
         }
       },
       take: parseInt(limit as string),
@@ -94,7 +100,28 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
     const total = await prisma.application.count({ where })
 
-    res.json({ applications, total })
+    function computeTier(score: number | null, maxScore: number | null): string | null {
+      if (score == null || maxScore == null || maxScore === 0) return null
+      const pct = (score / maxScore) * 100
+      if (pct > 80) return 'Tier 1'
+      if (pct > 70) return 'Tier 2'
+      if (pct > 60) return 'Tier 3'
+      return null
+    }
+
+    const enrichedApplications = applications.map((app) => {
+      const { assessments, ...rest } = app
+      const latestAssessment = assessments?.[0]
+      return {
+        ...rest,
+        assessmentTier: rest.assessmentTier || computeTier(
+          latestAssessment?.score ?? null,
+          latestAssessment?.maxScore ?? null
+        )
+      }
+    })
+
+    res.json({ applications: enrichedApplications, total })
   } catch (error) {
     console.error('Error fetching applications:', error)
     res.status(500).json({ error: 'Failed to fetch applications' })
