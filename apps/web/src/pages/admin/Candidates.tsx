@@ -165,7 +165,8 @@ export default function AdminCandidates() {
             </div>
           ) : (
             <>
-              <table className="w-full">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px]">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Candidate</th>
@@ -301,6 +302,7 @@ export default function AdminCandidates() {
                   ))}
                 </tbody>
               </table>
+              </div>
 
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t">

@@ -95,7 +95,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     <li>
       <Link
         to={to}
-        className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+        className={`flex items-center px-3 py-2 rounded-lg transition-colors text-sm ${
           isActive(to)
             ? 'text-white bg-slate-800 font-medium'
             : 'text-slate-300 hover:bg-slate-800'
@@ -114,7 +114,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const SidebarContent = () => (
     <>
-      <div className="p-6 border-b border-slate-700 shrink-0 flex items-center justify-between">
+      <div className="p-4 border-b border-slate-700 shrink-0 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center shrink-0">
             <Zap className="w-5 h-5 text-white" />
@@ -133,19 +133,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </div>
 
       <nav className="p-4 flex-1 overflow-y-auto">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
           Human-in-the-Loop
         </p>
-        <ul className="space-y-1 mb-6">
+        <ul className="space-y-0.5 mb-4">
           <NavLink to="/admin/dashboard" icon={Activity} label="Overview" />
           <NavLink to="/admin/ai-monitor" icon={Bot} label="AI Monitor" badge={pendingApprovals} />
           <NavLink to="/admin/test-allocation" icon={Target} label="Test Allocation" badge={pendingAllocation} />
         </ul>
 
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
           Platform
         </p>
-        <ul className="space-y-1 mb-6">
+        <ul className="space-y-0.5 mb-4">
           <NavLink to="/admin/vetting" icon={GitBranch} label="Vetting Pipeline" />
           <NavLink to="/admin/job-approvals" icon={CheckSquare} label="Job Approvals" badge={pendingJobApprovals} />
           <NavLink to="/admin/clients" icon={Building2} label="Clients" />
@@ -157,10 +157,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <NavLink to="/admin/users" icon={Shield} label="User Management" />
         </ul>
 
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
           System
         </p>
-        <ul className="space-y-1">
+        <ul className="space-y-0.5">
           <NavLink to="/admin/analytics" icon={BarChart3} label="Analytics" />
           <NavLink to="/admin/audit-log" icon={Eye} label="Audit Log" />
           <NavLink to="/admin/contract-templates" icon={FileText} label="Contract Templates" />
