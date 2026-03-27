@@ -239,7 +239,7 @@ router.post('/:id/advance', authenticateToken, requireRole('client', 'admin'), a
     const updated = await prisma.application.update({
       where: { id: req.params.id },
       data: {
-        stage,
+        stage: resolvedStage,
         notes: notes || application.notes,
         ...(assessmentTier !== undefined && { assessmentTier }),
         stageUpdatedAt: new Date(),
@@ -474,12 +474,16 @@ router.post('/admin/enroll', authenticateToken, requireRole('admin'), async (req
     if (!candidate) return res.status(404).json({ error: 'Candidate not found' })
     if (!job) return res.status(404).json({ error: 'Job not found' })
 
-    // Prevent duplicate applications
+    // Prevent duplicate applications — allow re-enroll if previously rejected/withdrawn
     const existing = await prisma.application.findUnique({
       where: { candidateId_jobId: { candidateId, jobId } },
     })
     if (existing) {
-      return res.status(409).json({ error: 'Candidate already in pipeline for this job' })
+      if (!['rejected', 'withdrawn'].includes(existing.stage)) {
+        return res.status(409).json({ error: 'Candidate already in pipeline for this job' })
+      }
+      // Delete old rejected/withdrawn record to allow fresh enrollment
+      await prisma.application.delete({ where: { id: existing.id } })
     }
 
     // Simple match score based on skill overlap
