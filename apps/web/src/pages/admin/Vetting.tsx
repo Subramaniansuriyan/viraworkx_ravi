@@ -131,7 +131,10 @@ export default function AdminVetting() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ stage, assessmentTier: tier }),
       })
-      if (!res.ok) throw new Error('Failed to advance')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Failed to advance (${res.status})`)
+      }
       return res.json()
     },
     onSuccess: () => {
@@ -303,6 +306,9 @@ export default function AdminVetting() {
                             </div>
                           )}
 
+                          {advanceMutation.isError && (
+                            <p className="text-xs text-red-500 mt-1">{(advanceMutation.error as Error)?.message}</p>
+                          )}
                           <div className="flex gap-2 mt-2">
                             <button
                               onClick={(e) => { e.stopPropagation(); setRejectModal({ appId: app.id, candidateName: `${app.candidate?.firstName} ${app.candidate?.lastName}` }) }}
@@ -316,7 +322,7 @@ export default function AdminVetting() {
                                 disabled={advanceMutation.isPending}
                                 className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
                               >
-                                {col.nextLabel}
+                                {advanceMutation.isPending ? '...' : col.nextLabel}
                                 <ArrowRight className="w-3 h-3" />
                               </button>
                             )}
