@@ -106,6 +106,7 @@ class ContractService {
     // Render template placeholders
     const renderedContent = this.renderTemplate(template.content, {
       candidateName,
+      candidateEmail: application.candidate.user.email,
       companyName,
       jobTitle: application.job.title,
       salary: input.terms?.salary?.toString() || 'TBD',

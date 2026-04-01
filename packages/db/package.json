@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "seed": "npx tsx prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts",
+    "seed:contract-template": "npx tsx prisma/seed-contract-template.ts"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
