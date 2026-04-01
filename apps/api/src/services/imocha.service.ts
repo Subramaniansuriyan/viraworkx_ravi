@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import prisma from '../config/database.js'
 import { imochaConfig, getBadgeLevel, BadgeLevel, getTierLevel, isIMochaConfigured } from '../config/imocha.js'
 import { socketService } from './socket.service.js'
+import { contractService } from './contract.service.js'
 
 // Types
 export interface IMochaTest {
@@ -490,6 +491,48 @@ class IMochaService {
         where: { id: assessment.applicationId },
         data: { stage: 'assessment_complete' }
       })
+    }
+
+    // Auto-initiate contract if score >= 60%
+    if (
+      assessment.applicationId &&
+      score != null &&
+      maxScore != null &&
+      maxScore > 0 &&
+      (score / maxScore) * 100 >= 60
+    ) {
+      try {
+        // Check no contract already exists for this application
+        const existingContract = await prisma.contract.findFirst({
+          where: { applicationId: assessment.applicationId },
+        })
+
+        if (!existingContract) {
+          // Find the first active contractor template
+          const template = await prisma.contractTemplate.findFirst({
+            where: { isActive: true, templateType: 'contractor' },
+            orderBy: { createdAt: 'asc' },
+          })
+
+          if (template) {
+            const contract = await contractService.generateContract({
+              applicationId: assessment.applicationId,
+              templateId: template.id,
+            })
+            if (contract) {
+              await contractService.sendForSignatures(contract.id)
+              console.log(
+                `[iMocha] Auto-initiated contract ${contract.id} for application ${assessment.applicationId} (score ${score}/${maxScore})`
+              )
+            }
+          } else {
+            console.warn('[iMocha] No active contractor template found — skipping auto-contract')
+          }
+        }
+      } catch (err) {
+        // Don't fail assessment completion if contract generation fails
+        console.error('[iMocha] Failed to auto-initiate contract:', err)
+      }
     }
 
     // Update candidate profile score
