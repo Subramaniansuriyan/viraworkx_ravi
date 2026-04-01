@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { candidateApi, jobApi } from '../../services/api'
+import { candidateApi, jobApi, contractApi } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 
 import {
@@ -14,12 +14,14 @@ import {
   MapPin,
   Building2,
   Bookmark,
+  PenLine,
 } from 'lucide-react'
 import NotificationBell from '../../components/shared/NotificationBell'
 import CandidateLayout from '../../components/candidate/CandidateLayout'
 
 export default function CandidateDashboard() {
   const { user, accessToken: token } = useAuthStore()
+  const navigate = useNavigate()
 
   const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ['profile'],
@@ -51,6 +53,19 @@ export default function CandidateDashboard() {
       return res.json()
     },
     enabled: !!token,
+  })
+
+  const { data: contractsData } = useQuery({
+    queryKey: ['candidateContracts'],
+    queryFn: async () => {
+      const { data } = await contractApi.getAll()
+      return data
+    },
+  })
+
+  const pendingContracts = (contractsData?.contracts || []).filter((c: any) => {
+    const candidateSig = c.signatures?.find((s: any) => s.signerRole === 'candidate')
+    return c.status === 'pending_signatures' && !candidateSig?.signedAt
   })
 
   const profile = profileData?.data?.profile
@@ -111,6 +126,31 @@ export default function CandidateDashboard() {
   return (
     <CandidateLayout>
       <div className="p-4 md:p-8">
+        {/* Pending contract alert */}
+        {pendingContracts.length > 0 && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+            <PenLine className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-semibold text-amber-900">
+                You have {pendingContracts.length} contract{pendingContracts.length > 1 ? 's' : ''} awaiting your signature
+              </p>
+              <p className="text-sm text-amber-700 mt-0.5">
+                Congratulations on passing your assessment! Please review and sign your contract to proceed.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {pendingContracts.map((c: any) => (
+                  <button
+                    key={c.id}
+                    onClick={() => navigate(`/candidate/contracts/${c.id}`)}
+                    className="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700"
+                  >
+                    Review &amp; Sign: {c.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center justify-between mb-6 md:mb-8">
           <div>

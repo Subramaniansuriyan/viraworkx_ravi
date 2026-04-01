@@ -79,7 +79,12 @@ export default function ClientContractReview() {
 
   const viraworkxSig = contract.signatures?.find((s) => s.signerRole === 'viraworkx')
   const clientSig = contract.signatures?.find((s) => s.signerRole === 'client')
-  const canSign = contract.status === 'pending_signatures' && clientSig && !clientSig.signedAt
+  const isAdmin = user?.userType === 'admin'
+  // Admin signs as viraworkx; client signs as client
+  const canSign = contract.status === 'pending_signatures' && (
+    isAdmin ? (viraworkxSig && !viraworkxSig.signedAt) : (clientSig && !clientSig.signedAt)
+  )
+  const signButtonLabel = isAdmin ? 'Counter-sign as ViraWorkx' : 'Sign Contract'
   const pdfUrl = contractApi.getPdfUrl(id!)
 
   return (
@@ -146,7 +151,7 @@ export default function ClientContractReview() {
           )}
           {canSign && (
             <button onClick={() => setShowSignModal(true)} className="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-medium flex items-center gap-2">
-              <PenTool className="w-4 h-4" /> Sign Contract
+              <PenTool className="w-4 h-4" /> {signButtonLabel}
             </button>
           )}
           {contract.status === 'active' && (
