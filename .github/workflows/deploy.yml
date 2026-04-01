@@ -247,3 +247,17 @@ jobs:
             --quiet
           echo "Prisma db push complete"
 
+          # Step 3: seed default contract template (idempotent — safe to run every deploy)
+          gcloud run jobs update viraworkx-migrate \
+            --image=$IMAGE:${{ github.sha }} \
+            --region=${{ env.GCP_REGION }} \
+            --command="npx" \
+            --args="tsx,packages/db/prisma/seed-contract-template.ts" \
+            --quiet
+
+          gcloud run jobs execute viraworkx-migrate \
+            --region=${{ env.GCP_REGION }} \
+            --wait \
+            --quiet
+          echo "Contract template seed complete"
+
