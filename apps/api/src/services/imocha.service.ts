@@ -699,7 +699,7 @@ class IMochaService {
 
   /**
    * Fetch invitation result from iMocha API (v3).
-   * Tries multiple endpoint patterns in order; logs each attempt.
+   * Uses GET /reports?testInvitationId={id} — the paginated reports endpoint.
    */
   async fetchInvitationResult(testId: string, invitationId: string): Promise<{
     score: number | null
@@ -709,41 +709,32 @@ class IMochaService {
     completedAt: string | null
     status: string
   }> {
-    // iMocha v3 candidate endpoints to try in order:
-    const endpoints = [
-      `/tests/${testId}/invitations/${invitationId}`,
-      `/invitations/${invitationId}`,
-      `/tests/${testId}/invitations/${invitationId}/report`,
-      `/reports/invitation/${invitationId}`,
-    ]
+    console.log(`[iMocha] Fetching report for invitationId=${invitationId}`)
+    const response = await this.client.get('/reports', {
+      params: { testInvitationId: invitationId },
+    })
 
-    let lastError: any
-    for (const endpoint of endpoints) {
-      try {
-        console.log(`[iMocha] Trying endpoint: GET ${endpoint}`)
-        const response = await this.client.get(endpoint)
-        const d = response.data
-        console.log(`[iMocha] Success on ${endpoint}:`, JSON.stringify(d).slice(0, 300))
-
-        return {
-          score: d.score ?? d.obtainedScore ?? d.candidateScore ?? null,
-          maxScore: d.maxScore ?? d.totalScore ?? d.testMaxScore ?? 100,
-          percentile: d.percentile ?? d.candidatePercentile ?? null,
-          reportUrl: d.reportUrl ?? d.testReportUrl ?? d.reportLink ?? null,
-          completedAt: d.completedAt ?? d.finishedAt ?? d.completedOn ?? null,
-          status: d.status ?? d.testStatus ?? d.invitationStatus ?? '',
-        }
-      } catch (err: any) {
-        const status = err?.response?.status
-        const data = JSON.stringify(err?.response?.data ?? err?.message ?? '').slice(0, 200)
-        console.warn(`[iMocha] ${endpoint} → ${status}: ${data}`)
-        lastError = err
-        // Only continue trying if it's a 404; other errors are definitive
-        if (status !== 404) break
-      }
+    const reports: any[] = response.data?.reports ?? []
+    if (reports.length === 0) {
+      throw new Error(`No report found in iMocha for invitationId ${invitationId}`)
     }
 
-    throw lastError
+    const r = reports[0]
+    console.log(`[iMocha] Report found:`, JSON.stringify(r).slice(0, 300))
+
+    // scorePercentage is already 0-100, so derive score/maxScore from it
+    // preferring candidatePoints/totalTestPoints if present
+    const score = r.candidatePoints ?? r.score ?? null
+    const maxScore = r.totalTestPoints ?? (score != null && r.scorePercentage ? Math.round(score / (r.scorePercentage / 100)) : 100)
+
+    return {
+      score,
+      maxScore,
+      percentile: r.scorePercentage ?? null,   // use scorePercentage as percentile fallback
+      reportUrl: r.pdfReportUrl ?? null,
+      completedAt: r.completedOn ?? r.appearedOn ?? null,
+      status: r.status ?? '',
+    }
   }
 
   /**

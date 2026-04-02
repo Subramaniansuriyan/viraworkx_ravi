@@ -449,9 +449,8 @@ router.post('/:id/sync-imocha', authenticateToken, requireRole('admin'), async (
 
     if (score == null) {
       return res.status(502).json({
-        error: 'Could not retrieve score from iMocha API. Check Cloud Run logs for details.',
+        error: 'Could not retrieve score from iMocha',
         imochaError: imochaFetchError,
-        hint: 'Pass score/maxScore in the request body to apply a manual override.',
       })
     }
 
