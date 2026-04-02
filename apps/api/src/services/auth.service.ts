@@ -133,9 +133,10 @@ class AuthService {
       throw new Error('Invalid email or password')
     }
 
-    // Enforce email verification for accounts created after 2026-03-18
+    // Admin accounts bypass email verification
+    // Enforce email verification for non-admin accounts created after 2026-03-18
     // Users registered before this date are grandfathered (auto-verified)
-    if (!user.emailVerified) {
+    if (!user.emailVerified && user.userType !== 'admin') {
       const grandfatherDate = new Date('2026-03-18T00:00:00Z')
       if (user.createdAt < grandfatherDate) {
         await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } })
