@@ -216,10 +216,16 @@ class IMochaService {
     }
 
     try {
+      // Build the webhook callback URL for this environment
+      const apiUrl = process.env.APP_API_URL || process.env.APP_URL || 'https://viraworkx-api-4bkn2v3nnq-uc.a.run.app'
+      const webhookCallbackUrl = `${apiUrl}/api/v1/assessments/webhook`
+
       // Call iMocha API to create invitation (v3 format)
       const response = await this.client.post(`/tests/${params.testId}/invite`, {
         email: params.candidateEmail,
         name: params.candidateName,
+        notificationUrl: webhookCallbackUrl,   // iMocha v3 field for webhook callback
+        callbackUrl: webhookCallbackUrl,        // fallback field name
       })
 
       const invitation: IMochaInvitation = {

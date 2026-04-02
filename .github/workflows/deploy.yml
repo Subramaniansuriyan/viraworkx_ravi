@@ -83,6 +83,15 @@ jobs:
             --set-env-vars="NODE_ENV=production,SKIP_REDIS=true,GCS_BUCKET=viraworkx-uploads" \
             --quiet
 
+      - name: Set API self-URL env var (for iMocha webhooks)
+        run: |
+          URL=$(gcloud run services describe ${{ env.API_SERVICE }} \
+            --region=${{ env.GCP_REGION }} --format='value(status.url)')
+          gcloud run services update ${{ env.API_SERVICE }} \
+            --region=${{ env.GCP_REGION }} \
+            --update-env-vars="APP_API_URL=$URL" \
+            --quiet
+
       - name: Get API URL
         id: api_url
         run: |
