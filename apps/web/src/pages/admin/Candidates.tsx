@@ -180,7 +180,7 @@ export default function AdminCandidates() {
                     <th className="text-right px-6 py-4 text-sm font-medium text-gray-500">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y [&_td]:align-middle">
                   {candidates.map((candidate: any) => (
                     <tr key={candidate.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
@@ -248,21 +248,21 @@ export default function AdminCandidates() {
                           <span className="text-gray-400 text-sm">-</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 align-middle">
                         {candidate.assessmentTier ? (
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
                               candidate.assessmentTier === 'Tier 1'
                                 ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
                                 : candidate.assessmentTier === 'Tier 2'
-                                ? 'bg-gray-100 text-gray-700 border border-gray-300'
-                                : 'bg-orange-100 text-orange-700 border border-orange-300'
+                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                : 'bg-green-100 text-green-800 border border-green-300'
                             }`}
                           >
                             {candidate.assessmentTier}
                           </span>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-gray-400 text-sm">—</span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
