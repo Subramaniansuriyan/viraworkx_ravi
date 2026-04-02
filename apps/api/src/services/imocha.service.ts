@@ -699,7 +699,7 @@ class IMochaService {
 
   /**
    * Fetch invitation result from iMocha API (v3).
-   * Used to manually sync a missed webhook.
+   * Tries multiple endpoint patterns in order; logs each attempt.
    */
   async fetchInvitationResult(testId: string, invitationId: string): Promise<{
     score: number | null
@@ -709,19 +709,41 @@ class IMochaService {
     completedAt: string | null
     status: string
   }> {
-    // iMocha v3: GET /tests/{testId}/invitations/{invitationId}
-    const response = await this.client.get(`/tests/${testId}/invitations/${invitationId}`)
-    const d = response.data
+    // iMocha v3 candidate endpoints to try in order:
+    const endpoints = [
+      `/tests/${testId}/invitations/${invitationId}`,
+      `/invitations/${invitationId}`,
+      `/tests/${testId}/invitations/${invitationId}/report`,
+      `/reports/invitation/${invitationId}`,
+    ]
 
-    // Normalise field names across API versions
-    return {
-      score: d.score ?? d.obtainedScore ?? null,
-      maxScore: d.maxScore ?? d.totalScore ?? 100,
-      percentile: d.percentile ?? null,
-      reportUrl: d.reportUrl ?? d.testReportUrl ?? null,
-      completedAt: d.completedAt ?? d.finishedAt ?? null,
-      status: d.status ?? d.testStatus ?? '',
+    let lastError: any
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`[iMocha] Trying endpoint: GET ${endpoint}`)
+        const response = await this.client.get(endpoint)
+        const d = response.data
+        console.log(`[iMocha] Success on ${endpoint}:`, JSON.stringify(d).slice(0, 300))
+
+        return {
+          score: d.score ?? d.obtainedScore ?? d.candidateScore ?? null,
+          maxScore: d.maxScore ?? d.totalScore ?? d.testMaxScore ?? 100,
+          percentile: d.percentile ?? d.candidatePercentile ?? null,
+          reportUrl: d.reportUrl ?? d.testReportUrl ?? d.reportLink ?? null,
+          completedAt: d.completedAt ?? d.finishedAt ?? d.completedOn ?? null,
+          status: d.status ?? d.testStatus ?? d.invitationStatus ?? '',
+        }
+      } catch (err: any) {
+        const status = err?.response?.status
+        const data = JSON.stringify(err?.response?.data ?? err?.message ?? '').slice(0, 200)
+        console.warn(`[iMocha] ${endpoint} → ${status}: ${data}`)
+        lastError = err
+        // Only continue trying if it's a 404; other errors are definitive
+        if (status !== 404) break
+      }
     }
+
+    throw lastError
   }
 
   /**

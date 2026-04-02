@@ -184,7 +184,10 @@ export default function TestAllocation() {
       queryClient.invalidateQueries({ queryKey: ['activeInvites'] })
       setSyncModalInvite(null)
     } catch (err: any) {
-      const msg = err?.response?.data?.error || err?.message || 'Sync failed'
+      const data = err?.response?.data
+      const msg = data?.imochaError
+        ? `${data.error} — ${data.imochaError}`
+        : (data?.error || err?.message || 'Sync failed')
       setSyncError(prev => ({ ...prev, [id]: msg }))
     } finally {
       setSyncingId(null)

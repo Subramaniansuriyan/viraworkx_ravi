@@ -428,6 +428,7 @@ router.post('/:id/sync-imocha', authenticateToken, requireRole('admin'), async (
     let percentile: number | null = req.body.percentile != null ? Number(req.body.percentile) : null
     let reportUrl: string | null = null
     let completedAt: string | null = null
+    let imochaFetchError: string | undefined
 
     // If score not provided manually, try to fetch from iMocha API
     if (score == null && assessment.imochaInvitationId && imochaService.isLive()) {
@@ -439,15 +440,18 @@ router.post('/:id/sync-imocha', authenticateToken, requireRole('admin'), async (
         reportUrl = result.reportUrl
         completedAt = result.completedAt
       } catch (err: any) {
+        const httpStatus = err?.response?.status
         const detail = err?.response?.data ?? err?.message ?? String(err)
-        console.warn('[sync-imocha] iMocha API fetch failed:', detail)
-        // Fall through — score still null, will be caught below
+        console.warn('[sync-imocha] iMocha API fetch failed:', httpStatus, detail)
+        imochaFetchError = `iMocha API returned ${httpStatus ?? 'error'}: ${JSON.stringify(detail)}`
       }
     }
 
     if (score == null) {
-      return res.status(400).json({
-        error: 'Could not obtain score. Either enter the score manually (pass score in request body) or check iMocha API configuration.',
+      return res.status(502).json({
+        error: 'Could not retrieve score from iMocha API. Check Cloud Run logs for details.',
+        imochaError: imochaFetchError,
+        hint: 'Pass score/maxScore in the request body to apply a manual override.',
       })
     }
 
