@@ -112,6 +112,10 @@ export default function TestAllocation() {
   const [allocationNotes, setAllocationNotes] = useState('')
   const [syncingId, setSyncingId] = useState<string | null>(null)
   const [syncError, setSyncError] = useState<Record<string, string>>({})
+  const [syncModalInvite, setSyncModalInvite] = useState<ActiveInvite | null>(null)
+  const [manualScore, setManualScore] = useState('')
+  const [manualMaxScore, setManualMaxScore] = useState('100')
+  const [manualPercentile, setManualPercentile] = useState('')
 
   const [expiresInDays, setExpiresInDays] = useState(() => {
     try {
@@ -168,18 +172,33 @@ export default function TestAllocation() {
     }
   })
 
-  const handleSyncImocha = async (id: string) => {
+  const handleSyncImocha = async (id: string, score?: number, maxScore?: number, percentile?: number) => {
     setSyncingId(id)
     setSyncError(prev => ({ ...prev, [id]: '' }))
     try {
-      await assessmentApi.syncFromImocha(id)
+      const body: any = {}
+      if (score != null) body.score = score
+      if (maxScore != null) body.maxScore = maxScore
+      if (percentile != null) body.percentile = percentile
+      await assessmentApi.syncFromImocha(id, body)
       queryClient.invalidateQueries({ queryKey: ['activeInvites'] })
+      setSyncModalInvite(null)
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.message || 'Sync failed'
       setSyncError(prev => ({ ...prev, [id]: msg }))
     } finally {
       setSyncingId(null)
     }
+  }
+
+  const handleManualSync = () => {
+    if (!syncModalInvite || !manualScore) return
+    handleSyncImocha(
+      syncModalInvite.id,
+      Number(manualScore),
+      Number(manualMaxScore) || 100,
+      manualPercentile ? Number(manualPercentile) : undefined
+    )
   }
 
   const candidates: PendingCandidate[] = pendingData?.candidates || []
@@ -515,9 +534,15 @@ export default function TestAllocation() {
                               )}
                               {inv.status !== 'completed' && inv.status !== 'expired' && (
                                 <button
-                                  onClick={() => handleSyncImocha(inv.id)}
+                                  onClick={() => {
+                                    setSyncModalInvite(inv)
+                                    setManualScore('')
+                                    setManualMaxScore('100')
+                                    setManualPercentile('')
+                                    setSyncError(prev => ({ ...prev, [inv.id]: '' }))
+                                  }}
                                   disabled={syncingId === inv.id}
-                                  title="Pull latest result from iMocha"
+                                  title="Enter score from iMocha dashboard"
                                   className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
                                 >
                                   <RefreshCw className={`w-3.5 h-3.5 ${syncingId === inv.id ? 'animate-spin' : ''}`} />
@@ -539,6 +564,105 @@ export default function TestAllocation() {
           </div>
         </div>
       </div>
+
+      {/* Manual Score Sync Modal */}
+      {syncModalInvite && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSyncModalInvite(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md m-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Enter Assessment Score</h2>
+                <p className="text-sm text-gray-500">{syncModalInvite.candidateName}</p>
+              </div>
+              <button onClick={() => setSyncModalInvite(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600">
+                Enter the score from the iMocha dashboard for test <span className="font-medium">{syncModalInvite.testName || syncModalInvite.testId}</span>.
+                This will update the candidate's tier and auto-initiate the contract if score ≥ 60%.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Score obtained *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={manualScore}
+                    onChange={e => setManualScore(e.target.value)}
+                    placeholder="e.g. 78"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Max score</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={manualMaxScore}
+                    onChange={e => setManualMaxScore(e.target.value)}
+                    placeholder="100"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Percentile (optional)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={manualPercentile}
+                  onChange={e => setManualPercentile(e.target.value)}
+                  placeholder="e.g. 72"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              {syncError[syncModalInvite.id] && (
+                <p className="text-sm text-red-600">{syncError[syncModalInvite.id]}</p>
+              )}
+              {manualScore && manualMaxScore && (
+                <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700">
+                  Score: <span className="font-semibold">{manualScore}/{manualMaxScore}</span>
+                  {' '}({Math.round((Number(manualScore) / Number(manualMaxScore)) * 100)}%)
+                  {' → '}
+                  <span className="font-semibold">
+                    {(() => {
+                      const pct = (Number(manualScore) / Number(manualMaxScore)) * 100
+                      if (pct > 80) return 'Tier 1'
+                      if (pct > 70) return 'Tier 2'
+                      if (pct > 60) return 'Tier 3'
+                      return 'No tier (below 60%)'
+                    })()}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t">
+              <button
+                onClick={() => setSyncModalInvite(null)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleManualSync}
+                disabled={!manualScore || syncingId === syncModalInvite.id}
+                className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {syncingId === syncModalInvite.id ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4" />
+                )}
+                Apply Score
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Allocation Modal */}
       {selectedCandidate && (

@@ -397,9 +397,17 @@ router.post('/:id/simulate-complete', authenticateToken, async (req: AuthRequest
 
 /**
  * POST /api/v1/assessments/:id/sync-imocha
- * Admin: pull the real result for this assessment directly from iMocha and
- * process it exactly as if the webhook had arrived (updates score, tier,
- * auto-initiates contract if ≥60%).
+ * Admin: record the real iMocha result and process it through the normal
+ * webhook handler (tier, contract auto-initiation, badges).
+ *
+ * Body (all optional):
+ *   score      – obtained score (required if iMocha API fetch fails)
+ *   maxScore   – total possible score (default 100)
+ *   percentile – candidate percentile
+ *
+ * If score/maxScore are supplied in the body they are used directly,
+ * skipping the iMocha API call. This lets admins manually enter a score
+ * they read from the iMocha dashboard when the API is unavailable.
  */
 router.post('/:id/sync-imocha', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
   try {
@@ -415,48 +423,47 @@ router.post('/:id/sync-imocha', authenticateToken, requireRole('admin'), async (
       return res.status(400).json({ error: 'Assessment already marked as completed' })
     }
 
-    if (!assessment.imochaInvitationId) {
-      return res.status(400).json({ error: 'No iMocha invitation ID on this record — cannot sync' })
+    let score: number | null = req.body.score != null ? Number(req.body.score) : null
+    let maxScore: number | null = req.body.maxScore != null ? Number(req.body.maxScore) : null
+    let percentile: number | null = req.body.percentile != null ? Number(req.body.percentile) : null
+    let reportUrl: string | null = null
+    let completedAt: string | null = null
+
+    // If score not provided manually, try to fetch from iMocha API
+    if (score == null && assessment.imochaInvitationId && imochaService.isLive()) {
+      try {
+        const result = await imochaService.fetchInvitationResult(assessment.imochaTestId, assessment.imochaInvitationId)
+        score = result.score
+        maxScore = result.maxScore
+        percentile = result.percentile
+        reportUrl = result.reportUrl
+        completedAt = result.completedAt
+      } catch (err: any) {
+        const detail = err?.response?.data ?? err?.message ?? String(err)
+        console.warn('[sync-imocha] iMocha API fetch failed:', detail)
+        // Fall through — score still null, will be caught below
+      }
     }
 
-    if (!imochaService.isLive()) {
-      return res.status(400).json({ error: 'iMocha API not configured — cannot sync in mock mode' })
-    }
-
-    // Fetch result directly from iMocha
-    let result
-    try {
-      result = await imochaService.fetchInvitationResult(assessment.imochaTestId, assessment.imochaInvitationId)
-    } catch (err: any) {
-      return res.status(502).json({
-        error: 'Failed to fetch result from iMocha API',
-        detail: err?.response?.data ?? err?.message ?? String(err),
-      })
-    }
-
-    // Accept any terminal status: completed / finished / passed / failed
-    const terminalStatuses = ['completed', 'finished', 'passed', 'failed']
-    const isTerminal = terminalStatuses.some(s => result.status?.toLowerCase().includes(s))
-    if (!isTerminal && result.score == null) {
+    if (score == null) {
       return res.status(400).json({
-        error: 'iMocha reports this test is not yet completed',
-        imochaStatus: result.status,
+        error: 'Could not obtain score. Either enter the score manually (pass score in request body) or check iMocha API configuration.',
       })
     }
 
-    // Synthesise a webhook payload and run through the normal handler
+    // Synthesise webhook payload and process through normal handler
     const syntheticPayload: IMochaWebhookPayload = {
       event: 'test.completed',
-      timestamp: result.completedAt || new Date().toISOString(),
+      timestamp: completedAt || new Date().toISOString(),
       data: {
         attemptId: assessment.imochaAttemptId || `synced-${Date.now()}`,
-        invitationId: assessment.imochaInvitationId,
+        invitationId: assessment.imochaInvitationId || '',
         testId: assessment.imochaTestId,
         candidateEmail: '',
-        score: result.score ?? undefined,
-        maxScore: result.maxScore ?? undefined,
-        percentile: result.percentile ?? undefined,
-        reportUrl: result.reportUrl ?? undefined,
+        score,
+        maxScore: maxScore ?? 100,
+        percentile: percentile ?? undefined,
+        reportUrl: reportUrl ?? undefined,
       }
     }
 
@@ -467,10 +474,10 @@ router.post('/:id/sync-imocha', authenticateToken, requireRole('admin'), async (
       include: { skillBadges: true }
     })
 
-    res.json({ message: 'Assessment synced from iMocha', assessment: updated })
+    res.json({ message: 'Assessment synced successfully', assessment: updated })
   } catch (error) {
     console.error('Error syncing from iMocha:', error)
-    res.status(500).json({ error: 'Failed to sync assessment from iMocha' })
+    res.status(500).json({ error: 'Failed to sync assessment' })
   }
 })
 
