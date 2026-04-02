@@ -172,7 +172,7 @@ export default function TestAllocation() {
     }
   })
 
-  const handleSyncImocha = async (id: string, score?: number, maxScore?: number, percentile?: number) => {
+  const handleSyncImocha = async (id: string, invite?: ActiveInvite, score?: number, maxScore?: number, percentile?: number) => {
     setSyncingId(id)
     setSyncError(prev => ({ ...prev, [id]: '' }))
     try {
@@ -185,10 +185,18 @@ export default function TestAllocation() {
       setSyncModalInvite(null)
     } catch (err: any) {
       const data = err?.response?.data
-      const msg = data?.imochaError
-        ? `${data.error} — ${data.imochaError}`
-        : (data?.error || err?.message || 'Sync failed')
-      setSyncError(prev => ({ ...prev, [id]: msg }))
+      // If iMocha API failed and we have no manual score, open the manual entry modal
+      if (invite && score == null) {
+        setSyncModalInvite(invite)
+        setManualScore('')
+        setManualMaxScore('100')
+        setManualPercentile('')
+      } else {
+        const msg = data?.imochaError
+          ? `${data.error} — ${data.imochaError}`
+          : (data?.error || err?.message || 'Sync failed')
+        setSyncError(prev => ({ ...prev, [id]: msg }))
+      }
     } finally {
       setSyncingId(null)
     }
@@ -198,6 +206,7 @@ export default function TestAllocation() {
     if (!syncModalInvite || !manualScore) return
     handleSyncImocha(
       syncModalInvite.id,
+      undefined,
       Number(manualScore),
       Number(manualMaxScore) || 100,
       manualPercentile ? Number(manualPercentile) : undefined
@@ -537,15 +546,9 @@ export default function TestAllocation() {
                               )}
                               {inv.status !== 'completed' && inv.status !== 'expired' && (
                                 <button
-                                  onClick={() => {
-                                    setSyncModalInvite(inv)
-                                    setManualScore('')
-                                    setManualMaxScore('100')
-                                    setManualPercentile('')
-                                    setSyncError(prev => ({ ...prev, [inv.id]: '' }))
-                                  }}
+                                  onClick={() => handleSyncImocha(inv.id, inv)}
                                   disabled={syncingId === inv.id}
-                                  title="Enter score from iMocha dashboard"
+                                  title="Pull latest result from iMocha"
                                   className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
                                 >
                                   <RefreshCw className={`w-3.5 h-3.5 ${syncingId === inv.id ? 'animate-spin' : ''}`} />
