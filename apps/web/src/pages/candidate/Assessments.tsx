@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import {
   Award,
@@ -6,8 +8,11 @@ import {
   CheckCircle,
   AlertCircle,
   ExternalLink,
+  PenLine,
+  X,
 } from 'lucide-react'
 import CandidateLayout from '../../components/candidate/CandidateLayout'
+import { contractApi } from '../../services/api'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   pending:   { label: 'Pending',      color: 'bg-gray-100 text-gray-700',   icon: Clock },
@@ -28,7 +33,7 @@ const BADGE_LEVEL_COLOR: Record<string, string> = {
 const TIER_COLOR: Record<string, string> = {
   'Tier 1': 'bg-amber-100 text-amber-800',
   'Tier 2': 'bg-blue-100 text-blue-800',
-  'Tier 3': 'bg-gray-100 text-gray-700',
+  'Tier 3': 'bg-green-100 text-green-700',
 }
 
 function getTier(score: number | null, maxScore: number | null): string | null {
@@ -46,6 +51,11 @@ function formatDate(d: string) {
 
 export default function Assessments() {
   const { accessToken: token } = useAuthStore()
+  const navigate = useNavigate()
+
+  // Pending contract that needs signing — blocks starting a new test
+  const [blockedTestUrl, setBlockedTestUrl] = useState<string | null>(null)
+  const [pendingContract, setPendingContract] = useState<any | null>(null)
 
   const { data: assessmentsData, isLoading } = useQuery({
     queryKey: ['candidateAssessments'],
@@ -59,9 +69,34 @@ export default function Assessments() {
     enabled: !!token,
   })
 
+  const { data: contractsData } = useQuery({
+    queryKey: ['candidateContracts'],
+    queryFn: async () => {
+      const { data } = await contractApi.getAll()
+      return data
+    },
+    enabled: !!token,
+  })
+
   const assessments: any[] = assessmentsData?.assessments || []
   const completed = assessments.filter(a => a.status === 'completed')
   const pending = assessments.filter(a => ['pending', 'invited', 'started'].includes(a.status))
+
+  // Find first contract awaiting candidate signature
+  const unsignedContract = (contractsData?.contracts || []).find((c: any) => {
+    const candidateSig = c.signatures?.find((s: any) => s.signerRole === 'candidate')
+    return c.status === 'pending_signatures' && !candidateSig?.signedAt
+  }) ?? null
+
+  const handleStartTest = (testUrl: string) => {
+    if (unsignedContract) {
+      // Block — candidate must sign first
+      setBlockedTestUrl(testUrl)
+      setPendingContract(unsignedContract)
+      return
+    }
+    window.open(testUrl, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <CandidateLayout>
@@ -189,15 +224,13 @@ export default function Assessments() {
                         <span className="hidden sm:inline">{cfg.label}</span>
                       </span>
                       {['invited', 'started'].includes(assessment.status) && assessment.invitationUrl && (
-                        <a
-                          href={assessment.invitationUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => handleStartTest(assessment.invitationUrl)}
                           className="flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs md:text-sm font-medium bg-primary text-white hover:bg-primary/90"
                         >
                           <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
                           <span>{assessment.status === 'started' ? 'Continue Test' : 'Start Assessment'}</span>
-                        </a>
+                        </button>
                       )}
                       {assessment.status === 'completed' && assessment.reportUrl && (
                         <a
@@ -218,6 +251,65 @@ export default function Assessments() {
           </div>
         )}
       </div>
+
+      {/* Contract sign-first blocking modal */}
+      {blockedTestUrl && pendingContract && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setBlockedTestUrl(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            {/* Header */}
+            <div className="flex items-start justify-between p-6 border-b">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+                  <PenLine className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Sign Your Contract First</h2>
+                  <p className="text-sm text-gray-500">Action required before proceeding</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setBlockedTestUrl(null)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <p className="text-gray-700 text-sm leading-relaxed">
+                You have a <span className="font-semibold text-amber-700">ViraWorkx Talent Agreement</span> waiting
+                for your signature. You must sign this contract before you can start or continue any assessments.
+              </p>
+              <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
+                <p className="font-medium mb-1">Why do I need to sign first?</p>
+                <p className="text-amber-700">
+                  The agreement covers your placement terms, IP rights, and compensation. It must be signed
+                  before you can be formally placed with a client.
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 p-6 border-t">
+              <button
+                onClick={() => setBlockedTestUrl(null)}
+                className="flex-1 px-4 py-2.5 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => navigate(`/candidate/contracts/${pendingContract.id}`)}
+                className="flex-1 px-4 py-2.5 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2"
+              >
+                <PenLine className="w-4 h-4" />
+                Review & Sign Contract
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </CandidateLayout>
   )
 }
