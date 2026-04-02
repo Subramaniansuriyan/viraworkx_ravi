@@ -39,10 +39,10 @@ const TIER_COLOR: Record<string, string> = {
 function getTier(score: number | null, maxScore: number | null): string | null {
   if (score == null || !maxScore) return null
   const pct = (score / maxScore) * 100
-  if (pct > 80) return 'Tier 1'
-  if (pct > 70) return 'Tier 2'
-  if (pct > 60) return 'Tier 3'
-  return null
+  if (pct > 85) return 'Tier 1'   // 85–100%
+  if (pct > 70) return 'Tier 2'   // 70–85%
+  if (pct > 60) return 'Tier 3'   // 60–70%
+  return null                      // < 60%: failed
 }
 
 function formatDate(d: string) {

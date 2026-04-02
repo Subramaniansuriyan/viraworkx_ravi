@@ -637,10 +637,10 @@ export default function TestAllocation() {
                   <span className="font-semibold">
                     {(() => {
                       const pct = (Number(manualScore) / Number(manualMaxScore)) * 100
-                      if (pct > 80) return 'Tier 1'
-                      if (pct > 70) return 'Tier 2'
-                      if (pct > 60) return 'Tier 3'
-                      return 'No tier (below 60%)'
+                      if (pct > 85) return 'Tier 1 (85–100%)'
+                      if (pct > 70) return 'Tier 2 (70–85%)'
+                      if (pct > 60) return 'Tier 3 (60–70%)'
+                      return 'Failed (below 60%)'
                     })()}
                   </span>
                 </div>

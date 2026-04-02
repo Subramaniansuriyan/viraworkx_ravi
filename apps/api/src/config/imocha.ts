@@ -21,9 +21,10 @@ export const imochaConfig = {
 
   // Tier level thresholds based on overall score percentage
   tierLevels: {
-    tier1: 80,  // score > 80%
-    tier2: 70,  // score > 70%
-    tier3: 60,  // score > 60%
+    tier1: 85,  // score > 85% → Tier 1 (85–100%)
+    tier2: 70,  // score > 70% → Tier 2 (70–85%)
+    tier3: 60,  // score > 60% → Tier 3 (60–70%)
+    // < 60%: failed — no tier assigned
   },
 
   // Badge level thresholds based on percentile
