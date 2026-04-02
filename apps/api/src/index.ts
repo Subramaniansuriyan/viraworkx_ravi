@@ -18,6 +18,7 @@ import { socketService } from './services/socket.service.js'
 import { initializeWorkers, closeWorkers, scheduleRecurringJobs, getQueueStats } from './jobs/index.js'
 import { closeAllQueues } from './jobs/queues.js'
 import { closeRedisConnection, SKIP_REDIS } from './config/redis.js'
+import { startImochaPoller, stopImochaPoller } from './jobs/imocha-poller.js'
 
 // Route imports
 import authRoutes from './routes/auth.routes.js'
@@ -374,6 +375,9 @@ async function startServer() {
     console.log('Skipping BullMQ workers (SKIP_REDIS=true)')
   }
 
+  // Start iMocha result poller (runs regardless of Redis — no dependency)
+  startImochaPoller()
+
   // Start Apollo Server
   await apolloServer.start()
 
@@ -416,6 +420,7 @@ async function startServer() {
   // Graceful shutdown
   process.on('SIGTERM', async () => {
     console.log('SIGTERM received, shutting down...')
+    stopImochaPoller()
     if (!SKIP_REDIS) {
       await closeWorkers()
       await closeAllQueues()
