@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Shield, AlertTriangle, CheckCircle, Target, MapPin, Briefcase,
-  Award, X, Send, Star, Search, Clock, Calendar, ExternalLink
+  Award, X, Send, Star, Search, Clock, Calendar, ExternalLink, RefreshCw
 } from 'lucide-react'
-import api from '../../services/api'
+import api, { assessmentApi } from '../../services/api'
 import AdminLayout from '../../components/admin/AdminLayout'
 
 interface PendingCandidate {
@@ -110,6 +110,9 @@ export default function TestAllocation() {
   const [selectedCandidate, setSelectedCandidate] = useState<PendingCandidate | null>(null)
   const [selectedTestId, setSelectedTestId] = useState('')
   const [allocationNotes, setAllocationNotes] = useState('')
+  const [syncingId, setSyncingId] = useState<string | null>(null)
+  const [syncError, setSyncError] = useState<Record<string, string>>({})
+
   const [expiresInDays, setExpiresInDays] = useState(() => {
     try {
       const saved = localStorage.getItem('viraworkx_admin_settings')
@@ -164,6 +167,20 @@ export default function TestAllocation() {
       setAllocationNotes('')
     }
   })
+
+  const handleSyncImocha = async (id: string) => {
+    setSyncingId(id)
+    setSyncError(prev => ({ ...prev, [id]: '' }))
+    try {
+      await assessmentApi.syncFromImocha(id)
+      queryClient.invalidateQueries({ queryKey: ['activeInvites'] })
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || 'Sync failed'
+      setSyncError(prev => ({ ...prev, [id]: msg }))
+    } finally {
+      setSyncingId(null)
+    }
+  }
 
   const candidates: PendingCandidate[] = pendingData?.candidates || []
   const tests: Test[] = testsData?.tests || []
@@ -484,17 +501,33 @@ export default function TestAllocation() {
                             )}
                           </td>
                           <td className="px-5 py-4">
-                            {inv.invitationUrl && inv.status === 'invited' && (
-                              <a
-                                href={inv.invitationUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:text-primary-700 flex items-center gap-1 text-xs font-medium"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                                Link
-                              </a>
-                            )}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {inv.invitationUrl && inv.status === 'invited' && (
+                                <a
+                                  href={inv.invitationUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:text-primary-700 flex items-center gap-1 text-xs font-medium"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  Link
+                                </a>
+                              )}
+                              {inv.status !== 'completed' && inv.status !== 'expired' && (
+                                <button
+                                  onClick={() => handleSyncImocha(inv.id)}
+                                  disabled={syncingId === inv.id}
+                                  title="Pull latest result from iMocha"
+                                  className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
+                                >
+                                  <RefreshCw className={`w-3.5 h-3.5 ${syncingId === inv.id ? 'animate-spin' : ''}`} />
+                                  Sync
+                                </button>
+                              )}
+                              {syncError[inv.id] && (
+                                <p className="text-xs text-red-500 w-full">{syncError[inv.id]}</p>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       )

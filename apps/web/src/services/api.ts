@@ -306,6 +306,10 @@ export const assessmentApi = {
   // For testing purposes
   simulateComplete: (id: string, data?: { score?: number; percentile?: number }) =>
     api.post<{ assessment: Assessment }>(`/assessments/${id}/simulate-complete`, data),
+
+  // Admin: pull real result from iMocha and process like a webhook
+  syncFromImocha: (id: string) =>
+    api.post<{ message: string; assessment: Assessment }>(`/assessments/${id}/sync-imocha`),
 }
 
 export interface AssessmentReport {

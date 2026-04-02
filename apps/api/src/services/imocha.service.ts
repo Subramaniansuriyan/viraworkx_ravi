@@ -698,6 +698,33 @@ class IMochaService {
   }
 
   /**
+   * Fetch invitation result from iMocha API (v3).
+   * Used to manually sync a missed webhook.
+   */
+  async fetchInvitationResult(testId: string, invitationId: string): Promise<{
+    score: number | null
+    maxScore: number | null
+    percentile: number | null
+    reportUrl: string | null
+    completedAt: string | null
+    status: string
+  }> {
+    // iMocha v3: GET /tests/{testId}/invitations/{invitationId}
+    const response = await this.client.get(`/tests/${testId}/invitations/${invitationId}`)
+    const d = response.data
+
+    // Normalise field names across API versions
+    return {
+      score: d.score ?? d.obtainedScore ?? null,
+      maxScore: d.maxScore ?? d.totalScore ?? 100,
+      percentile: d.percentile ?? null,
+      reportUrl: d.reportUrl ?? d.testReportUrl ?? null,
+      completedAt: d.completedAt ?? d.finishedAt ?? null,
+      status: d.status ?? d.testStatus ?? '',
+    }
+  }
+
+  /**
    * Generate mock skill scores for testing
    */
   private generateMockSkillScores(testName: string): IMochaSkillScore[] {
