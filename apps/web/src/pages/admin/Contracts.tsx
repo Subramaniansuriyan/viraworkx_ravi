@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { FileCheck, Search, FileText, Clock, CheckCircle, XCircle, UserCheck } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -97,7 +96,6 @@ function SignerPill({ role, signed, signedAt }: { role: string; signed: boolean;
 
 export default function AdminContracts() {
   const { accessToken } = useAuthStore()
-  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'candidate_signed'>('all')
 
@@ -247,8 +245,7 @@ export default function AdminContracts() {
                     return (
                       <tr
                         key={contract.id}
-                        onClick={() => navigate(`/client/contracts/${contract.id}`)}
-                        className={`cursor-pointer transition-colors ${candidateSigned ? 'bg-blue-50/40 hover:bg-blue-50' : 'hover:bg-gray-50'}`}
+                        className={`transition-colors ${candidateSigned ? 'bg-blue-50/40' : ''}`}
                       >
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center gap-2">

@@ -95,7 +95,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     <li>
       <Link
         to={to}
-        className={`flex items-center px-3 py-2 rounded-lg transition-colors text-sm ${
+        className={`flex items-center px-3 py-1.5 rounded-lg transition-colors text-sm ${
           isActive(to)
             ? 'text-white bg-slate-800 font-medium'
             : 'text-slate-300 hover:bg-slate-800'
@@ -132,20 +132,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </button>
       </div>
 
-      <nav className="p-4 flex-1 overflow-y-auto">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+      <nav className="px-3 py-3 flex-1 overflow-y-auto">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
           Human-in-the-Loop
         </p>
-        <ul className="space-y-0.5 mb-4">
+        <ul className="space-y-0.5 mb-3">
           <NavLink to="/admin/dashboard" icon={Activity} label="Overview" />
           <NavLink to="/admin/ai-monitor" icon={Bot} label="AI Monitor" badge={pendingApprovals} />
           <NavLink to="/admin/test-allocation" icon={Target} label="Test Allocation" badge={pendingAllocation} />
         </ul>
 
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
           Platform
         </p>
-        <ul className="space-y-0.5 mb-4">
+        <ul className="space-y-0.5 mb-3">
           <NavLink to="/admin/vetting" icon={GitBranch} label="Vetting Pipeline" />
           <NavLink to="/admin/job-approvals" icon={CheckSquare} label="Job Approvals" badge={pendingJobApprovals} />
           <NavLink to="/admin/clients" icon={Building2} label="Clients" />
@@ -157,7 +157,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <NavLink to="/admin/users" icon={Shield} label="User Management" />
         </ul>
 
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
           System
         </p>
         <ul className="space-y-0.5">

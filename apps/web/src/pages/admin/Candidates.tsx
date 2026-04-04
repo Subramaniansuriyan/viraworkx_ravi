@@ -166,7 +166,7 @@ export default function AdminCandidates() {
           ) : (
             <>
               <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px]">
+              <table className="w-full min-w-[800px]">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Candidate</th>
@@ -175,8 +175,7 @@ export default function AdminCandidates() {
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Experience</th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Profile Score</th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Badges</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Assessment</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Tier</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Assessment & Tier</th>
                     <th className="text-right px-6 py-4 text-sm font-medium text-gray-500">Actions</th>
                   </tr>
                 </thead>
@@ -228,39 +227,35 @@ export default function AdminCandidates() {
                       </td>
                       <td className="px-6 py-4">
                         {candidate.latestAssessment ? (
-                          <div>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              candidate.latestAssessment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                              candidate.latestAssessment.status === 'started' ? 'bg-yellow-100 text-yellow-700' :
-                              candidate.latestAssessment.status === 'invited' ? 'bg-blue-100 text-blue-700' :
-                              candidate.latestAssessment.status === 'expired' ? 'bg-red-100 text-red-700' :
-                              'bg-gray-100 text-gray-500'
-                            }`}>
-                              {candidate.latestAssessment.status}
-                            </span>
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
+                                candidate.latestAssessment.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                candidate.latestAssessment.status === 'started' ? 'bg-yellow-100 text-yellow-700' :
+                                candidate.latestAssessment.status === 'invited' ? 'bg-blue-100 text-blue-700' :
+                                candidate.latestAssessment.status === 'expired' ? 'bg-red-100 text-red-700' :
+                                'bg-gray-100 text-gray-500'
+                              }`}>
+                                {candidate.latestAssessment.status}
+                              </span>
+                              {candidate.assessmentTier && (
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold whitespace-nowrap ${
+                                  candidate.assessmentTier === 'Tier 1'
+                                    ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                                    : candidate.assessmentTier === 'Tier 2'
+                                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                    : 'bg-green-100 text-green-800 border border-green-300'
+                                }`}>
+                                  {candidate.assessmentTier}
+                                </span>
+                              )}
+                            </div>
                             {candidate.latestAssessment.score != null && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                {candidate.latestAssessment.score}/{candidate.latestAssessment.maxScore}
+                              <p className="text-xs text-gray-500">
+                                Score: {candidate.latestAssessment.score}/{candidate.latestAssessment.maxScore}
                               </p>
                             )}
                           </div>
-                        ) : (
-                          <span className="text-gray-400 text-sm">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 align-middle">
-                        {candidate.assessmentTier ? (
-                          <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
-                              candidate.assessmentTier === 'Tier 1'
-                                ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                                : candidate.assessmentTier === 'Tier 2'
-                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                : 'bg-green-100 text-green-800 border border-green-300'
-                            }`}
-                          >
-                            {candidate.assessmentTier}
-                          </span>
                         ) : (
                           <span className="text-gray-400 text-sm">—</span>
                         )}
