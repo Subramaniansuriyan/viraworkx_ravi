@@ -241,17 +241,39 @@ class ContractService {
   async sendForSignatures(contractId: string) {
     const contract = await prisma.contract.findUnique({
       where: { id: contractId },
+      include: {
+        application: {
+          include: { candidate: { select: { userId: true } } },
+        },
+      },
     })
     if (!contract) throw new Error('Contract not found')
     if (contract.status !== 'draft') {
       throw new Error('Contract must be in draft status')
     }
 
-    return prisma.contract.update({
+    const updated = await prisma.contract.update({
       where: { id: contractId },
       data: { status: 'pending_signatures' },
       include: { signatures: true },
     })
+
+    // Notify the candidate in-app
+    const candidateUserId = contract.application?.candidate?.userId
+    if (candidateUserId) {
+      await prisma.notification.create({
+        data: {
+          userId: candidateUserId,
+          type: 'contract_ready',
+          title: 'Contract ready to sign',
+          message: 'Your ViraWorkx Talent Agreement is ready. Please review and sign it to proceed.',
+          data: { contractId },
+          channel: 'in_app',
+        },
+      })
+    }
+
+    return updated
   }
 
   async signContract(input: SignContractInput) {

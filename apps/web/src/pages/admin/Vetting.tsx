@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Users, ChevronRight, MapPin, Briefcase, Star, Award,
-  CheckCircle, AlertTriangle, Bot, ArrowRight, Plus, X, Search
+  CheckCircle, AlertTriangle, Bot, ArrowRight, Plus, X, Search,
+  FileText, Send
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -73,6 +74,9 @@ export default function AdminVetting() {
   const [enrollNotes, setEnrollNotes] = useState('')
   const [candidateSearch, setCandidateSearch] = useState('')
   const [jobSearch, setJobSearch] = useState('')
+  const [contractModal, setContractModal] = useState<{ appId: string; candidateName: string } | null>(null)
+  const [selectedTemplateId, setSelectedTemplateId] = useState('')
+  const [contractSent, setContractSent] = useState(false)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['vettingPipeline'],
@@ -106,6 +110,54 @@ export default function AdminVetting() {
       return res.data
     },
     enabled: enrollOpen,
+  })
+
+  const { data: templatesData } = useQuery({
+    queryKey: ['contractTemplates'],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/api/v1/contracts/templates`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Failed to fetch templates')
+      return res.json()
+    },
+    enabled: !!contractModal,
+  })
+
+  const sendContractMutation = useMutation({
+    mutationFn: async ({ appId, templateId }: { appId: string; templateId: string }) => {
+      // Step 1: generate contract
+      const genRes = await fetch(`${API_URL}/api/v1/contracts/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ applicationId: appId, templateId }),
+      })
+      if (!genRes.ok) {
+        const body = await genRes.json().catch(() => ({}))
+        throw new Error(body.error || 'Failed to generate contract')
+      }
+      const { contract } = await genRes.json()
+
+      // Step 2: send for signatures
+      const sendRes = await fetch(`${API_URL}/api/v1/contracts/${contract.id}/send-for-signatures`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!sendRes.ok) {
+        const body = await sendRes.json().catch(() => ({}))
+        throw new Error(body.error || 'Failed to send contract')
+      }
+      return sendRes.json()
+    },
+    onSuccess: () => {
+      setContractSent(true)
+      setTimeout(() => {
+        setContractModal(null)
+        setSelectedTemplateId('')
+        setContractSent(false)
+        sendContractMutation.reset()
+      }, 2000)
+    },
   })
 
   const enrollMutation = useMutation({
@@ -309,6 +361,19 @@ export default function AdminVetting() {
                           {advanceMutation.isError && (
                             <p className="text-xs text-red-500 mt-1">{(advanceMutation.error as Error)?.message}</p>
                           )}
+                          {col.key === 'tiered' && (
+                            <button
+                              onClick={() => {
+                                setContractModal({ appId: app.id, candidateName: `${app.candidate?.firstName} ${app.candidate?.lastName}` })
+                                setSelectedTemplateId('')
+                                setContractSent(false)
+                              }}
+                              className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 mb-2"
+                            >
+                              <FileText className="w-3 h-3" />
+                              Send Contract
+                            </button>
+                          )}
                           <div className="flex gap-2 mt-2">
                             <button
                               onClick={(e) => { e.stopPropagation(); setRejectModal({ appId: app.id, candidateName: `${app.candidate?.firstName} ${app.candidate?.lastName}` }) }}
@@ -440,6 +505,113 @@ export default function AdminVetting() {
           </div>
         </div>
       )}
+      {/* Send Contract Modal */}
+      {contractModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => !sendContractMutation.isPending && setContractModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md m-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Send Contract</h2>
+                <p className="text-sm text-gray-500">
+                  To <span className="font-medium text-gray-900">{contractModal.candidateName}</span>
+                </p>
+              </div>
+              <button
+                onClick={() => setContractModal(null)}
+                disabled={sendContractMutation.isPending}
+                className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {contractSent ? (
+                <div className="flex flex-col items-center gap-3 py-4 text-center">
+                  <CheckCircle className="w-12 h-12 text-green-500" />
+                  <p className="font-semibold text-gray-900">Contract sent!</p>
+                  <p className="text-sm text-gray-500">
+                    {contractModal.candidateName} will receive a notification to review and sign.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600 mb-4">Select a contract template to send:</p>
+                  {!templatesData ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : (templatesData.templates || []).length === 0 ? (
+                    <div className="text-center py-6 text-gray-400 text-sm">
+                      No templates found. Create one in Contract Templates first.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 mb-6">
+                      {(templatesData.templates || []).map((t: any) => (
+                        <label
+                          key={t.id}
+                          className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                            selectedTemplateId === t.id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="template"
+                            value={t.id}
+                            checked={selectedTemplateId === t.id}
+                            onChange={() => setSelectedTemplateId(t.id)}
+                            className="mt-0.5 text-primary"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{t.name}</p>
+                            {t.description && (
+                              <p className="text-xs text-gray-500 mt-0.5">{t.description}</p>
+                            )}
+                            <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                              {t.templateType}
+                            </span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {sendContractMutation.isError && (
+                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
+                      {(sendContractMutation.error as Error)?.message || 'Failed to send contract'}
+                    </p>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setContractModal(null)}
+                      disabled={sendContractMutation.isPending}
+                      className="flex-1 py-2.5 border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => sendContractMutation.mutate({ appId: contractModal.appId, templateId: selectedTemplateId })}
+                      disabled={!selectedTemplateId || sendContractMutation.isPending}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:opacity-50"
+                    >
+                      {sendContractMutation.isPending ? (
+                        <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Sending...</>
+                      ) : (
+                        <><Send className="w-4 h-4" />Send Contract</>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Enroll Candidate Modal */}
       {enrollOpen && (() => {
         const allCandidates: any[] = candidatesData?.candidates || []
