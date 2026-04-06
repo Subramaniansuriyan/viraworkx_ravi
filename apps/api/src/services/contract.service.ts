@@ -1,6 +1,7 @@
 import prisma from '../config/database.js'
 import { stripeService } from './stripe.service.js'
 import { pdfService } from './pdf.service.js'
+import { emailService } from './email.service.js'
 
 interface GenerateContractInput {
   applicationId: string
@@ -258,7 +259,7 @@ class ContractService {
       include: { signatures: true },
     })
 
-    // Notify the candidate in-app
+    // Notify the candidate in-app and by email
     const candidateUserId = contract.application?.candidate?.userId
     if (candidateUserId) {
       await prisma.notification.create({
@@ -271,6 +272,23 @@ class ContractService {
           channel: 'in_app',
         },
       })
+
+      // Send email with direct link to the contracts page
+      const candidateUser = await prisma.user.findUnique({
+        where: { id: candidateUserId },
+        select: { email: true },
+      })
+      const candidateRecord = await prisma.candidate.findUnique({
+        where: { userId: candidateUserId },
+        select: { firstName: true, lastName: true },
+      })
+      if (candidateUser?.email && candidateRecord) {
+        const appUrl = process.env.APP_URL || 'https://www.viraworkx.ai'
+        emailService.sendContractReady(candidateUser.email, {
+          candidateName: `${candidateRecord.firstName} ${candidateRecord.lastName}`,
+          contractUrl: `${appUrl}/candidate/contracts/${contractId}`,
+        }).catch(err => console.error('[ContractService] Failed to send contract email:', err))
+      }
     }
 
     return updated

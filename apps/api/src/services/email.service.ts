@@ -8,7 +8,7 @@ import { Resend } from 'resend'
 const RESEND_API_KEY = process.env.RESEND_API_KEY || ''
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@viraworkx.ai'
 const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'ViraWorkx'
-const APP_URL = process.env.APP_URL || 'http://localhost:3000'
+const APP_URL = process.env.APP_URL || 'https://www.viraworkx.ai'
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
 
@@ -301,6 +301,41 @@ const templates = {
     text: `Hi ${data.userName},\n\nWe received a request to reset your password.\n\nReset here: ${data.resetUrl}\n\nThis link expires in ${data.expiresIn}.\n\nIf you didn't request this, ignore this email.\n\nViraWorkx Team`
   }),
 
+  // Contract Ready to Sign
+  contractReady: (data: {
+    candidateName: string
+    contractUrl: string
+  }) => ({
+    subject: 'Action Required: Your ViraWorkx Agreement is Ready to Sign',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">ViraWorkx</h1>
+        </div>
+        <div style="padding: 30px; background: #f9fafb;">
+          <h2 style="color: #1f2937;">Hi ${data.candidateName},</h2>
+          <p style="color: #4b5563; line-height: 1.6;">
+            Your ViraWorkx Talent Agreement is ready for your review and signature.
+            Please sign it to complete your onboarding and get started.
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.contractUrl}" style="background: #6366f1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Review &amp; Sign Agreement
+            </a>
+          </div>
+          <p style="color: #6b7280; font-size: 14px;">
+            If the button doesn't work, copy this link into your browser:<br>
+            <a href="${data.contractUrl}" style="color: #6366f1;">${data.contractUrl}</a>
+          </p>
+        </div>
+        <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
+          <p>ViraWorkx - AI-Powered Global Recruiting</p>
+        </div>
+      </div>
+    `,
+    text: `Hi ${data.candidateName},\n\nYour ViraWorkx Talent Agreement is ready to sign.\n\nReview and sign here: ${data.contractUrl}\n\nViraWorkx Team`
+  }),
+
   // Ops Assessment Notification
   opsAssessmentCompleted: (data: {
     candidateName: string
@@ -487,6 +522,13 @@ class EmailService {
    */
   async sendWelcome(to: string, data: Parameters<typeof templates.welcome>[0]) {
     return this.send(to, templates.welcome(data))
+  }
+
+  /**
+   * Send contract ready-to-sign email to candidate
+   */
+  async sendContractReady(to: string, data: Parameters<typeof templates.contractReady>[0]) {
+    return this.send(to, templates.contractReady(data))
   }
 
   /**
