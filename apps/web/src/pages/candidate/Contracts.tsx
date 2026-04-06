@@ -46,15 +46,19 @@ export default function CandidateContracts() {
         ) : (
           <div className="space-y-3">
             {contracts.map((contract) => {
-              const viraworkxSig = contract.signatures?.find((s) => s.signerRole === 'viraworkx')
-              const clientSig = contract.signatures?.find((s) => s.signerRole === 'client')
-              const allSigned = viraworkxSig?.signedAt && clientSig?.signedAt
+              const candidateSig = contract.signatures?.find((s) => s.signerRole === 'candidate')
+              const hasSigned = !!candidateSig?.signedAt
+              const needsSignature = contract.status === 'pending_signatures' && !hasSigned
 
               return (
                 <div
                   key={contract.id}
                   onClick={() => navigate(`/candidate/contracts/${contract.id}`)}
-                  className="bg-slate-900/80 rounded-xl border border-slate-800/50 p-5 cursor-pointer hover:border-slate-700/50 transition-all"
+                  className={`rounded-xl border p-5 cursor-pointer transition-all ${
+                    needsSignature
+                      ? 'bg-amber-500/5 border-amber-500/30 hover:border-amber-400/50'
+                      : 'bg-slate-900/80 border-slate-800/50 hover:border-slate-700/50'
+                  }`}
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
@@ -68,13 +72,17 @@ export default function CandidateContracts() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {contract.status === 'pending_signatures' && !allSigned ? (
-                        <span className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-medium flex items-center gap-1">
-                          <PenTool className="w-3 h-3" /> Awaiting Signatures
-                        </span>
-                      ) : contract.status === 'active' ? (
+                      {contract.status === 'active' ? (
                         <span className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" /> Active
+                        </span>
+                      ) : needsSignature ? (
+                        <span className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-semibold flex items-center gap-1">
+                          <PenTool className="w-3 h-3" /> Action Required — Sign Now
+                        </span>
+                      ) : hasSigned && contract.status === 'pending_signatures' ? (
+                        <span className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 text-xs font-medium flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> You Signed — Awaiting Others
                         </span>
                       ) : (
                         <span className="px-3 py-1.5 rounded-lg bg-slate-500/20 text-slate-400 text-xs font-medium flex items-center gap-1">
