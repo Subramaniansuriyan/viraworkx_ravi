@@ -3,10 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Layers, Search, ChevronLeft, ChevronRight, TrendingUp
 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
-
-const API_URL = ''
+import api from '../../services/api'
 
 const STAGE_STYLES: Record<string, string> = {
   new: 'bg-gray-100 text-gray-700',
@@ -22,7 +20,6 @@ const STAGE_STYLES: Record<string, string> = {
 }
 
 export default function AdminApplications() {
-  const { accessToken: token } = useAuthStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [stageFilter, setStageFilter] = useState('')
   const [page, setPage] = useState(1)
@@ -31,14 +28,11 @@ export default function AdminApplications() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminApplications', page, searchQuery, stageFilter],
     queryFn: async () => {
-      const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() })
-      if (searchQuery) params.append('search', searchQuery)
-      if (stageFilter) params.append('stage', stageFilter)
-      const res = await fetch(`${API_URL}/api/v1/applications?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to fetch applications')
-      return res.json()
+      const params: Record<string, string> = { page: page.toString(), limit: limit.toString() }
+      if (searchQuery) params.search = searchQuery
+      if (stageFilter) params.stage = stageFilter
+      const res = await api.get('/applications', { params })
+      return res.data
     },
   })
 

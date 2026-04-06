@@ -2,9 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileCheck, Search, FileText, Clock, CheckCircle, XCircle, UserCheck } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { useAuthStore } from '../../stores/authStore'
-
-const API_URL = ''
+import api from '../../services/api'
 
 interface ContractSignature {
   signerRole: string
@@ -96,18 +94,14 @@ function SignerPill({ role, signed, signedAt }: { role: string; signed: boolean;
 }
 
 export default function AdminContracts() {
-  const { accessToken } = useAuthStore()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'candidate_signed'>('all')
 
   const { data, isLoading, isError } = useQuery<{ contracts: Contract[] }>({
     queryKey: ['admin-contracts'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/contracts`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      })
-      if (!res.ok) throw new Error('Failed to fetch contracts')
-      return res.json()
+      const res = await api.get('/contracts')
+      return res.data
     },
   })
 

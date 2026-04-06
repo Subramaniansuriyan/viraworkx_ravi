@@ -7,46 +7,33 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
-
-const API_URL = ''
+import api from '../../services/api'
 
 const PIPELINE_COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#f0abfc', '#e879f9', '#10b981', '#ef4444']
 
 export default function AdminAnalytics() {
-  const { accessToken: token } = useAuthStore()
-
   const { data: overviewData, isLoading: loadingOverview } = useQuery({
     queryKey: ['analyticsOverview'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/analytics/overview`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed')
-      return res.json()
+      const res = await api.get('/analytics/overview')
+      return res.data
     },
   })
 
   const { data: pipelineData } = useQuery({
     queryKey: ['analyticsPipeline'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/analytics/pipeline`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed')
-      return res.json()
+      const res = await api.get('/analytics/pipeline')
+      return res.data
     },
   })
 
   const { data: conversionData } = useQuery({
     queryKey: ['analyticsConversions'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/analytics/conversion-rates`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed')
-      return res.json()
+      const res = await api.get('/analytics/conversion-rates')
+      return res.data
     },
   })
 

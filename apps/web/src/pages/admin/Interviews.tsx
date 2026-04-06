@@ -4,10 +4,8 @@ import {
   Video, Plus, Search, ChevronLeft, ChevronRight, X, ExternalLink,
   CheckCircle, XCircle, Clock, Calendar, Users, Building2, MessageSquare, Star
 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
-
-const API_URL = ''
+import api from '../../services/api'
 
 const STATUS_STYLES: Record<string, string> = {
   scheduled: 'bg-blue-100 text-blue-700',
@@ -41,7 +39,6 @@ const EMPTY_FEEDBACK = {
 }
 
 export default function AdminInterviews() {
-  const { accessToken: token } = useAuthStore()
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
@@ -56,16 +53,13 @@ export default function AdminInterviews() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminInterviews', page, statusFilter],
     queryFn: async () => {
-      const params = new URLSearchParams({
+      const params: Record<string, string> = {
         limit: limit.toString(),
         offset: ((page - 1) * limit).toString(),
-      })
-      if (statusFilter) params.append('status', statusFilter)
-      const res = await fetch(`${API_URL}/api/v1/interviews?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed')
-      return res.json()
+      }
+      if (statusFilter) params.status = statusFilter
+      const res = await api.get('/interviews', { params })
+      return res.data
     },
   })
 
@@ -73,26 +67,18 @@ export default function AdminInterviews() {
   const { data: appsData } = useQuery({
     queryKey: ['appsForInterview', appSearch],
     queryFn: async () => {
-      const params = new URLSearchParams({ limit: '10' })
-      if (appSearch) params.append('search', appSearch)
-      const res = await fetch(`${API_URL}/api/v1/applications?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) return { applications: [] }
-      return res.json()
+      const params: Record<string, string> = { limit: '10' }
+      if (appSearch) params.search = appSearch
+      const res = await api.get('/applications', { params })
+      return res.data
     },
     enabled: showCreate,
   })
 
   const createMutation = useMutation({
     mutationFn: async (body: typeof form) => {
-      const res = await fetch(`${API_URL}/api/v1/interviews`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) throw new Error('Failed to create interview')
-      return res.json()
+      const res = await api.post('/interviews', body)
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminInterviews'] })
@@ -104,25 +90,16 @@ export default function AdminInterviews() {
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`${API_URL}/api/v1/interviews/${id}/cancel`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed')
-      return res.json()
+      const res = await api.post(`/interviews/${id}/cancel`)
+      return res.data
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminInterviews'] }),
   })
 
   const feedbackMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof EMPTY_FEEDBACK }) => {
-      const res = await fetch(`${API_URL}/api/v1/interviews/${id}/feedback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Failed to submit feedback')
-      return res.json()
+      const res = await api.post(`/interviews/${id}/feedback`, data)
+      return res.data
     },
     onSuccess: () => {
       setFeedbackModal(null)
@@ -133,11 +110,8 @@ export default function AdminInterviews() {
   const { data: viewFeedbackData } = useQuery({
     queryKey: ['interviewFeedback', viewFeedbackId],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/interviews/${viewFeedbackId}/feedback`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) return { feedback: [] }
-      return res.json()
+      const res = await api.get(`/interviews/${viewFeedbackId}/feedback`)
+      return res.data
     },
     enabled: !!viewFeedbackId,
   })

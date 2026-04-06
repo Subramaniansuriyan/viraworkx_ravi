@@ -5,12 +5,9 @@ import {
   CheckCircle, XCircle, Clock, AlertTriangle, Filter
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { useAuthStore } from '../../stores/authStore'
-
-const API_URL = ''
+import api from '../../services/api'
 
 export default function AuditLog() {
-  const { accessToken: token } = useAuthStore()
   const [selectedAgent, setSelectedAgent] = useState<string>('')
   const [selectedStatus, setSelectedStatus] = useState<string>('')
   const [page, setPage] = useState(1)
@@ -19,14 +16,11 @@ export default function AuditLog() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['auditLog', page, selectedAgent, selectedStatus],
     queryFn: async () => {
-      const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() })
-      if (selectedAgent) params.append('agentType', selectedAgent)
-      if (selectedStatus) params.append('status', selectedStatus)
-      const res = await fetch(`${API_URL}/api/v1/ai/actions?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to fetch audit log')
-      return res.json()
+      const params: Record<string, string> = { page: page.toString(), limit: limit.toString() }
+      if (selectedAgent) params.agentType = selectedAgent
+      if (selectedStatus) params.status = selectedStatus
+      const res = await api.get('/ai/actions', { params })
+      return res.data
     },
   })
 

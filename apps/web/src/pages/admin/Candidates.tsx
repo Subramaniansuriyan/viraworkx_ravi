@@ -5,15 +5,12 @@ import {
   Users, Search, MoreVertical, MapPin, ChevronLeft, ChevronRight, Award,
   UserPlus, X, Send, Eye, ClipboardList
 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
-
-const API_URL = ''
+import api from '../../services/api'
 
 const INVITE_EMPTY = { firstName: '', lastName: '', email: '', phone: '' }
 
 export default function AdminCandidates() {
-  const { accessToken: token } = useAuthStore()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
@@ -43,11 +40,8 @@ export default function AdminCandidates() {
   const { data: testsData, isLoading: testsLoading, isError: testsError } = useQuery({
     queryKey: ['imochaTests', showAssignModal],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/assessments/tests`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to fetch tests')
-      return res.json()
+      const res = await api.get('/assessments/tests')
+      return res.data
     },
     enabled: showAssignModal,
     retry: 1,
@@ -55,13 +49,8 @@ export default function AdminCandidates() {
 
   const assignMutation = useMutation({
     mutationFn: async ({ testId, candidateId }: { testId: string; candidateId: string }) => {
-      const res = await fetch(`${API_URL}/api/v1/assessments/invite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ testId, candidateId }),
-      })
-      if (!res.ok) throw new Error('Failed to assign assessment')
-      return res.json()
+      const res = await api.post('/assessments/invite', { testId, candidateId })
+      return res.data
     },
     onSuccess: () => {
       setAssignSuccess(true)
@@ -77,13 +66,8 @@ export default function AdminCandidates() {
 
   const inviteMutation = useMutation({
     mutationFn: async (data: typeof INVITE_EMPTY) => {
-      const res = await fetch(`${API_URL}/api/v1/candidates/invite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Invite failed')
-      return res.json()
+      const res = await api.post('/candidates/invite', data)
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminCandidates'] })
@@ -99,13 +83,10 @@ export default function AdminCandidates() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminCandidates', page, searchQuery],
     queryFn: async () => {
-      const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() })
-      if (searchQuery) params.append('search', searchQuery)
-      const res = await fetch(`${API_URL}/api/v1/candidates?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to fetch candidates')
-      return res.json()
+      const params: Record<string, string> = { page: page.toString(), limit: limit.toString() }
+      if (searchQuery) params.search = searchQuery
+      const res = await api.get('/candidates', { params })
+      return res.data
     },
   })
 

@@ -5,10 +5,8 @@ import {
   Briefcase, Search, ChevronLeft, ChevronRight, ExternalLink, Building2,
   PlayCircle, XCircle
 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
-
-const API_URL = ''
+import api from '../../services/api'
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
@@ -25,7 +23,6 @@ const REMOTE_LABELS: Record<string, string> = {
 }
 
 export default function AdminJobs() {
-  const { accessToken: token } = useAuthStore()
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -34,12 +31,8 @@ export default function AdminJobs() {
 
   const publishMutation = useMutation({
     mutationFn: async (jobId: string) => {
-      const res = await fetch(`${API_URL}/api/v1/jobs/${jobId}/publish`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to publish')
-      return res.json()
+      const res = await api.post(`/jobs/${jobId}/publish`)
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminJobs'] })
@@ -48,12 +41,8 @@ export default function AdminJobs() {
 
   const closeMutation = useMutation({
     mutationFn: async (jobId: string) => {
-      const res = await fetch(`${API_URL}/api/v1/jobs/${jobId}/close`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to close')
-      return res.json()
+      const res = await api.post(`/jobs/${jobId}/close`)
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminJobs'] })
@@ -63,14 +52,11 @@ export default function AdminJobs() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminJobs', page, searchQuery, statusFilter],
     queryFn: async () => {
-      const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() })
-      if (searchQuery) params.append('search', searchQuery)
-      if (statusFilter) params.append('status', statusFilter)
-      const res = await fetch(`${API_URL}/api/v1/jobs?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to fetch jobs')
-      return res.json()
+      const params: Record<string, string> = { page: page.toString(), limit: limit.toString() }
+      if (searchQuery) params.search = searchQuery
+      if (statusFilter) params.status = statusFilter
+      const res = await api.get('/jobs', { params })
+      return res.data
     },
   })
 

@@ -6,22 +6,14 @@ import {
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import NotificationBell from '../../components/shared/NotificationBell'
-import { useAuthStore } from '../../stores/authStore'
 import api from '../../services/api'
 
-const API_URL = ''
-
 export default function AdminDashboard() {
-  const { accessToken: token } = useAuthStore()
-
   const { data: statsData } = useQuery({
     queryKey: ['aiStats'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/ai/actions/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) return { stats: {} }
-      return res.json()
+      const res = await api.get('/ai/actions/stats')
+      return res.data
     },
     refetchInterval: 30000,
   })
@@ -29,11 +21,8 @@ export default function AdminDashboard() {
   const { data: pendingData } = useQuery({
     queryKey: ['pendingApprovals'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/ai/actions/pending-approval`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) return { actions: [] }
-      return res.json()
+      const res = await api.get('/ai/actions/pending-approval')
+      return res.data
     },
     refetchInterval: 10000,
   })
@@ -41,11 +30,8 @@ export default function AdminDashboard() {
   const { data: overviewData } = useQuery({
     queryKey: ['adminOverview'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/analytics/overview`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) return {}
-      return res.json()
+      const res = await api.get('/analytics/overview')
+      return res.data
     },
     refetchInterval: 60000,
   })

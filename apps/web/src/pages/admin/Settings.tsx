@@ -3,8 +3,8 @@ import {
   Save, Bell, Mail, Globe, Lock, Database, Cpu, ClipboardCheck,
   ToggleLeft, ToggleRight, CheckCircle
 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
+import api from '../../services/api'
 
 interface AdminSettings {
   aiAutoApprove: boolean
@@ -31,7 +31,6 @@ const DEFAULTS: AdminSettings = {
 }
 
 export default function AdminSettings() {
-  const { accessToken: token } = useAuthStore()
   const [settings, setSettings] = useState<AdminSettings>(DEFAULTS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -39,30 +38,19 @@ export default function AdminSettings() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch('/api/v1/settings/platform', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.settings) setSettings(data.settings)
+    api.get('/settings/platform')
+      .then(r => {
+        if (r.data.settings) setSettings(r.data.settings)
       })
       .catch(() => setError('Failed to load settings'))
       .finally(() => setLoading(false))
-  }, [token])
+  }, [])
 
   const handleSave = async () => {
     setSaving(true)
     setError('')
     try {
-      const res = await fetch('/api/v1/settings/platform', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(settings),
-      })
-      if (!res.ok) throw new Error('Save failed')
+      await api.put('/settings/platform', settings)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch {

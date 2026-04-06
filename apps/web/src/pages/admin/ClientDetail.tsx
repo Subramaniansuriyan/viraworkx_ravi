@@ -5,15 +5,12 @@ import {
   Building2, Globe, Users, Briefcase, ChevronLeft,
   CheckCircle, Shield, Layers, ArrowRight
 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
-
-const API_URL = ''
+import api from '../../services/api'
 
 export default function AdminClientDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { accessToken: token } = useAuthStore()
   const queryClient = useQueryClient()
   const [verifyNotes, setVerifyNotes] = useState('')
   const [showVerifyForm, setShowVerifyForm] = useState(false)
@@ -21,24 +18,16 @@ export default function AdminClientDetail() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['adminClientDetail', id],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/clients/${id}/detail`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to fetch client detail')
-      return res.json()
+      const res = await api.get(`/clients/${id}/detail`)
+      return res.data
     },
-    enabled: !!token && !!id,
+    enabled: !!id,
   })
 
   const verifyMutation = useMutation({
     mutationFn: async ({ verified, notes }: { verified: boolean; notes?: string }) => {
-      const res = await fetch(`${API_URL}/api/v1/clients/${id}/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ verified, notes }),
-      })
-      if (!res.ok) throw new Error('Failed to update verification')
-      return res.json()
+      const res = await api.post(`/clients/${id}/verify`, { verified, notes })
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminClientDetail', id] })

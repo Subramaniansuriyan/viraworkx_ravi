@@ -1,18 +1,15 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
+import api from '../../services/api'
 import {
   ArrowLeft, MapPin, Briefcase, Mail,
   FileText, ExternalLink
 } from 'lucide-react'
 
-const API_URL = ''
-
 export default function AdminCandidateDetail() {
   const { id } = useParams<{ id: string }>()
-  const { accessToken: token } = useAuthStore()
   const queryClient = useQueryClient()
   const [rejectReason, setRejectReason] = useState('')
   const [rejectAppId, setRejectAppId] = useState<string | null>(null)
@@ -20,11 +17,8 @@ export default function AdminCandidateDetail() {
   const { data, isLoading } = useQuery({
     queryKey: ['candidateDetail', id],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/candidates/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed')
-      return res.json()
+      const res = await api.get(`/candidates/${id}`)
+      return res.data
     },
     enabled: !!id,
   })
@@ -32,11 +26,8 @@ export default function AdminCandidateDetail() {
   const { data: appsData } = useQuery({
     queryKey: ['candidateApplications', id],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/applications?candidateId=${id}&limit=50`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) return { applications: [] }
-      return res.json()
+      const res = await api.get('/applications', { params: { candidateId: id, limit: 50 } })
+      return res.data
     },
     enabled: !!id,
   })
@@ -44,24 +35,16 @@ export default function AdminCandidateDetail() {
   const { data: assessData } = useQuery({
     queryKey: ['candidateAssessments', id],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/assessments?candidateId=${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) return { assessments: [] }
-      return res.json()
+      const res = await api.get('/assessments', { params: { candidateId: id } })
+      return res.data
     },
     enabled: !!id,
   })
 
   const rejectMutation = useMutation({
     mutationFn: async ({ appId, reason }: { appId: string; reason: string }) => {
-      const res = await fetch(`${API_URL}/api/v1/applications/${appId}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ reason }),
-      })
-      if (!res.ok) throw new Error('Failed')
-      return res.json()
+      const res = await api.post(`/applications/${appId}/reject`, { reason })
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['candidateApplications', id] })

@@ -5,11 +5,8 @@ import {
   CheckCircle, AlertTriangle, Bot, ArrowRight, Plus, X, Search,
   FileText, Send
 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
 import api from '../../services/api'
-
-const API_URL = ''
 
 // Phase 1 pipeline: Applied → Vetted → Tiered → Deployed
 const PIPELINE_STAGES = [
@@ -62,7 +59,6 @@ const PIPELINE_STAGES = [
 const TIER_OPTIONS = ['Tier 1', 'Tier 2', 'Tier 3']
 
 export default function AdminVetting() {
-  const { accessToken: token } = useAuthStore()
   const queryClient = useQueryClient()
   const [tierModal, setTierModal] = useState<{ appId: string; candidateName: string } | null>(null)
   const [selectedTier, setSelectedTier] = useState('Tier 1')
@@ -81,17 +77,10 @@ export default function AdminVetting() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['vettingPipeline'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/applications?limit=200`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || `HTTP ${res.status}`)
-      }
-      return res.json()
+      const res = await api.get('/applications', { params: { limit: 200 } })
+      return res.data
     },
     refetchInterval: 30000,
-    enabled: !!token,
   })
 
   const { data: candidatesData } = useQuery({
@@ -115,11 +104,8 @@ export default function AdminVetting() {
   const { data: templatesData } = useQuery({
     queryKey: ['contractTemplates'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/contracts/templates`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to fetch templates')
-      return res.json()
+      const res = await api.get('/contracts/templates')
+      return res.data
     },
     enabled: !!contractModal,
   })
@@ -127,27 +113,11 @@ export default function AdminVetting() {
   const sendContractMutation = useMutation({
     mutationFn: async ({ appId, templateId }: { appId: string; templateId: string }) => {
       // Step 1: generate contract
-      const genRes = await fetch(`${API_URL}/api/v1/contracts/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ applicationId: appId, templateId }),
-      })
-      if (!genRes.ok) {
-        const body = await genRes.json().catch(() => ({}))
-        throw new Error(body.error || 'Failed to generate contract')
-      }
-      const { contract } = await genRes.json()
+      const { data: { contract } } = await api.post('/contracts/generate', { applicationId: appId, templateId })
 
       // Step 2: send for signatures
-      const sendRes = await fetch(`${API_URL}/api/v1/contracts/${contract.id}/send-for-signatures`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!sendRes.ok) {
-        const body = await sendRes.json().catch(() => ({}))
-        throw new Error(body.error || 'Failed to send contract')
-      }
-      return sendRes.json()
+      const sendRes = await api.post(`/contracts/${contract.id}/send-for-signatures`)
+      return sendRes.data
     },
     onSuccess: () => {
       setContractSent(true)
@@ -178,16 +148,8 @@ export default function AdminVetting() {
 
   const advanceMutation = useMutation({
     mutationFn: async ({ appId, stage, tier }: { appId: string; stage: string; tier?: string }) => {
-      const res = await fetch(`${API_URL}/api/v1/applications/${appId}/advance`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ stage, assessmentTier: tier }),
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || `Failed to advance (${res.status})`)
-      }
-      return res.json()
+      const res = await api.post(`/applications/${appId}/advance`, { stage, assessmentTier: tier })
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vettingPipeline'] })
@@ -197,13 +159,8 @@ export default function AdminVetting() {
 
   const rejectMutation = useMutation({
     mutationFn: async ({ appId, reason }: { appId: string; reason: string }) => {
-      const res = await fetch(`${API_URL}/api/v1/applications/${appId}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ reason }),
-      })
-      if (!res.ok) throw new Error('Failed to reject')
-      return res.json()
+      const res = await api.post(`/applications/${appId}/reject`, { reason })
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vettingPipeline'] })

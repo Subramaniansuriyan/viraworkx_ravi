@@ -4,10 +4,8 @@ import {
   Users, Search, ChevronLeft, ChevronRight, MoreVertical,
   UserCheck, UserX, Shield, User, Building2
 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
-
-const API_URL = ''
+import api from '../../services/api'
 
 const USER_TYPE_STYLES: Record<string, { badge: string; icon: React.ElementType }> = {
   candidate: { badge: 'bg-blue-100 text-blue-700', icon: User },
@@ -16,7 +14,6 @@ const USER_TYPE_STYLES: Record<string, { badge: string; icon: React.ElementType 
 }
 
 export default function AdminUsers() {
-  const { accessToken: token } = useAuthStore()
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
@@ -39,30 +36,19 @@ export default function AdminUsers() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminUsers', page, searchQuery, typeFilter, statusFilter],
     queryFn: async () => {
-      const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() })
-      if (searchQuery) params.append('search', searchQuery)
-      if (typeFilter) params.append('type', typeFilter)
-      if (statusFilter) params.append('status', statusFilter)
-      const res = await fetch(`${API_URL}/api/v1/users?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to fetch users')
-      return res.json()
+      const params: Record<string, string> = { page: page.toString(), limit: limit.toString() }
+      if (searchQuery) params.search = searchQuery
+      if (typeFilter) params.type = typeFilter
+      if (statusFilter) params.status = statusFilter
+      const res = await api.get('/users', { params })
+      return res.data
     },
   })
 
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ userId, status }: { userId: string; status: string }) => {
-      const res = await fetch(`${API_URL}/api/v1/users/${userId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      })
-      if (!res.ok) throw new Error('Failed to update status')
-      return res.json()
+      const res = await api.patch(`/users/${userId}/status`, { status })
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] })

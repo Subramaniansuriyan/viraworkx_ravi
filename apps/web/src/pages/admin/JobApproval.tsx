@@ -1,13 +1,10 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Briefcase, MapPin, DollarSign, CheckCircle, XCircle, Building2 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
-
-const API_URL = ''
+import api from '../../services/api'
 
 export default function AdminJobApproval() {
-  const { accessToken: token } = useAuthStore()
   const queryClient = useQueryClient()
   const [rejectModal, setRejectModal] = useState<{ jobId: string; title: string } | null>(null)
   const [rejectReason, setRejectReason] = useState('')
@@ -15,37 +12,24 @@ export default function AdminJobApproval() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['pendingJobApprovals'],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/v1/jobs/pending-approval`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to fetch pending jobs')
-      return res.json()
+      const res = await api.get('/jobs/pending-approval')
+      return res.data
     },
     refetchInterval: 30000,
-    enabled: !!token,
   })
 
   const approveMutation = useMutation({
     mutationFn: async (jobId: string) => {
-      const res = await fetch(`${API_URL}/api/v1/jobs/${jobId}/approve`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to approve job')
-      return res.json()
+      const res = await api.post(`/jobs/${jobId}/approve`)
+      return res.data
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pendingJobApprovals'] }),
   })
 
   const rejectMutation = useMutation({
     mutationFn: async ({ jobId, reason }: { jobId: string; reason: string }) => {
-      const res = await fetch(`${API_URL}/api/v1/jobs/${jobId}/reject-approval`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ reason }),
-      })
-      if (!res.ok) throw new Error('Failed to reject job')
-      return res.json()
+      const res = await api.post(`/jobs/${jobId}/reject-approval`, { reason })
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pendingJobApprovals'] })

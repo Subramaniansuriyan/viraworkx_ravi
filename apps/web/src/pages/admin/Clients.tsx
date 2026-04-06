@@ -5,13 +5,10 @@ import {
   Building2, Users, Briefcase, Search, MoreVertical,
   Globe, ChevronLeft, ChevronRight, Eye
 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
 import AdminLayout from '../../components/admin/AdminLayout'
-
-const API_URL = ''
+import api from '../../services/api'
 
 export default function AdminClients() {
-  const { accessToken: token } = useAuthStore()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTier, setSelectedTier] = useState<string>('')
@@ -21,14 +18,11 @@ export default function AdminClients() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminClients', page, searchQuery, selectedTier],
     queryFn: async () => {
-      const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() })
-      if (searchQuery) params.append('search', searchQuery)
-      if (selectedTier) params.append('tier', selectedTier)
-      const res = await fetch(`${API_URL}/api/v1/clients?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to fetch clients')
-      return res.json()
+      const params: Record<string, string> = { page: page.toString(), limit: limit.toString() }
+      if (searchQuery) params.search = searchQuery
+      if (selectedTier) params.tier = selectedTier
+      const res = await api.get('/clients', { params })
+      return res.data
     },
   })
 
