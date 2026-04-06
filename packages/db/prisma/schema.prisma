@@ -92,6 +92,7 @@ model Candidate {
   savedJobs          SavedJob[]
   skillBadges        SkillBadge[]
   communicationLogs  CommunicationLog[]
+  contracts          Contract[]
 
   @@map("candidates")
 }
@@ -397,6 +398,7 @@ model Contract {
   pdfSignedData Bytes?              @map("pdf_signed_data")
   signatures    ContractSignature[]
   application   Application         @relation(fields: [applicationId], references: [id])
+  candidate     Candidate           @relation(fields: [candidateId], references: [id])
   client        Client              @relation(fields: [clientId], references: [id])
   template      ContractTemplate    @relation(fields: [templateId], references: [id])
 

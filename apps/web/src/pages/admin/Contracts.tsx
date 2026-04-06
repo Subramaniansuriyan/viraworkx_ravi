@@ -17,10 +17,11 @@ interface Contract {
   status: string
   createdAt: string
   signatures: ContractSignature[]
+  candidate?: { firstName: string; lastName: string }
   application: {
     candidate: { firstName: string; lastName: string }
     job: { title: string; client: { companyName: string } }
-  }
+  } | null
   template: { name: string; templateType: string }
 }
 
@@ -126,8 +127,9 @@ export default function AdminContracts() {
     .filter((c) => {
       if (!search.trim()) return true
       const q = search.toLowerCase()
-      const candidateName = c.application
-        ? `${c.application.candidate?.firstName ?? ''} ${c.application.candidate?.lastName ?? ''}`.toLowerCase()
+      const cand = c.application?.candidate ?? c.candidate
+      const candidateName = cand
+        ? `${cand.firstName ?? ''} ${cand.lastName ?? ''}`.toLowerCase()
         : ''
       const company = c.application?.job?.client?.companyName?.toLowerCase() ?? ''
       return candidateName.includes(q) || company.includes(q)
@@ -231,8 +233,9 @@ export default function AdminContracts() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filtered.map((contract) => {
-                    const candidateName = contract.application
-                      ? `${contract.application.candidate?.firstName ?? ''} ${contract.application.candidate?.lastName ?? ''}`.trim()
+                    const cand = contract.application?.candidate ?? contract.candidate
+                    const candidateName = cand
+                      ? `${cand.firstName ?? ''} ${cand.lastName ?? ''}`.trim()
                       : 'Unknown Candidate'
                     const createdDate = new Date(contract.createdAt).toLocaleDateString('en-US', {
                       year: 'numeric', month: 'short', day: 'numeric',

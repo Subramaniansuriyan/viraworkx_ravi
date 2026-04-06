@@ -91,11 +91,12 @@ router.get('/', async (req: AuthRequest, res) => {
     }
 
     if (req.user.userType === 'admin') {
-      // Admin sees all contracts
+      // Admin sees all contracts — include candidate directly as fallback
       const contracts = await prisma.contract.findMany({
         include: {
           signatures: true,
           template: { select: { name: true, templateType: true } },
+          candidate: { select: { firstName: true, lastName: true } },
           application: {
             include: {
               candidate: { select: { firstName: true, lastName: true } },
