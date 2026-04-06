@@ -467,10 +467,21 @@ router.get('/pipeline/:jobId', authenticateToken, requireRole('client', 'admin')
  */
 router.post('/admin/enroll', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
   try {
-    const { candidateId, jobId, notes } = req.body
-    if (!candidateId || !jobId) {
-      return res.status(400).json({ error: 'candidateId and jobId are required' })
+    const { candidateId, jobId: requestedJobId, notes } = req.body
+    if (!candidateId) {
+      return res.status(400).json({ error: 'candidateId is required' })
     }
+
+    // If no jobId provided, auto-select the first active job
+    const resolvedJobId = requestedJobId || (
+      await prisma.job.findFirst({ where: { status: 'active' }, orderBy: { createdAt: 'desc' } })
+    )?.id
+
+    if (!resolvedJobId) {
+      return res.status(400).json({ error: 'No active jobs available. Please create an active job first.' })
+    }
+
+    const jobId = resolvedJobId
 
     const [candidate, job] = await Promise.all([
       prisma.candidate.findUnique({ where: { id: candidateId } }),
