@@ -73,7 +73,7 @@ router.post('/admin/deduplicate', requireRole('admin'), async (_req: AuthRequest
     // Find all applicationIds that have more than one non-terminated contract
     const dupes = await prisma.contract.groupBy({
       by: ['applicationId'],
-      where: { applicationId: { not: null }, status: { not: 'terminated' } },
+      where: { applicationId: { not: undefined }, status: { not: 'terminated' } },
       having: { applicationId: { _count: { gt: 1 } } },
       _count: { applicationId: true },
     })
