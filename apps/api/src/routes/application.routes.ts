@@ -91,6 +91,12 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
           orderBy: { completedAt: 'desc' },
           take: 1,
           select: { score: true, maxScore: true }
+        },
+        contracts: {
+          where: { status: { not: 'terminated' } },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { id: true, status: true }
         }
       },
       take: parseInt(limit as string),

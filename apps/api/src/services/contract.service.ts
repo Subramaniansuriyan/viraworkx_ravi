@@ -77,6 +77,19 @@ class ContractService {
     })
     if (!template) throw new Error('Template not found')
 
+    // Block duplicate contracts for the same application
+    const existing = await prisma.contract.findFirst({
+      where: {
+        applicationId: input.applicationId,
+        status: { not: 'terminated' },
+      },
+    })
+    if (existing) {
+      throw new Error(
+        `A contract already exists for this application (status: ${existing.status}). Terminate it before generating a new one.`
+      )
+    }
+
     const application = await prisma.application.findUnique({
       where: { id: input.applicationId },
       include: {

@@ -318,19 +318,27 @@ export default function AdminVetting() {
                           {advanceMutation.isError && (
                             <p className="text-xs text-red-500 mt-1">{(advanceMutation.error as Error)?.message}</p>
                           )}
-                          {col.key === 'tiered' && (
-                            <button
-                              onClick={() => {
-                                setContractModal({ appId: app.id, candidateName: `${app.candidate?.firstName} ${app.candidate?.lastName}` })
-                                setSelectedTemplateId('')
-                                setContractSent(false)
-                              }}
-                              className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 mb-2"
-                            >
-                              <FileText className="w-3 h-3" />
-                              Send Contract
-                            </button>
-                          )}
+                          {col.key === 'tiered' && (() => {
+                            const existingContract = app.contracts?.[0]
+                            return existingContract ? (
+                              <div className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium bg-green-100 text-green-700 rounded-lg mb-2 cursor-default">
+                                <FileText className="w-3 h-3" />
+                                Contract {existingContract.status === 'active' ? 'Active' : existingContract.status === 'pending_signatures' ? 'Sent' : existingContract.status}
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setContractModal({ appId: app.id, candidateName: `${app.candidate?.firstName} ${app.candidate?.lastName}` })
+                                  setSelectedTemplateId('')
+                                  setContractSent(false)
+                                }}
+                                className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 mb-2"
+                              >
+                                <FileText className="w-3 h-3" />
+                                Send Contract
+                              </button>
+                            )
+                          })()}
                           <div className="flex gap-2 mt-2">
                             <button
                               onClick={(e) => { e.stopPropagation(); setRejectModal({ appId: app.id, candidateName: `${app.candidate?.firstName} ${app.candidate?.lastName}` }) }}
