@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Shield, AlertTriangle, CheckCircle, Target, MapPin, Briefcase,
-  Award, X, Send, Star, Search, Clock, Calendar, ExternalLink, RefreshCw
+  Award, X, Send, Star, Search, Clock, Calendar, ExternalLink
 } from 'lucide-react'
-import api, { assessmentApi } from '../../services/api'
+import api from '../../services/api'
 import AdminLayout from '../../components/admin/AdminLayout'
 
 interface PendingCandidate {
@@ -110,13 +110,6 @@ export default function TestAllocation() {
   const [selectedCandidate, setSelectedCandidate] = useState<PendingCandidate | null>(null)
   const [selectedTestId, setSelectedTestId] = useState('')
   const [allocationNotes, setAllocationNotes] = useState('')
-  const [syncingId, setSyncingId] = useState<string | null>(null)
-  const [syncError, setSyncError] = useState<Record<string, string>>({})
-  const [syncModalInvite, setSyncModalInvite] = useState<ActiveInvite | null>(null)
-  const [manualScore, setManualScore] = useState('')
-  const [manualMaxScore, setManualMaxScore] = useState('100')
-  const [manualPercentile, setManualPercentile] = useState('')
-
   const [expiresInDays, setExpiresInDays] = useState(() => {
     try {
       const saved = localStorage.getItem('viraworkx_admin_settings')
@@ -171,47 +164,6 @@ export default function TestAllocation() {
       setAllocationNotes('')
     }
   })
-
-  const handleSyncImocha = async (id: string, invite?: ActiveInvite, score?: number, maxScore?: number, percentile?: number) => {
-    setSyncingId(id)
-    setSyncError(prev => ({ ...prev, [id]: '' }))
-    try {
-      const body: any = {}
-      if (score != null) body.score = score
-      if (maxScore != null) body.maxScore = maxScore
-      if (percentile != null) body.percentile = percentile
-      await assessmentApi.syncFromImocha(id, body)
-      queryClient.invalidateQueries({ queryKey: ['activeInvites'] })
-      setSyncModalInvite(null)
-    } catch (err: any) {
-      const data = err?.response?.data
-      // If iMocha API failed and we have no manual score, open the manual entry modal
-      if (invite && score == null) {
-        setSyncModalInvite(invite)
-        setManualScore('')
-        setManualMaxScore('100')
-        setManualPercentile('')
-      } else {
-        const msg = data?.imochaError
-          ? `${data.error} — ${data.imochaError}`
-          : (data?.error || err?.message || 'Sync failed')
-        setSyncError(prev => ({ ...prev, [id]: msg }))
-      }
-    } finally {
-      setSyncingId(null)
-    }
-  }
-
-  const handleManualSync = () => {
-    if (!syncModalInvite || !manualScore) return
-    handleSyncImocha(
-      syncModalInvite.id,
-      undefined,
-      Number(manualScore),
-      Number(manualMaxScore) || 100,
-      manualPercentile ? Number(manualPercentile) : undefined
-    )
-  }
 
   const candidates: PendingCandidate[] = pendingData?.candidates || []
   const tests: Test[] = testsData?.tests || []
@@ -488,7 +440,6 @@ export default function TestAllocation() {
                         <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Expires</span>
                       </th>
                       <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-5 py-3">Time Left</th>
-                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-5 py-3">Score</th>
                       <th className="px-5 py-3"></th>
                     </tr>
                   </thead>
@@ -523,42 +474,17 @@ export default function TestAllocation() {
                             <TimeRemaining expiresAt={inv.expiresAt} status={inv.status} />
                           </td>
                           <td className="px-5 py-4">
-                            {inv.score != null ? (
-                              <span className="text-green-600 font-semibold text-xs">
-                                {inv.score}/{inv.maxScore}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400 text-xs">—</span>
+                            {inv.invitationUrl && inv.status === 'invited' && (
+                              <a
+                                href={inv.invitationUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:text-primary-700 flex items-center gap-1 text-xs font-medium"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                Link
+                              </a>
                             )}
-                          </td>
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {inv.invitationUrl && inv.status === 'invited' && (
-                                <a
-                                  href={inv.invitationUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:text-primary-700 flex items-center gap-1 text-xs font-medium"
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  Link
-                                </a>
-                              )}
-                              {inv.status !== 'completed' && inv.status !== 'expired' && (
-                                <button
-                                  onClick={() => handleSyncImocha(inv.id, inv)}
-                                  disabled={syncingId === inv.id}
-                                  title="Pull latest result from iMocha"
-                                  className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
-                                >
-                                  <RefreshCw className={`w-3.5 h-3.5 ${syncingId === inv.id ? 'animate-spin' : ''}`} />
-                                  Sync
-                                </button>
-                              )}
-                              {syncError[inv.id] && (
-                                <p className="text-xs text-red-500 w-full">{syncError[inv.id]}</p>
-                              )}
-                            </div>
                           </td>
                         </tr>
                       )
@@ -570,105 +496,6 @@ export default function TestAllocation() {
           </div>
         </div>
       </div>
-
-      {/* Manual Score Sync Modal */}
-      {syncModalInvite && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSyncModalInvite(null)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md m-4">
-            <div className="flex items-center justify-between p-6 border-b">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">Enter Assessment Score</h2>
-                <p className="text-sm text-gray-500">{syncModalInvite.candidateName}</p>
-              </div>
-              <button onClick={() => setSyncModalInvite(null)} className="p-2 hover:bg-gray-100 rounded-lg">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-600">
-                Enter the score from the iMocha dashboard for test <span className="font-medium">{syncModalInvite.testName || syncModalInvite.testId}</span>.
-                This will update the candidate's tier and auto-initiate the contract if score ≥ 60%.
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Score obtained *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={manualScore}
-                    onChange={e => setManualScore(e.target.value)}
-                    placeholder="e.g. 78"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Max score</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={manualMaxScore}
-                    onChange={e => setManualMaxScore(e.target.value)}
-                    placeholder="100"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Percentile (optional)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={manualPercentile}
-                  onChange={e => setManualPercentile(e.target.value)}
-                  placeholder="e.g. 72"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              {syncError[syncModalInvite.id] && (
-                <p className="text-sm text-red-600">{syncError[syncModalInvite.id]}</p>
-              )}
-              {manualScore && manualMaxScore && (
-                <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700">
-                  Score: <span className="font-semibold">{manualScore}/{manualMaxScore}</span>
-                  {' '}({Math.round((Number(manualScore) / Number(manualMaxScore)) * 100)}%)
-                  {' → '}
-                  <span className="font-semibold">
-                    {(() => {
-                      const pct = (Number(manualScore) / Number(manualMaxScore)) * 100
-                      if (pct > 85) return 'Tier 1 (85–100%)'
-                      if (pct > 70) return 'Tier 2 (70–85%)'
-                      if (pct > 60) return 'Tier 3 (60–70%)'
-                      return 'Failed (below 60%)'
-                    })()}
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end gap-3 p-6 border-t">
-              <button
-                onClick={() => setSyncModalInvite(null)}
-                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleManualSync}
-                disabled={!manualScore || syncingId === syncModalInvite.id}
-                className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
-              >
-                {syncingId === syncModalInvite.id ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="w-4 h-4" />
-                )}
-                Apply Score
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Allocation Modal */}
       {selectedCandidate && (
