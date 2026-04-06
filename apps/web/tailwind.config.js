@@ -27,6 +27,7 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         heading: ['Plus Jakarta Sans', 'sans-serif'],
+        signature: ['Dancing Script', 'cursive'],
       },
       borderRadius: {
         lg: '0.75rem',

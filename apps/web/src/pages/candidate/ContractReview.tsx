@@ -115,9 +115,13 @@ export default function CandidateContractReview() {
               <span className="font-medium">Your Signature</span>
             </div>
             {candidateSig?.signedAt ? (
-              <div className="text-sm text-slate-400">
-                <p>Signed by: <span className="text-white">{candidateSig.signedName}</span></p>
-                <p>Date: {new Date(candidateSig.signedAt).toLocaleDateString()}</p>
+              <div>
+                <p className="font-signature text-emerald-300 text-xl leading-tight tracking-wide italic">
+                  {candidateSig.signedName}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Signed {new Date(candidateSig.signedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </p>
               </div>
             ) : canSign ? (
               <button
