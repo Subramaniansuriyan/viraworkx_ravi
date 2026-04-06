@@ -663,7 +663,6 @@ export default function AdminVetting() {
                         className={`px-4 py-2.5 cursor-pointer hover:bg-gray-50 border-b last:border-0 ${enrollJobId === j.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
                       >
                         <p className="text-sm font-medium text-gray-900">{j.title}</p>
-                        <p className="text-xs text-gray-400">{j.client?.companyName || ''} · {j.location || 'Remote'}</p>
                       </div>
                     ))}
                   </div>
