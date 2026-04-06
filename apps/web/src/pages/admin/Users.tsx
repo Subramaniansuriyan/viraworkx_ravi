@@ -56,6 +56,17 @@ export default function AdminUsers() {
     },
   })
 
+  const changeRoleMutation = useMutation({
+    mutationFn: async ({ userId, userType }: { userId: string; userType: string }) => {
+      const res = await api.patch(`/users/${userId}/role`, { userType })
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] })
+      setOpenMenuId(null)
+    },
+  })
+
   const users = data?.users || []
   const totalPages = Math.ceil((data?.total || 0) / limit)
 
@@ -199,7 +210,24 @@ export default function AdminUsers() {
                               <MoreVertical className="w-4 h-4" />
                             </button>
                             {openMenuId === user.id && (
-                              <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-100 rounded-lg shadow-lg z-10">
+                              <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-100 rounded-lg shadow-lg z-10">
+                                {user.userType !== 'admin' && (
+                                  <button
+                                    onClick={() => changeRoleMutation.mutate({ userId: user.id, userType: 'admin' })}
+                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-50 font-medium"
+                                  >
+                                    <Shield className="w-4 h-4" /> Make Admin
+                                  </button>
+                                )}
+                                {user.userType === 'admin' && (
+                                  <button
+                                    onClick={() => changeRoleMutation.mutate({ userId: user.id, userType: 'candidate' })}
+                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                                  >
+                                    <User className="w-4 h-4" /> Remove Admin
+                                  </button>
+                                )}
+                                <div className="border-t border-gray-100 my-1" />
                                 {user.status !== 'active' && (
                                   <button
                                     onClick={() => toggleStatusMutation.mutate({ userId: user.id, status: 'active' })}

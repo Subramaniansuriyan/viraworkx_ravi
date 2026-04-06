@@ -95,4 +95,38 @@ router.patch('/:userId/status', authenticateToken, requireRole('admin'), async (
   }
 })
 
+/**
+ * PATCH /api/v1/users/:userId/role
+ * Admin: promote a user to admin (or change userType)
+ */
+router.patch('/:userId/role', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId } = req.params
+    const { userType } = z.object({
+      userType: z.enum(['admin', 'candidate', 'client'])
+    }).parse(req.body)
+
+    if (userId === req.user?.userId) {
+      return res.status(400).json({ error: 'Cannot change your own role' })
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { userType },
+      select: { id: true, email: true, userType: true, status: true }
+    })
+
+    res.json({ user, message: `User role updated to ${userType}` })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: 'Invalid userType value' })
+    }
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'User not found' })
+    }
+    console.error('Error updating user role:', error)
+    res.status(500).json({ error: 'Failed to update user role' })
+  }
+})
+
 export default router
