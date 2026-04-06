@@ -173,7 +173,7 @@ export default function AdminCandidates() {
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Current Role</th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Location</th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Experience</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Profile Score</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Profile Completeness</th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Badges</th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Assessment & Tier</th>
                     <th className="text-right px-6 py-4 text-sm font-medium text-gray-500">Actions</th>

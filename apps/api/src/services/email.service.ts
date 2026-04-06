@@ -301,6 +301,44 @@ const templates = {
     text: `Hi ${data.userName},\n\nWe received a request to reset your password.\n\nReset here: ${data.resetUrl}\n\nThis link expires in ${data.expiresIn}.\n\nIf you didn't request this, ignore this email.\n\nViraWorkx Team`
   }),
 
+  // Ops Assessment Notification
+  opsAssessmentCompleted: (data: {
+    candidateName: string
+    candidateEmail: string
+    testName: string
+    score: number | null
+    maxScore: number | null
+    tier: string | null
+    adminUrl: string
+  }) => ({
+    subject: `Assessment Completed: ${data.candidateName} — ${data.testName}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">ViraWorkx</h1>
+        </div>
+        <div style="padding: 30px; background: #f9fafb;">
+          <h2 style="color: #1f2937; margin-top: 0;">Assessment Completed</h2>
+          <div style="background: white; border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid #e5e7eb;">
+            <p style="margin: 0 0 10px 0;"><strong>Candidate:</strong> ${data.candidateName} (${data.candidateEmail})</p>
+            <p style="margin: 0 0 10px 0;"><strong>Test:</strong> ${data.testName}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Score:</strong> ${data.score != null && data.maxScore != null ? `${data.score}/${data.maxScore}` : 'Pending'}</p>
+            <p style="margin: 0;"><strong>Tier:</strong> ${data.tier ?? 'Not assigned'}</p>
+          </div>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.adminUrl}" style="background: #6366f1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              View in Admin Portal
+            </a>
+          </div>
+        </div>
+        <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
+          <p>ViraWorkx - Internal Ops Notification</p>
+        </div>
+      </div>
+    `,
+    text: `Assessment Completed\n\nCandidate: ${data.candidateName} (${data.candidateEmail})\nTest: ${data.testName}\nScore: ${data.score != null && data.maxScore != null ? `${data.score}/${data.maxScore}` : 'Pending'}\nTier: ${data.tier ?? 'Not assigned'}\n\nView in admin: ${data.adminUrl}\n\nViraWorkx Ops`
+  }),
+
   // Welcome Email
   welcome: (data: {
     userName: string
@@ -449,6 +487,25 @@ class EmailService {
    */
   async sendWelcome(to: string, data: Parameters<typeof templates.welcome>[0]) {
     return this.send(to, templates.welcome(data))
+  }
+
+  /**
+   * Notify ops team when an assessment is completed
+   */
+  async sendOpsAssessmentNotification(data: Parameters<typeof templates.opsAssessmentCompleted>[0]): Promise<void> {
+    const opsEmails = (process.env.OPS_NOTIFICATION_EMAILS || '')
+      .split(',')
+      .map(e => e.trim())
+      .filter(Boolean)
+
+    if (opsEmails.length === 0) {
+      console.warn('[EmailService] OPS_NOTIFICATION_EMAILS not configured — skipping ops notification')
+      return
+    }
+
+    await Promise.all(
+      opsEmails.map(email => this.send(email, templates.opsAssessmentCompleted(data)))
+    )
   }
 }
 

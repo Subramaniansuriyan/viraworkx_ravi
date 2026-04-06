@@ -4,6 +4,7 @@ import prisma from '../config/database.js'
 import { imochaConfig, getBadgeLevel, BadgeLevel, getTierLevel, isIMochaConfigured } from '../config/imocha.js'
 import { socketService } from './socket.service.js'
 import { contractService } from './contract.service.js'
+import { emailService } from './email.service.js'
 
 // Types
 export interface IMochaTest {
@@ -447,7 +448,9 @@ class IMochaService {
         ]
       },
       include: {
-        candidate: true,
+        candidate: {
+          include: { user: { select: { email: true } } }
+        },
         application: true,
       }
     })
@@ -564,6 +567,22 @@ class IMochaService {
         maxScore,
         assessment.application.jobId
       )
+    }
+
+    // Notify ops team
+    try {
+      const adminUrl = `${process.env.APP_URL || 'https://www.viraworkx.ai'}/admin/candidates`
+      await emailService.sendOpsAssessmentNotification({
+        candidateName: `${assessment.candidate.firstName} ${assessment.candidate.lastName}`,
+        candidateEmail: (assessment.candidate as any).user?.email ?? '',
+        testName: assessment.testName || 'Assessment',
+        score: score ?? null,
+        maxScore: maxScore ?? null,
+        tier,
+        adminUrl,
+      })
+    } catch (err) {
+      console.error('[iMocha] Failed to send ops notification:', err)
     }
 
     console.log(`Assessment completed: ${assessment.id}, Score: ${score ?? 'N/A'}/${maxScore ?? 'N/A'}`)

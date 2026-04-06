@@ -12,6 +12,40 @@ import { imochaService, IMochaWebhookPayload } from '../services/imocha.service.
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 
+/**
+ * One-time startup cleanup: reset assessments that were incorrectly marked
+ * as "completed" by the old poller bug (wrong iMocha endpoint returned the
+ * same first result for every candidate, stored with a fake "polled-{ts}" attemptId).
+ */
+async function resetFabricatedAssessments(): Promise<void> {
+  const fabricated = await prisma.assessment.findMany({
+    where: {
+      status: 'completed',
+      imochaAttemptId: { startsWith: 'polled-' },
+    },
+    select: { id: true },
+  })
+
+  if (fabricated.length === 0) return
+
+  console.log(`[iMocha Poller] Resetting ${fabricated.length} fabricated assessment(s) (polled- fake IDs)...`)
+
+  await prisma.assessment.updateMany({
+    where: { id: { in: fabricated.map(a => a.id) } },
+    data: {
+      status: 'invited',
+      imochaAttemptId: null,
+      score: null,
+      maxScore: null,
+      percentile: null,
+      tier: null,
+      completedAt: null,
+    },
+  })
+
+  console.log(`[iMocha Poller] Reset complete — ${fabricated.length} assessment(s) will be re-polled with correct scores`)
+}
+
 async function pollImochaResults(): Promise<void> {
   if (!imochaService.isLive()) return
 
@@ -72,8 +106,10 @@ let pollerTimer: NodeJS.Timeout | null = null
 export function startImochaPoller(): void {
   if (pollerTimer) return // already running
 
-  // Run once immediately on startup to catch any missed results
-  pollImochaResults().catch(err => console.error('[iMocha Poller] Startup poll error:', err))
+  // Run cleanup first, then immediate poll on startup
+  resetFabricatedAssessments()
+    .then(() => pollImochaResults())
+    .catch(err => console.error('[iMocha Poller] Startup error:', err))
 
   pollerTimer = setInterval(() => {
     pollImochaResults().catch(err => console.error('[iMocha Poller] Poll error:', err))

@@ -115,6 +115,7 @@ export default function ContractTemplates() {
                     onChange={(e) => setForm({ ...form, templateType: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                   >
+                    <option value="onboarding">Candidate Onboarding</option>
                     <option value="freelancer">Freelancer</option>
                     <option value="contractor">Contractor</option>
                     <option value="nda">NDA</option>
