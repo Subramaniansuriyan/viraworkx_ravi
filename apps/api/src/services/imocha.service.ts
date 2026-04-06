@@ -500,40 +500,51 @@ class IMochaService {
     }
 
     // Auto-initiate contract if score >= 60%
-    if (
-      assessment.applicationId &&
-      score != null &&
-      maxScore != null &&
-      maxScore > 0 &&
-      (score / maxScore) * 100 >= 60
-    ) {
+    if (score != null && maxScore != null && maxScore > 0 && (score / maxScore) * 100 >= 60) {
       try {
-        // Check no contract already exists for this application
-        const existingContract = await prisma.contract.findFirst({
-          where: { applicationId: assessment.applicationId },
-        })
+        // Resolve applicationId — use the assessment's own if set, otherwise find
+        // the candidate's most recent active application (for test-allocation assessments)
+        let resolvedApplicationId = assessment.applicationId
+        if (!resolvedApplicationId) {
+          const latestApp = await prisma.application.findFirst({
+            where: {
+              candidateId: assessment.candidateId,
+              stage: { notIn: ['rejected', 'withdrawn'] },
+            },
+            orderBy: { appliedAt: 'desc' },
+          })
+          resolvedApplicationId = latestApp?.id ?? null
+        }
 
-        if (!existingContract) {
-          // Find the first active contractor template
-          const template = await prisma.contractTemplate.findFirst({
-            where: { isActive: true, templateType: 'contractor' },
-            orderBy: { createdAt: 'asc' },
+        if (resolvedApplicationId) {
+          // Check no contract already exists for this application
+          const existingContract = await prisma.contract.findFirst({
+            where: { applicationId: resolvedApplicationId },
           })
 
-          if (template) {
-            const contract = await contractService.generateContract({
-              applicationId: assessment.applicationId,
-              templateId: template.id,
+          if (!existingContract) {
+            const template = await prisma.contractTemplate.findFirst({
+              where: { isActive: true, templateType: 'contractor' },
+              orderBy: { createdAt: 'asc' },
             })
-            if (contract) {
-              await contractService.sendForSignatures(contract.id)
-              console.log(
-                `[iMocha] Auto-initiated contract ${contract.id} for application ${assessment.applicationId} (score ${score}/${maxScore})`
-              )
+
+            if (template) {
+              const contract = await contractService.generateContract({
+                applicationId: resolvedApplicationId,
+                templateId: template.id,
+              })
+              if (contract) {
+                await contractService.sendForSignatures(contract.id)
+                console.log(
+                  `[iMocha] Auto-initiated contract ${contract.id} for application ${resolvedApplicationId} (score ${score}/${maxScore})`
+                )
+              }
+            } else {
+              console.warn('[iMocha] No active contractor template found — skipping auto-contract')
             }
-          } else {
-            console.warn('[iMocha] No active contractor template found — skipping auto-contract')
           }
+        } else {
+          console.warn(`[iMocha] No application found for candidate ${assessment.candidateId} — skipping auto-contract`)
         }
       } catch (err) {
         // Don't fail assessment completion if contract generation fails
@@ -705,7 +716,8 @@ class IMochaService {
 
   /**
    * Fetch invitation result from iMocha API (v3).
-   * Uses GET /reports?testInvitationId={id} — the paginated reports endpoint.
+   * Uses GET /reports/tests/{testId} — returns all reports for a test,
+   * then filters by testInvitationId to find this specific candidate's result.
    */
   async fetchInvitationResult(testId: string, invitationId: string): Promise<{
     score: number | null
@@ -715,28 +727,26 @@ class IMochaService {
     completedAt: string | null
     status: string
   }> {
-    console.log(`[iMocha] Fetching report for invitationId=${invitationId}`)
-    const response = await this.client.get('/reports', {
-      params: { testInvitationId: invitationId },
-    })
+    console.log(`[iMocha] Fetching report for testId=${testId} invitationId=${invitationId}`)
+    const response = await this.client.get(`/reports/tests/${testId}`)
 
     const reports: any[] = response.data?.reports ?? []
-    if (reports.length === 0) {
-      throw new Error(`No report found in iMocha for invitationId ${invitationId}`)
+
+    // Filter to the specific invitation — testInvitationId is a number in iMocha
+    const r = reports.find(
+      (rep: any) => String(rep.testInvitationId) === String(invitationId)
+    )
+
+    if (!r) {
+      throw new Error(`No report found for testId=${testId} invitationId=${invitationId}`)
     }
 
-    const r = reports[0]
-    console.log(`[iMocha] Report found:`, JSON.stringify(r).slice(0, 300))
-
-    // scorePercentage is already 0-100, so derive score/maxScore from it
-    // preferring candidatePoints/totalTestPoints if present
-    const score = r.candidatePoints ?? r.score ?? null
-    const maxScore = r.totalTestPoints ?? (score != null && r.scorePercentage ? Math.round(score / (r.scorePercentage / 100)) : 100)
+    console.log(`[iMocha] Report found for invitationId=${invitationId}:`, JSON.stringify(r).slice(0, 300))
 
     return {
-      score,
-      maxScore,
-      percentile: r.scorePercentage ?? null,   // use scorePercentage as percentile fallback
+      score: r.candidatePoints ?? r.score ?? null,
+      maxScore: r.totalTestPoints ?? null,
+      percentile: r.scorePercentage ?? null,
       reportUrl: r.pdfReportUrl ?? null,
       completedAt: r.completedOn ?? r.appearedOn ?? null,
       status: r.status ?? '',
