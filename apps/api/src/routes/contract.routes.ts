@@ -66,6 +66,44 @@ router.put('/templates/:id', requireRole('admin'), async (req: AuthRequest, res)
   }
 })
 
+// ---- One-time deduplication (admin only) ----
+
+router.post('/admin/deduplicate', requireRole('admin'), async (_req: AuthRequest, res) => {
+  try {
+    // Find all applicationIds that have more than one non-terminated contract
+    const dupes = await prisma.contract.groupBy({
+      by: ['applicationId'],
+      where: { applicationId: { not: null }, status: { not: 'terminated' } },
+      having: { applicationId: { _count: { gt: 1 } } },
+      _count: { applicationId: true },
+    })
+
+    let terminated = 0
+    for (const d of dupes) {
+      if (!d.applicationId) continue
+      // Get all non-terminated contracts for this application, newest first
+      const contracts = await prisma.contract.findMany({
+        where: { applicationId: d.applicationId, status: { not: 'terminated' } },
+        orderBy: { createdAt: 'desc' },
+      })
+      // Keep the first (newest); terminate the rest
+      const toTerminate = contracts.slice(1)
+      for (const c of toTerminate) {
+        await prisma.contract.update({
+          where: { id: c.id },
+          data: { status: 'terminated', terminatedAt: new Date() },
+        })
+        terminated++
+      }
+    }
+
+    res.json({ deduplicated: terminated, applicationGroups: dupes.length })
+  } catch (error) {
+    console.error('Error deduplicating contracts:', error)
+    res.status(500).json({ error: 'Failed to deduplicate contracts' })
+  }
+})
+
 // ---- Contract routes ----
 
 router.get('/', async (req: AuthRequest, res) => {
