@@ -14,6 +14,7 @@ export default function CandidateContractReview() {
   const [signedName, setSignedName] = useState('')
   const [signing, setSigning] = useState(false)
   const [signError, setSignError] = useState('')
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null)
 
   useEffect(() => { if (id) loadContract() }, [id])
 
@@ -164,20 +165,25 @@ export default function CandidateContractReview() {
           </div>
         )}
 
-        {/* Download PDF */}
+        {/* Download PDF — uses authenticated blob URL once loaded */}
         <div className="flex gap-3 mb-6">
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2 rounded-lg bg-slate-800/50 text-slate-300 text-sm font-medium flex items-center gap-2 hover:bg-slate-700/50"
-          >
-            <Download className="w-4 h-4" /> Download PDF
-          </a>
+          {pdfBlobUrl ? (
+            <a
+              href={pdfBlobUrl}
+              download={`contract-${id}.pdf`}
+              className="px-4 py-2 rounded-lg bg-slate-800/50 text-slate-300 text-sm font-medium flex items-center gap-2 hover:bg-slate-700/50"
+            >
+              <Download className="w-4 h-4" /> Download PDF
+            </a>
+          ) : (
+            <span className="px-4 py-2 rounded-lg bg-slate-800/30 text-slate-500 text-sm flex items-center gap-2">
+              <Download className="w-4 h-4" /> Loading PDF...
+            </span>
+          )}
         </div>
 
         {/* Contract PDF Viewer */}
-        <PdfViewer url={pdfUrl} />
+        <PdfViewer url={pdfUrl} onBlobUrl={setPdfBlobUrl} />
       </div>
     </div>
   )
