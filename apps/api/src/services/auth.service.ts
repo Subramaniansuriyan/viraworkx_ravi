@@ -258,11 +258,14 @@ class AuthService {
     const userName = email.split('@')[0]
 
     const { emailService } = await import('./email.service.js')
-    await emailService.sendPasswordReset(email, {
+    const sent = await emailService.sendPasswordReset(email, {
       userName,
       resetUrl,
       expiresIn: '1 hour',
     })
+    if (!sent) {
+      console.error(`Failed to send password reset email to ${email}`)
+    }
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {

@@ -91,6 +91,7 @@ NODE_ENV: production
 SKIP_REDIS: 'true'
 CORS_ORIGINS: '${CORS_ORIGINS}'
 ANTHROPIC_API_KEY: '${ANTHROPIC_API_KEY:-}'
+EMAIL_FROM: 'no-reply@viraworkx.ai'
 ENVEOF
 
   echo "==> Deploying API to Cloud Run..."
@@ -107,7 +108,7 @@ ENVEOF
     --timeout=30 \
     --service-account="$SA_EMAIL" \
     --set-cloudsql-instances="$SQL_CONNECTION_NAME" \
-    --set-secrets="DATABASE_URL=viraworkx-db-url:latest,JWT_SECRET=viraworkx-jwt-secret:latest" \
+    --set-secrets="DATABASE_URL=viraworkx-db-url:latest,JWT_SECRET=viraworkx-jwt-secret:latest,RESEND_API_KEY=viraworkx-resend-key:latest" \
     --env-vars-file="$ENVVARS_FILE" \
     --quiet
   rm -f "$ENVVARS_FILE"

@@ -442,10 +442,10 @@ class EmailService {
    */
   async send(to: string, template: { subject: string; html: string; text: string }): Promise<boolean> {
     if (!this.enabled) {
-      console.log('📧 Email (not sent - no API key):')
-      console.log(`   To: ${to}`)
-      console.log(`   Subject: ${template.subject}`)
-      return true
+      console.warn('📧 Email NOT sent (no RESEND_API_KEY configured):')
+      console.warn(`   To: ${to}`)
+      console.warn(`   Subject: ${template.subject}`)
+      return false
     }
 
     try {

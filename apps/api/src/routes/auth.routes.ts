@@ -245,8 +245,9 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     const appUrl = process.env.APP_URL || 'https://www.viraworkx.ai'
     await authService.forgotPassword(email.toLowerCase().trim(), appUrl)
     res.json({ message: 'If that email exists, a reset link has been sent.' })
-  } catch (error) {
-    // Always return 200 to prevent email enumeration
+  } catch (error: any) {
+    // Always return 200 to prevent email enumeration, but log the failure
+    console.error('Password reset email failed:', error.message)
     res.json({ message: 'If that email exists, a reset link has been sent.' })
   }
 })
