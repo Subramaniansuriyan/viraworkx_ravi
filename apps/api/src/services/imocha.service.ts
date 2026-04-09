@@ -227,6 +227,8 @@ class IMochaService {
         name: params.candidateName,
         notificationUrl: webhookCallbackUrl,   // iMocha v3 field for webhook callback
         callbackUrl: webhookCallbackUrl,        // fallback field name
+        expiresAt: expiresAt.toISOString(),    // pass expiry to iMocha
+        expires_at: expiresAt.toISOString(),   // alternate field name used by some iMocha API versions
       })
 
       const invitation: IMochaInvitation = {
