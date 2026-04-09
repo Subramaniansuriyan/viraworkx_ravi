@@ -867,4 +867,46 @@ router.post('/:id/kyc-approve', authenticateToken, requireRole('admin'), async (
   }
 })
 
+/**
+ * GET /api/v1/candidates/:id/documents/:type/url
+ * Generate a short-lived signed URL for any candidate's document (admin only)
+ */
+router.get('/:id/documents/:type/url', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const typeToField: Record<string, string> = {
+      resume: 'resumeUrl',
+      'pan-card': 'panCardUrl',
+      'aadhaar-front': 'aadhaarFrontUrl',
+      'aadhaar-back': 'aadhaarBackUrl',
+    }
+
+    const docField = typeToField[req.params.type]
+    if (!docField) {
+      return res.status(400).json({ error: 'Invalid document type' })
+    }
+
+    const candidate = await prisma.candidate.findUnique({
+      where: { id: req.params.id },
+      select: { resumeUrl: true, panCardUrl: true, aadhaarFrontUrl: true, aadhaarBackUrl: true },
+    })
+
+    if (!candidate) {
+      return res.status(404).json({ error: 'Candidate not found' })
+    }
+
+    const storedUrl = (candidate as any)[docField] as string | null
+    if (!storedUrl) {
+      return res.status(404).json({ error: 'Document not uploaded' })
+    }
+
+    const url = await generateSignedUrl(storedUrl, 15)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+
+    res.json({ url, expiresAt })
+  } catch (error) {
+    console.error('Error generating signed URL for admin:', error)
+    res.status(500).json({ error: 'Failed to generate document URL' })
+  }
+})
+
 export default router

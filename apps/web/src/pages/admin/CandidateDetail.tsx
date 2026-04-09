@@ -5,7 +5,7 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import api from '../../services/api'
 import {
   ArrowLeft, MapPin, Briefcase, Mail,
-  FileText, ExternalLink
+  FileText, ExternalLink, Loader2
 } from 'lucide-react'
 
 export default function AdminCandidateDetail() {
@@ -13,6 +13,7 @@ export default function AdminCandidateDetail() {
   const queryClient = useQueryClient()
   const [rejectReason, setRejectReason] = useState('')
   const [rejectAppId, setRejectAppId] = useState<string | null>(null)
+  const [openingDoc, setOpeningDoc] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['candidateDetail', id],
@@ -68,6 +69,18 @@ export default function AdminCandidateDetail() {
     hired: 'bg-green-600 text-white',
     rejected: 'bg-red-100 text-red-700',
     withdrawn: 'bg-gray-100 text-gray-500',
+  }
+
+  async function openDocument(type: string) {
+    setOpeningDoc(type)
+    try {
+      const res = await api.get(`/candidates/${id}/documents/${type}/url`)
+      window.open(res.data.url, '_blank', 'noopener,noreferrer')
+    } catch {
+      alert('Failed to load document. Please try again.')
+    } finally {
+      setOpeningDoc(null)
+    }
   }
 
   if (isLoading) {
@@ -139,16 +152,15 @@ export default function AdminCandidateDetail() {
                 </div>
               )}
               {candidate.resumeUrl && (
-                <a
-                  href={candidate.resumeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 flex items-center gap-2 text-primary text-sm hover:underline"
+                <button
+                  onClick={() => openDocument('resume')}
+                  disabled={openingDoc === 'resume'}
+                  className="mt-4 flex items-center gap-2 text-primary text-sm hover:underline disabled:opacity-60"
                 >
-                  <FileText className="w-4 h-4" />
+                  {openingDoc === 'resume' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                   View Resume
-                  <ExternalLink className="w-3 h-3" />
-                </a>
+                  {openingDoc !== 'resume' && <ExternalLink className="w-3 h-3" />}
+                </button>
               )}
             </div>
 
@@ -157,16 +169,20 @@ export default function AdminCandidateDetail() {
               <h2 className="font-semibold text-gray-900 mb-4">KYC Documents</h2>
               <div className="space-y-3">
                 {[
-                  { label: 'PAN Card', url: candidate.panCardUrl },
-                  { label: 'Aadhaar Front', url: candidate.aadhaarFrontUrl },
-                  { label: 'Aadhaar Back', url: candidate.aadhaarBackUrl },
-                ].map(({ label, url }) => (
+                  { label: 'PAN Card', type: 'pan-card', url: candidate.panCardUrl },
+                  { label: 'Aadhaar Front', type: 'aadhaar-front', url: candidate.aadhaarFrontUrl },
+                  { label: 'Aadhaar Back', type: 'aadhaar-back', url: candidate.aadhaarBackUrl },
+                ].map(({ label, type, url }) => (
                   <div key={label} className="flex items-center justify-between">
                     <span className="text-sm text-gray-700">{label}</span>
                     {url ? (
-                      <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
-                        View <ExternalLink className="w-3 h-3" />
-                      </a>
+                      <button
+                        onClick={() => openDocument(type)}
+                        disabled={openingDoc === type}
+                        className="text-xs text-primary hover:underline flex items-center gap-1 disabled:opacity-60"
+                      >
+                        {openingDoc === type ? <Loader2 className="w-3 h-3 animate-spin" /> : <>View <ExternalLink className="w-3 h-3" /></>}
+                      </button>
                     ) : (
                       <span className="text-xs text-gray-400">Not uploaded</span>
                     )}
