@@ -5,6 +5,7 @@ import { imochaService, IMochaWebhookPayload } from '../services/imocha.service.
 import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.js'
 import { socketService } from '../services/socket.service.js'
 import { emailService } from '../services/email.service.js'
+import { getTierLevel } from '../config/imocha.js'
 
 const router = Router()
 
@@ -186,6 +187,16 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       orderBy: { createdAt: 'desc' },
       take: 50,
     })
+
+    // Candidates see only their tier — not raw score, percentile, or report URL
+    if (req.user?.userType === 'candidate') {
+      return res.json({
+        assessments: assessments.map(({ score, maxScore, percentile, reportUrl, ...rest }) => ({
+          ...rest,
+          tier: (score != null && maxScore) ? getTierLevel(score, maxScore) : null,
+        })),
+      })
+    }
 
     res.json({ assessments })
   } catch (error) {

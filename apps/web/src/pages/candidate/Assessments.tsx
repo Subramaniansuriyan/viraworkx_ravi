@@ -36,14 +36,6 @@ const TIER_COLOR: Record<string, string> = {
   'Tier 3': 'bg-green-100 text-green-700',
 }
 
-function getTier(score: number | null, maxScore: number | null): string | null {
-  if (score == null || !maxScore) return null
-  const pct = (score / maxScore) * 100
-  if (pct > 85) return 'Tier 1'   // 85–100%
-  if (pct > 70) return 'Tier 2'   // 70–85%
-  if (pct > 60) return 'Tier 3'   // 60–70%
-  return null                      // < 60%: failed
-}
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -200,9 +192,9 @@ export default function Assessments() {
 
                         {assessment.status === 'completed' && (
                           <div className="mt-3 flex flex-wrap items-center gap-2 md:gap-3">
-                            {getTier(assessment.score, assessment.maxScore) && (
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${TIER_COLOR[getTier(assessment.score, assessment.maxScore)!]}`}>
-                                {getTier(assessment.score, assessment.maxScore)}
+                            {assessment.tier && (
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${TIER_COLOR[assessment.tier] || 'bg-gray-100 text-gray-700'}`}>
+                                {assessment.tier}
                               </span>
                             )}
                             {assessment.skillBadges?.map((badge: any) => (
@@ -231,17 +223,6 @@ export default function Assessments() {
                           <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
                           <span>{assessment.status === 'started' ? 'Continue Test' : 'Start Assessment'}</span>
                         </button>
-                      )}
-                      {assessment.status === 'completed' && assessment.reportUrl && (
-                        <a
-                          href={assessment.reportUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs md:text-sm font-medium border border-gray-200 text-gray-700 hover:bg-gray-50"
-                        >
-                          <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
-                          <span className="hidden sm:inline">View Report</span>
-                        </a>
                       )}
                     </div>
                   </div>
