@@ -80,16 +80,41 @@ router.post('/invite', authenticateToken, async (req: AuthRequest, res: Response
       expiresAt,
     })
 
-    // Send real-time notification
+    // Send real-time socket notification
     const candidateUserId = candidate.userId
-    if (candidateUserId && input.applicationId) {
-      socketService.notifyAssessmentInvited(
-        result.assessment.id,
-        input.applicationId,
-        input.testId,
-        candidateUserId
-      )
+    if (candidateUserId) {
+      socketService.sendNotification(candidateUserId, {
+        id: `assessment-${result.assessment.id}`,
+        type: 'assessment_invite',
+        title: 'Assessment Invitation',
+        message: `You've been invited to complete a technical assessment. Click to view.`,
+      })
     }
+
+    // Persist in-app notification so it shows in the candidate's notification bell
+    await prisma.notification.create({
+      data: {
+        userId: candidateUserId,
+        type: 'assessment_invite',
+        title: 'Assessment Invitation',
+        message: `You've been invited to complete a technical assessment. Please complete it before it expires.`,
+        data: { assessmentId: result.assessment.id, testUrl: result.invitation.testUrl },
+        channel: 'in_app',
+      },
+    })
+
+    // Send email notification to candidate
+    const appUrl = process.env.APP_URL || 'https://www.viraworkx.ai'
+    emailService.sendAssessmentInvite(candidate.user.email, {
+      candidateName: `${candidate.firstName} ${candidate.lastName}`,
+      jobTitle: 'Technical Skills Assessment',
+      companyName: 'ViraWorkx',
+      testName: result.assessment.testName || input.testId,
+      testUrl: result.invitation.testUrl || `${appUrl}/assessments`,
+      expiresAt: result.invitation.expiresAt
+        ? new Date(result.invitation.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : '7 days from now',
+    }).catch(err => console.error('Failed to send assessment invite email:', err))
 
     res.status(201).json({
       message: 'Assessment invitation sent',

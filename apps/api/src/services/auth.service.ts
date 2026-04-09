@@ -179,6 +179,22 @@ class AuthService {
 
     await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } })
 
+    // Auto-enroll new candidates into the vetting pipeline
+    if (user.userType === 'candidate' && user.candidate) {
+      const activeJob = await prisma.job.findFirst({
+        where: { status: 'active' },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
+      })
+      if (activeJob) {
+        await prisma.application.upsert({
+          where: { candidateId_jobId: { candidateId: user.candidate.id, jobId: activeJob.id } },
+          update: {},
+          create: { candidateId: user.candidate.id, jobId: activeJob.id, stage: 'new' },
+        })
+      }
+    }
+
     const tokens = this.generateTokens(user.id, user.email, user.userType)
     return { user: this.formatUserResponse(user), tokens }
   }

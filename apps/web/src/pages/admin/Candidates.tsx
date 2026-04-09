@@ -22,6 +22,7 @@ export default function AdminCandidates() {
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null)
   const [selectedTestId, setSelectedTestId] = useState('')
+  const [expiresInDays, setExpiresInDays] = useState(7)
   const [assignSuccess, setAssignSuccess] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const limit = 10
@@ -48,8 +49,8 @@ export default function AdminCandidates() {
   })
 
   const assignMutation = useMutation({
-    mutationFn: async ({ testId, candidateId }: { testId: string; candidateId: string }) => {
-      const res = await api.post('/assessments/invite', { testId, candidateId })
+    mutationFn: async ({ testId, candidateId, expiresInDays }: { testId: string; candidateId: string; expiresInDays: number }) => {
+      const res = await api.post('/assessments/invite', { testId, candidateId, expiresInDays })
       return res.data
     },
     onSuccess: () => {
@@ -58,6 +59,7 @@ export default function AdminCandidates() {
         setShowAssignModal(false)
         setSelectedCandidate(null)
         setSelectedTestId('')
+        setExpiresInDays(7)
         setAssignSuccess(false)
         assignMutation.reset()
       }, 2000)
@@ -485,6 +487,17 @@ export default function AdminCandidates() {
                       </select>
                     )}
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Expires in (days)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={expiresInDays}
+                      onChange={(e) => setExpiresInDays(Math.max(1, Math.min(30, Number(e.target.value))))}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                  </div>
                   {assignMutation.isError && (
                     <p className="text-sm text-red-600">Failed to assign assessment. Please try again.</p>
                   )}
@@ -505,6 +518,7 @@ export default function AdminCandidates() {
                       assignMutation.mutate({
                         testId: selectedTestId,
                         candidateId: selectedCandidate.id,
+                        expiresInDays,
                       })
                     }
                     disabled={!selectedTestId || assignMutation.isPending || testsLoading || testsError}

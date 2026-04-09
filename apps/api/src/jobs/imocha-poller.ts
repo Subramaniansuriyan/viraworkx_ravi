@@ -83,7 +83,7 @@ async function pollImochaResults(): Promise<void> {
         event: 'test.completed',
         timestamp: result.completedAt || new Date().toISOString(),
         data: {
-          attemptId: assessment.imochaAttemptId || `polled-${Date.now()}`,
+          attemptId: assessment.imochaAttemptId || `synced-${assessment.id}`,
           invitationId: assessment.imochaInvitationId!,
           testId: assessment.imochaTestId,
           candidateEmail: '',
@@ -106,9 +106,8 @@ let pollerTimer: NodeJS.Timeout | null = null
 export function startImochaPoller(): void {
   if (pollerTimer) return // already running
 
-  // Run cleanup first, then immediate poll on startup
-  resetFabricatedAssessments()
-    .then(() => pollImochaResults())
+  // Immediate poll on startup
+  pollImochaResults()
     .catch(err => console.error('[iMocha Poller] Startup error:', err))
 
   pollerTimer = setInterval(() => {
