@@ -11,10 +11,22 @@ interface GenerateContractPdfParams {
 
 interface EmbedSignatureParams {
   existingPdfBytes: Buffer
-  signatureImagePng: Buffer
+  signatureImagePng?: Buffer // optional — text-only signature when omitted
   signerRole: 'viraworkx' | 'client' | 'candidate'
   signedName: string
   signedDate: string
+}
+
+// Layout constants shared between generate and embed
+const MARGIN = 60
+const PAGE_WIDTH = 595.28 // A4
+const PAGE_HEIGHT = 841.89
+const GUTTER = 15
+const COL_WIDTH = (PAGE_WIDTH - MARGIN * 2 - GUTTER * 2) / 3 // ~148 pt
+const COL_X: Record<'viraworkx' | 'client' | 'candidate', number> = {
+  viraworkx: MARGIN,
+  client:    MARGIN + COL_WIDTH + GUTTER,
+  candidate: MARGIN + (COL_WIDTH + GUTTER) * 2,
 }
 
 class PdfService {
@@ -74,15 +86,15 @@ class PdfService {
     const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica)
     const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
 
-    const pageWidth = 595.28 // A4
-    const pageHeight = 841.89
-    const margin = 60
+    const margin = MARGIN
+    const pageWidth = PAGE_WIDTH
+    const pageHeight = PAGE_HEIGHT
     const contentWidth = pageWidth - margin * 2
     const lineHeight = 16
     const bodyFontSize = 10
     const titleFontSize = 18
-    const headerFontSize = 12
-    const signatureBlockHeight = 200
+    const headerFontSize = 11
+    const signatureBlockHeight = 220
 
     const plainText = this.stripHtml(params.bodyText)
     const bodyLines = this.wrapText(plainText, contentWidth, helvetica, bodyFontSize)
@@ -118,7 +130,7 @@ class PdfService {
 
     // -- Body text --
     for (const line of bodyLines) {
-      if (y < margin + 20) {
+      if (y < margin + signatureBlockHeight + 20) {
         currentPage = pdfDoc.addPage([pageWidth, pageHeight])
         y = pageHeight - margin
       }
@@ -132,49 +144,58 @@ class PdfService {
       y -= lineHeight
     }
 
-    // -- Signature blocks --
+    // -- Signature blocks (3 columns: ViraWorkx | Client | Candidate) --
     if (y < margin + signatureBlockHeight) {
       currentPage = pdfDoc.addPage([pageWidth, pageHeight])
       y = pageHeight - margin
     }
 
     y -= 30
-    const yHr = y // Store for metadata
+    const yHr = y
 
     currentPage.drawLine({
       start: { x: margin, y }, end: { x: pageWidth - margin, y },
       thickness: 0.5, color: rgb(0.7, 0.7, 0.7),
     })
-    y -= 30
+    y -= 25
 
-    const leftX = margin
-    const rightX = pageWidth / 2 + 20
-    const sigBlockWidth = contentWidth / 2 - 20
+    const colHeaders: Array<{ role: keyof typeof COL_X; label: string }> = [
+      { role: 'viraworkx', label: 'ViraWorkx.ai' },
+      { role: 'client',    label: params.companyName },
+      { role: 'candidate', label: 'Candidate' },
+    ]
 
-    // Section headers
-    currentPage.drawText('ViraWorkx.ai', {
-      x: leftX, y, size: headerFontSize, font: helveticaBold, color: rgb(0.1, 0.1, 0.1),
-    })
-    currentPage.drawText(params.companyName, {
-      x: rightX, y, size: headerFontSize, font: helveticaBold, color: rgb(0.1, 0.1, 0.1),
-    })
-    y -= 50
+    for (const { role, label } of colHeaders) {
+      const x = COL_X[role]
+      // Truncate label if too wide
+      const maxLabelChars = Math.floor(COL_WIDTH / (headerFontSize * 0.55))
+      const displayLabel = label.length > maxLabelChars ? label.slice(0, maxLabelChars - 1) + '…' : label
+      currentPage.drawText(displayLabel, {
+        x, y, size: headerFontSize, font: helveticaBold, color: rgb(0.1, 0.1, 0.1),
+      })
+    }
+    y -= 45
 
-    // Signature lines
-    const drawLineRow = (label: string) => {
-      currentPage.drawLine({ start: { x: leftX, y }, end: { x: leftX + sigBlockWidth, y }, thickness: 0.5, color: rgb(0.4, 0.4, 0.4) })
-      currentPage.drawLine({ start: { x: rightX, y }, end: { x: rightX + sigBlockWidth, y }, thickness: 0.5, color: rgb(0.4, 0.4, 0.4) })
-      y -= 14
-      currentPage.drawText(label, { x: leftX, y, size: 8, font: helvetica, color: rgb(0.5, 0.5, 0.5) })
-      currentPage.drawText(label, { x: rightX, y, size: 8, font: helvetica, color: rgb(0.5, 0.5, 0.5) })
-      y -= 30
+    // Signature line rows
+    const drawRow = (label: string) => {
+      for (const role of Object.keys(COL_X) as Array<keyof typeof COL_X>) {
+        const x = COL_X[role]
+        currentPage.drawLine({
+          start: { x, y }, end: { x: x + COL_WIDTH, y },
+          thickness: 0.5, color: rgb(0.4, 0.4, 0.4),
+        })
+        currentPage.drawText(label, {
+          x: x + 2, y: y - 12, size: 8, font: helvetica, color: rgb(0.5, 0.5, 0.5),
+        })
+      }
+      y -= 40
     }
 
-    drawLineRow('Signature')
-    drawLineRow('Name')
-    drawLineRow('Date')
+    drawRow('Signature')
+    drawRow('Name')
+    drawRow('Date')
 
-    // Store signature block Y coordinate in PDF metadata for embedding later
+    // Store signature block Y in metadata for embedSignatureInPdf
     pdfDoc.setSubject(`sig_y:${yHr}`)
     pdfDoc.setTitle(params.title)
 
@@ -185,53 +206,58 @@ class PdfService {
   async embedSignatureInPdf(params: EmbedSignatureParams): Promise<Buffer> {
     const pdfDoc = await PDFDocument.load(params.existingPdfBytes)
     const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica)
+    const helveticaOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique)
 
     const pages = pdfDoc.getPages()
     const lastPage = pages[pages.length - 1]
-    const { width: pageWidth } = lastPage.getSize()
 
-    const margin = 60
-    const contentWidth = (pageWidth - margin * 2) / 2 - 20
+    const baseX = COL_X[params.signerRole]
 
-    // Position: left for viraworkx, center for client, right for candidate
-    const colWidth = (pageWidth - margin * 2) / 3
-    const baseX = params.signerRole === 'viraworkx' ? margin
-      : params.signerRole === 'client' ? margin + colWidth
-      : margin + colWidth * 2
-
-    // Read the stored horizontal rule Y from metadata
+    // Read the stored HR Y from metadata
     const sigBlockMeta = pdfDoc.getSubject()
     let yHr: number
     if (sigBlockMeta && sigBlockMeta.startsWith('sig_y:')) {
       yHr = parseFloat(sigBlockMeta.split(':')[1])
     } else {
-      // Fallback estimate
       yHr = 250
     }
 
-    // From the layout in generateContractPdf, offsets from yHr:
-    //   yHr - 80: signature lines
-    //   yHr - 124: name lines
-    //   yHr - 168: date lines
+    // Offsets from yHr matching the layout in generateContractPdf:
+    //   yHr - 25: col headers drawn
+    //   yHr - 70: top of first row (signature line)
+    //   yHr - 110: top of second row (name line)
+    //   yHr - 150: top of third row (date line)
 
-    // Embed the signature PNG image above the signature line
-    const sigImage = await pdfDoc.embedPng(params.signatureImagePng)
-    const sigAspectRatio = sigImage.width / sigImage.height
-    const sigDisplayHeight = 35
-    const sigDisplayWidth = Math.min(sigDisplayHeight * sigAspectRatio, contentWidth)
+    const sigLineY  = yHr - 70
+    const nameLineY = yHr - 110
+    const dateLineY = yHr - 150
 
-    const sigLineY = yHr - 80
-    lastPage.drawImage(sigImage, {
-      x: baseX + 5,
-      y: sigLineY + 2,
-      width: sigDisplayWidth,
-      height: sigDisplayHeight,
-    })
+    if (params.signatureImagePng) {
+      // Embed signature image above the signature line
+      const sigImage = await pdfDoc.embedPng(params.signatureImagePng)
+      const aspectRatio = sigImage.width / sigImage.height
+      const imgH = 30
+      const imgW = Math.min(imgH * aspectRatio, COL_WIDTH - 10)
+      lastPage.drawImage(sigImage, {
+        x: baseX + 2,
+        y: sigLineY,
+        width: imgW,
+        height: imgH,
+      })
+    } else {
+      // No image — draw signed name in italics as a text signature
+      lastPage.drawText(params.signedName, {
+        x: baseX + 4,
+        y: sigLineY + 4,
+        size: 13,
+        font: helveticaOblique,
+        color: rgb(0.05, 0.05, 0.45), // dark ink blue
+      })
+    }
 
     // Name text above the name line
-    const nameLineY = yHr - 124
     lastPage.drawText(params.signedName, {
-      x: baseX + 5,
+      x: baseX + 4,
       y: nameLineY + 4,
       size: 10,
       font: helvetica,
@@ -239,9 +265,8 @@ class PdfService {
     })
 
     // Date text above the date line
-    const dateLineY = yHr - 168
     lastPage.drawText(params.signedDate, {
-      x: baseX + 5,
+      x: baseX + 4,
       y: dateLineY + 4,
       size: 10,
       font: helvetica,

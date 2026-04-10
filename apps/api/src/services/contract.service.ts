@@ -256,6 +256,7 @@ class ContractService {
     const contract = await prisma.contract.findUnique({
       where: { id: contractId },
       include: {
+        signatures: true,
         application: {
           include: { candidate: { select: { userId: true } } },
         },
@@ -271,6 +272,28 @@ class ContractService {
       data: { status: 'pending_signatures' },
       include: { signatures: true },
     })
+
+    // Auto-apply ViraWorkx CEO signature (Rahul Ramachandran)
+    const viraworkxSig = contract.signatures.find((s) => s.signerRole === 'viraworkx')
+    if (viraworkxSig && !viraworkxSig.signedAt && contract.pdfData) {
+      const signedDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric',
+      })
+      const updatedPdf = await pdfService.embedSignatureInPdf({
+        existingPdfBytes: Buffer.from(contract.pdfData),
+        signerRole: 'viraworkx',
+        signedName: 'Rahul Ramachandran',
+        signedDate,
+      })
+      await prisma.contractSignature.update({
+        where: { id: viraworkxSig.id },
+        data: { signedName: 'Rahul Ramachandran', signedAt: new Date() },
+      })
+      await prisma.contract.update({
+        where: { id: contractId },
+        data: { pdfData: updatedPdf },
+      })
+    }
 
     // Notify the candidate in-app and by email
     const candidateUserId = contract.application?.candidate?.userId
@@ -342,19 +365,19 @@ class ContractService {
     })
 
     let signatureImageBuffer: Buffer | undefined
-    let pdfToStore: Buffer = Buffer.from(currentPdf)
-
     if (input.signatureImage) {
       const base64Data = input.signatureImage.replace(/^data:image\/png;base64,/, '')
       signatureImageBuffer = Buffer.from(base64Data, 'base64')
-      pdfToStore = await pdfService.embedSignatureInPdf({
-        existingPdfBytes: Buffer.from(currentPdf),
-        signatureImagePng: signatureImageBuffer,
-        signerRole: input.signerRole,
-        signedName: input.signedName,
-        signedDate,
-      })
     }
+
+    // Always embed name + date in the PDF (image optional)
+    const pdfToStore = await pdfService.embedSignatureInPdf({
+      existingPdfBytes: Buffer.from(currentPdf),
+      ...(signatureImageBuffer ? { signatureImagePng: signatureImageBuffer } : {}),
+      signerRole: input.signerRole,
+      signedName: input.signedName,
+      signedDate,
+    })
 
     // Record the signature and update PDF
     await prisma.contractSignature.update({
@@ -374,11 +397,14 @@ class ContractService {
       data: { pdfData: pdfToStore },
     })
 
-    // Check if both parties have signed
-    const otherSignature = contract.signatures.find(
-      (s) => s.signerRole !== input.signerRole
+    // Check if ALL other parties have now signed
+    // Re-fetch signatures so we see the signedAt values updated this request
+    const freshSignatures = await prisma.contractSignature.findMany({
+      where: { contractId: input.contractId },
+    })
+    const allSigned = freshSignatures.every(
+      (s) => s.signerRole === input.signerRole || s.signedAt != null
     )
-    const allSigned = otherSignature?.signedAt != null
 
     if (allSigned) {
       // Copy final PDF to pdfSignedData
