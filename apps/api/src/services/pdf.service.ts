@@ -12,21 +12,21 @@ interface GenerateContractPdfParams {
 interface EmbedSignatureParams {
   existingPdfBytes: Buffer
   signatureImagePng?: Buffer // optional — text-only signature when omitted
-  signerRole: 'viraworkx' | 'client' | 'candidate'
+  signerRole: 'viraworkx' | 'candidate'
   signedName: string
   signedDate: string
 }
 
 // Layout constants shared between generate and embed
+// Talent Agreement is bilateral: ViraWorkx ↔ Candidate (client has a separate services agreement)
 const MARGIN = 60
 const PAGE_WIDTH = 595.28 // A4
 const PAGE_HEIGHT = 841.89
-const GUTTER = 15
-const COL_WIDTH = (PAGE_WIDTH - MARGIN * 2 - GUTTER * 2) / 3 // ~148 pt
-const COL_X: Record<'viraworkx' | 'client' | 'candidate', number> = {
+const GUTTER = 30
+const COL_WIDTH = (PAGE_WIDTH - MARGIN * 2 - GUTTER) / 2 // ~217 pt
+const COL_X: Record<'viraworkx' | 'candidate', number> = {
   viraworkx: MARGIN,
-  client:    MARGIN + COL_WIDTH + GUTTER,
-  candidate: MARGIN + (COL_WIDTH + GUTTER) * 2,
+  candidate: MARGIN + COL_WIDTH + GUTTER,
 }
 
 class PdfService {
@@ -161,7 +161,6 @@ class PdfService {
 
     const colHeaders: Array<{ role: keyof typeof COL_X; label: string }> = [
       { role: 'viraworkx', label: 'ViraWorkx.ai' },
-      { role: 'client',    label: params.companyName },
       { role: 'candidate', label: 'Candidate' },
     ]
 

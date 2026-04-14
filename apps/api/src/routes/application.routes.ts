@@ -267,7 +267,9 @@ router.post('/:id/advance', authenticateToken, requireRole('client', 'admin'), a
     const jobTitle = updated.job?.title || 'Position'
     const companyName = (updated.job as any)?.client?.companyName || 'Company'
 
-    if (candidateEmail) {
+    // Only send candidate-facing emails for externally-sourced applications
+    // Admin-sourced pipeline tracking is internal and should not trigger candidate notifications
+    if (candidateEmail && application.source !== 'admin') {
       if (stage === 'offer') {
         // Offer extended
         emailService.sendOfferExtended(candidateEmail, {

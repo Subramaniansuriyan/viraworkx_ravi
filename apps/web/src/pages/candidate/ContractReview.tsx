@@ -38,7 +38,6 @@ export default function CandidateContractReview() {
   }
 
   const viraworkxSig = contract.signatures?.find((s) => s.signerRole === 'viraworkx')
-  const clientSig = contract.signatures?.find((s) => s.signerRole === 'client')
   const candidateSig = contract.signatures?.find((s) => s.signerRole === 'candidate')
   const pdfUrl = contractApi.getPdfUrl(id!)
   const canSign = contract.status === 'pending_signatures' && !candidateSig?.signedAt
@@ -50,6 +49,8 @@ export default function CandidateContractReview() {
       const { data } = await contractApi.sign(id!, signedName.trim(), '')
       setContract(data.contract)
       setSignModal(false)
+      // Reset blob URL so PdfViewer reloads the PDF with the embedded signature
+      setPdfBlobUrl(null)
     } catch {
       setSignError('Failed to sign. Please try again.')
     } finally {
@@ -79,7 +80,7 @@ export default function CandidateContractReview() {
         </div>
 
         {/* Signature Status */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <div className={`p-4 rounded-xl border ${viraworkxSig?.signedAt ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-700/30 bg-slate-900/50'}`}>
             <div className="flex items-center gap-2 mb-2">
               {viraworkxSig?.signedAt ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Clock className="w-5 h-5 text-slate-500" />}
@@ -92,21 +93,6 @@ export default function CandidateContractReview() {
               </div>
             ) : (
               <p className="text-sm text-slate-500">Awaiting ViraWorkx signature</p>
-            )}
-          </div>
-
-          <div className={`p-4 rounded-xl border ${clientSig?.signedAt ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-700/30 bg-slate-900/50'}`}>
-            <div className="flex items-center gap-2 mb-2">
-              {clientSig?.signedAt ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : <Clock className="w-5 h-5 text-slate-500" />}
-              <span className="font-medium">Client Signature</span>
-            </div>
-            {clientSig?.signedAt ? (
-              <div className="text-sm text-slate-400">
-                <p>Signed by: <span className="text-white">{clientSig.signedName}</span></p>
-                <p>Date: {new Date(clientSig.signedAt).toLocaleDateString()}</p>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">Awaiting client signature</p>
             )}
           </div>
 

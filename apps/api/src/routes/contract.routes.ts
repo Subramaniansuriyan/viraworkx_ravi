@@ -274,10 +274,9 @@ router.post('/:id/sign', async (req: AuthRequest, res) => {
     }
 
     // Determine signer role from user type
-    let signerRole: 'client' | 'viraworkx' | 'candidate'
-    if (req.user.userType === 'client') {
-      signerRole = 'client'
-    } else if (req.user.userType === 'admin') {
+    // Talent Agreement is ViraWorkx ↔ Candidate only; clients are not party to this agreement
+    let signerRole: 'viraworkx' | 'candidate'
+    if (req.user.userType === 'admin') {
       signerRole = 'viraworkx'
     } else if (req.user.userType === 'candidate') {
       signerRole = 'candidate'

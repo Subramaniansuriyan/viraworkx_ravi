@@ -685,7 +685,12 @@ router.get('/me/applications', authenticateToken, async (req: AuthRequest, res: 
     }
 
     const applications = await prisma.application.findMany({
-      where: { candidateId: candidate.id },
+      where: {
+        candidateId: candidate.id,
+        // Hide internal pipeline tracking entries from the candidate portal.
+        // Admin-sourced enrollments are ViraWorkx-internal and not visible to candidates.
+        NOT: { source: 'admin' },
+      },
       select: {
         id: true,
         stage: true,
