@@ -231,6 +231,15 @@ class PdfService {
     const nameLineY = yHr - 110
     const dateLineY = yHr - 150
 
+    // Auto-scale font size so the name fits within the column width
+    const fitFontSize = (text: string, font: any, maxSize: number, maxWidth: number): number => {
+      let size = maxSize
+      while (size > 6 && font.widthOfTextAtSize(text, size) > maxWidth - 8) {
+        size -= 0.5
+      }
+      return size
+    }
+
     if (params.signatureImagePng) {
       // Embed signature image above the signature line
       const sigImage = await pdfDoc.embedPng(params.signatureImagePng)
@@ -244,21 +253,23 @@ class PdfService {
         height: imgH,
       })
     } else {
-      // No image — draw signed name in italics as a text signature
+      // No image — draw signed name in italics as a text signature (scale to fit)
+      const sigFontSize = fitFontSize(params.signedName, helveticaOblique, 13, COL_WIDTH)
       lastPage.drawText(params.signedName, {
         x: baseX + 4,
         y: sigLineY + 4,
-        size: 13,
+        size: sigFontSize,
         font: helveticaOblique,
         color: rgb(0.05, 0.05, 0.45), // dark ink blue
       })
     }
 
-    // Name text above the name line
+    // Name text above the name line (scale to fit)
+    const nameFontSize = fitFontSize(params.signedName, helvetica, 10, COL_WIDTH)
     lastPage.drawText(params.signedName, {
       x: baseX + 4,
       y: nameLineY + 4,
-      size: 10,
+      size: nameFontSize,
       font: helvetica,
       color: rgb(0.1, 0.1, 0.1),
     })

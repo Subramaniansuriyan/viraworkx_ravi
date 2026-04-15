@@ -179,35 +179,7 @@ class AuthService {
 
     await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } })
 
-    // Auto-enroll new candidates into the vetting pipeline
-    if (user.userType === 'candidate') {
-      const candidateRecord = user.candidate || await prisma.candidate.findUnique({
-        where: { userId: user.id },
-        select: { id: true },
-      })
-
-      if (candidateRecord) {
-        const targetJob = await prisma.job.findFirst({
-          where: { status: 'active' },
-          orderBy: { createdAt: 'desc' },
-          select: { id: true },
-        }) || await prisma.job.findFirst({
-          where: { status: { not: 'closed' } },
-          orderBy: { createdAt: 'desc' },
-          select: { id: true },
-        })
-
-        if (targetJob) {
-          await prisma.application.upsert({
-            where: { candidateId_jobId: { candidateId: candidateRecord.id, jobId: targetJob.id } },
-            update: {},
-            create: { candidateId: candidateRecord.id, jobId: targetJob.id, stage: 'new' },
-          })
-        } else {
-          console.warn(`[verifyEmail] No job found to auto-enroll candidate ${candidateRecord.id}`)
-        }
-      }
-    }
+    // Role/job assignment is done manually by HR — no auto-enrollment
 
     const tokens = this.generateTokens(user.id, user.email, user.userType)
     return { user: this.formatUserResponse(user), tokens }

@@ -825,34 +825,7 @@ router.post('/invite', authenticateToken, requireRole('admin'), async (req: Auth
       return { user, candidate }
     })
 
-    // Auto-enroll into the vetting pipeline (active job first, any job as fallback)
-    const targetJob = await prisma.job.findFirst({
-      where: { status: 'active' },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true, skillsRequired: true },
-    }) || await prisma.job.findFirst({
-      where: { status: { not: 'closed' } },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true, skillsRequired: true },
-    })
-
-    if (targetJob) {
-      const existing = await prisma.application.findUnique({
-        where: { candidateId_jobId: { candidateId: result.candidate.id, jobId: targetJob.id } },
-      })
-      if (!existing) {
-        await prisma.application.create({
-          data: {
-            candidateId: result.candidate.id,
-            jobId: targetJob.id,
-            stage: 'new',
-            source: 'admin',
-          },
-        })
-      }
-    } else {
-      console.warn(`[Invite] No job found to auto-enroll candidate ${result.candidate.id} — create a job first`)
-    }
+    // Role/job assignment is done manually by HR after profile review — no auto-enrollment
 
     // Send invite email (non-blocking)
     const { emailService } = await import('../services/email.service.js')

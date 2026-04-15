@@ -103,7 +103,7 @@ export default function CandidateContractReview() {
             </div>
             {candidateSig?.signedAt ? (
               <div>
-                <p className="font-signature text-emerald-300 text-xl leading-tight tracking-wide italic">
+                <p className="font-signature text-emerald-300 text-xl leading-tight tracking-wide italic break-words">
                   {candidateSig.signedName}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
