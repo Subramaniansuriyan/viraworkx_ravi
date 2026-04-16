@@ -652,9 +652,7 @@ export default function AdminVetting() {
                     >
                       <option value="">-- Select a role --</option>
                       {(jobsData?.jobs || []).map((job: any) => (
-                        <option key={job.id} value={job.id}>
-                          {job.title}{job.client?.companyName ? ` — ${job.client.companyName}` : ''}
-                        </option>
+                        <option key={job.id} value={job.id}>{job.title}</option>
                       ))}
                     </select>
                   )}

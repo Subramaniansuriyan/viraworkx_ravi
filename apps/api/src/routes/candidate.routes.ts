@@ -119,7 +119,6 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
         { firstName: { contains: q, mode: 'insensitive' } },
         { lastName: { contains: q, mode: 'insensitive' } },
         { user: { email: { contains: q, mode: 'insensitive' } } },
-        { skills: { hasSome: [q] } },
       ]
     }
 
