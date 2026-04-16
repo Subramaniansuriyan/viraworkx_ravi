@@ -66,6 +66,7 @@ export default function AdminVetting() {
   const [rejectReason, setRejectReason] = useState('')
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [enrollCandidateId, setEnrollCandidateId] = useState('')
+  const [enrollJobId, setEnrollJobId] = useState('')
   const [enrollNotes, setEnrollNotes] = useState('')
   const [candidateSearch, setCandidateSearch] = useState('')
   const [contractModal, setContractModal] = useState<{ appId: string; candidateName: string } | null>(null)
@@ -85,6 +86,15 @@ export default function AdminVetting() {
     queryKey: ['allCandidates'],
     queryFn: async () => {
       const res = await api.get('/candidates?limit=200')
+      return res.data
+    },
+    enabled: enrollOpen,
+  })
+
+  const { data: jobsData } = useQuery({
+    queryKey: ['activeJobs'],
+    queryFn: async () => {
+      const res = await api.get('/jobs?status=active&limit=50')
       return res.data
     },
     enabled: enrollOpen,
@@ -120,7 +130,7 @@ export default function AdminVetting() {
   })
 
   const enrollMutation = useMutation({
-    mutationFn: async (data: { candidateId: string; notes: string }) => {
+    mutationFn: async (data: { candidateId: string; jobId: string; notes: string }) => {
       const res = await api.post('/applications/admin/enroll', data)
       return res.data
     },
@@ -128,6 +138,7 @@ export default function AdminVetting() {
       queryClient.invalidateQueries({ queryKey: ['vettingPipeline'] })
       setEnrollOpen(false)
       setEnrollCandidateId('')
+      setEnrollJobId('')
       setEnrollNotes('')
       setCandidateSearch('')
     },
@@ -621,6 +632,34 @@ export default function AdminVetting() {
                   )}
                 </div>
 
+                {/* Job / Role selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Role / Job *</label>
+                  {!jobsData ? (
+                    <div className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-400 text-sm">
+                      <div className="w-4 h-4 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+                      Loading jobs...
+                    </div>
+                  ) : (jobsData?.jobs || []).length === 0 ? (
+                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                      No active jobs found. Create an active job first before enrolling candidates.
+                    </p>
+                  ) : (
+                    <select
+                      value={enrollJobId}
+                      onChange={e => setEnrollJobId(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+                    >
+                      <option value="">-- Select a role --</option>
+                      {(jobsData?.jobs || []).map((job: any) => (
+                        <option key={job.id} value={job.id}>
+                          {job.title}{job.client?.companyName ? ` — ${job.client.companyName}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
                 {/* Notes */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Notes (optional)</label>
@@ -645,8 +684,8 @@ export default function AdminVetting() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => enrollMutation.mutate({ candidateId: enrollCandidateId, notes: enrollNotes })}
-                  disabled={!enrollCandidateId || enrollMutation.isPending}
+                  onClick={() => enrollMutation.mutate({ candidateId: enrollCandidateId, jobId: enrollJobId, notes: enrollNotes })}
+                  disabled={!enrollCandidateId || !enrollJobId || enrollMutation.isPending}
                   className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
                 >
                   {enrollMutation.isPending ? (

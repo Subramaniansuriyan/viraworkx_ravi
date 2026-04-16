@@ -235,7 +235,10 @@ export default function AdminCandidates() {
                             </div>
                             {candidate.latestAssessment.score != null && (
                               <p className="text-xs text-gray-500">
-                                Score: {candidate.latestAssessment.score}/{candidate.latestAssessment.maxScore}
+                                {candidate.latestAssessment.score}/{candidate.latestAssessment.maxScore ?? '?'}
+                                {candidate.latestAssessment.maxScore
+                                  ? ` (${Math.round((candidate.latestAssessment.score / candidate.latestAssessment.maxScore) * 100)}%)`
+                                  : ''}
                               </p>
                             )}
                           </div>
