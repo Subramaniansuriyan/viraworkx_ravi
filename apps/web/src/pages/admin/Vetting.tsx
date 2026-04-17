@@ -66,7 +66,9 @@ export default function AdminVetting() {
   const [rejectReason, setRejectReason] = useState('')
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [enrollCandidateId, setEnrollCandidateId] = useState('')
-  const [enrollJobId, setEnrollJobId] = useState('')
+  const [enrollJobId, setEnrollJobId] = useState('')       // set when user picks from suggestions
+  const [enrollRoleText, setEnrollRoleText] = useState('') // what's typed in the role field
+  const [showRoleSuggestions, setShowRoleSuggestions] = useState(false)
   const [enrollNotes, setEnrollNotes] = useState('')
   const [candidateSearch, setCandidateSearch] = useState('')
   const [contractModal, setContractModal] = useState<{ appId: string; candidateName: string } | null>(null)
@@ -130,7 +132,7 @@ export default function AdminVetting() {
   })
 
   const enrollMutation = useMutation({
-    mutationFn: async (data: { candidateId: string; jobId: string; notes: string }) => {
+    mutationFn: async (data: { candidateId: string; jobId?: string; customRole?: string; notes: string }) => {
       const res = await api.post('/applications/admin/enroll', data)
       return res.data
     },
@@ -139,6 +141,7 @@ export default function AdminVetting() {
       setEnrollOpen(false)
       setEnrollCandidateId('')
       setEnrollJobId('')
+      setEnrollRoleText('')
       setEnrollNotes('')
       setCandidateSearch('')
     },
@@ -632,29 +635,56 @@ export default function AdminVetting() {
                   )}
                 </div>
 
-                {/* Job / Role selector */}
+                {/* Role combo-box: type freely or pick from existing jobs */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Role / Job *</label>
-                  {!jobsData ? (
-                    <div className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-400 text-sm">
-                      <div className="w-4 h-4 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
-                      Loading jobs...
-                    </div>
-                  ) : (jobsData?.jobs || []).length === 0 ? (
-                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                      No active jobs found. Create an active job first before enrolling candidates.
-                    </p>
-                  ) : (
-                    <select
-                      value={enrollJobId}
-                      onChange={e => setEnrollJobId(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
-                    >
-                      <option value="">-- Select a role --</option>
-                      {(jobsData?.jobs || []).map((job: any) => (
-                        <option key={job.id} value={job.id}>{job.title}</option>
-                      ))}
-                    </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                  <p className="text-xs text-gray-400 mb-2">Type a role name or select an existing job below.</p>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="e.g. Senior Backend Engineer"
+                      value={enrollRoleText}
+                      onChange={e => {
+                        setEnrollRoleText(e.target.value)
+                        setEnrollJobId('') // clear job link when user edits manually
+                        setShowRoleSuggestions(true)
+                      }}
+                      onFocus={() => setShowRoleSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowRoleSuggestions(false), 150)}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                    {enrollJobId && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-primary font-medium">linked</span>
+                    )}
+                    {/* Suggestions dropdown */}
+                    {showRoleSuggestions && enrollRoleText.trim() && (() => {
+                      const matches = (jobsData?.jobs || []).filter((j: any) =>
+                        j.title.toLowerCase().includes(enrollRoleText.toLowerCase())
+                      )
+                      return matches.length > 0 ? (
+                        <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                          {matches.map((job: any) => (
+                            <div
+                              key={job.id}
+                              onMouseDown={() => {
+                                setEnrollRoleText(job.title)
+                                setEnrollJobId(job.id)
+                                setShowRoleSuggestions(false)
+                              }}
+                              className="px-4 py-2 text-sm text-gray-800 hover:bg-primary/5 cursor-pointer border-b last:border-0"
+                            >
+                              {job.title}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null
+                    })()}
+                  </div>
+                  {enrollJobId && (
+                    <p className="text-xs text-primary mt-1">Matched to existing job posting.</p>
+                  )}
+                  {enrollRoleText.trim() && !enrollJobId && (
+                    <p className="text-xs text-amber-600 mt-1">New role — will be created as a placeholder if it doesn't exist.</p>
                   )}
                 </div>
 
@@ -682,8 +712,12 @@ export default function AdminVetting() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => enrollMutation.mutate({ candidateId: enrollCandidateId, jobId: enrollJobId, notes: enrollNotes })}
-                  disabled={!enrollCandidateId || !enrollJobId || enrollMutation.isPending}
+                  onClick={() => enrollMutation.mutate({
+                    candidateId: enrollCandidateId,
+                    ...(enrollJobId ? { jobId: enrollJobId } : { customRole: enrollRoleText.trim() }),
+                    notes: enrollNotes,
+                  })}
+                  disabled={!enrollCandidateId || !enrollRoleText.trim() || enrollMutation.isPending}
                   className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
                 >
                   {enrollMutation.isPending ? (

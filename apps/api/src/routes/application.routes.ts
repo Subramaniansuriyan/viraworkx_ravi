@@ -469,18 +469,52 @@ router.get('/pipeline/:jobId', authenticateToken, requireRole('client', 'admin')
  */
 router.post('/admin/enroll', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
   try {
-    const { candidateId, jobId: requestedJobId, notes } = req.body
+    const { candidateId, jobId: requestedJobId, customRole, notes } = req.body
     if (!candidateId) {
       return res.status(400).json({ error: 'candidateId is required' })
     }
+    if (!requestedJobId && !customRole?.trim()) {
+      return res.status(400).json({ error: 'Either jobId or customRole is required' })
+    }
 
-    // If no jobId provided, auto-select the first active job
-    const resolvedJobId = requestedJobId || (
-      await prisma.job.findFirst({ where: { status: 'active' }, orderBy: { createdAt: 'desc' } })
-    )?.id
+    let resolvedJobId = requestedJobId
+
+    // If no jobId but a custom role title was provided, find or create a placeholder job
+    if (!resolvedJobId && customRole?.trim()) {
+      const roleTitle = customRole.trim()
+
+      // Find any existing job with this title (any client, any status)
+      const existingJob = await prisma.job.findFirst({
+        where: { title: { equals: roleTitle, mode: 'insensitive' } },
+        orderBy: { createdAt: 'desc' },
+      })
+
+      if (existingJob) {
+        resolvedJobId = existingJob.id
+      } else {
+        // Find or create a ViraWorkx Internal client for placeholder jobs
+        let internalClient = await prisma.client.findFirst({
+          where: { companyName: { equals: 'ViraWorkx Internal', mode: 'insensitive' } },
+        })
+        if (!internalClient) {
+          internalClient = await prisma.client.create({
+            data: { companyName: 'ViraWorkx Internal', planTier: 'enterprise' },
+          })
+        }
+        const newJob = await prisma.job.create({
+          data: {
+            clientId: internalClient.id,
+            title: roleTitle,
+            status: 'active',
+            createdById: req.user!.userId,
+          },
+        })
+        resolvedJobId = newJob.id
+      }
+    }
 
     if (!resolvedJobId) {
-      return res.status(400).json({ error: 'No active jobs available. Please create an active job first.' })
+      return res.status(400).json({ error: 'Could not resolve a job for enrollment' })
     }
 
     const jobId = resolvedJobId
