@@ -103,7 +103,7 @@ function calculateProfileScore(candidate: any): number {
  */
 router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: AuthRequest, res: Response) => {
   try {
-    const { skills, location, experienceMin, experienceMax, tier, limit = '20', offset = '0', page, search } = req.query
+    const { skills, location, experienceMin, experienceMax, tier, limit = '20', offset = '0', page, search, noApplications } = req.query
 
     // Support both page-based (frontend) and offset-based pagination
     const parsedLimit = parseInt(limit as string)
@@ -140,6 +140,11 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
 
     if (tier) {
       where.tier = tier as string
+    }
+
+    // Filter to only candidates with zero applications (for "New Registrations" panel)
+    if (noApplications === 'true') {
+      where.applications = { none: {} }
     }
 
     const candidates = await prisma.candidate.findMany({

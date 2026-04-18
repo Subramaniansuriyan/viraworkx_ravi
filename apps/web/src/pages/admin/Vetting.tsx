@@ -84,6 +84,15 @@ export default function AdminVetting() {
     refetchInterval: 30000,
   })
 
+  const { data: newRegsData, refetch: refetchNewRegs } = useQuery({
+    queryKey: ['newRegistrations'],
+    queryFn: async () => {
+      const res = await api.get('/candidates', { params: { noApplications: 'true', limit: 50, offset: 0 } })
+      return res.data
+    },
+    refetchInterval: 30000,
+  })
+
   const { data: candidatesData, isLoading: candidatesLoading, isError: candidatesError } = useQuery({
     queryKey: ['allCandidates'],
     queryFn: async () => {
@@ -140,6 +149,7 @@ export default function AdminVetting() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vettingPipeline'] })
+      queryClient.invalidateQueries({ queryKey: ['newRegistrations'] })
       setEnrollOpen(false)
       setEnrollCandidateId('')
       setEnrollJobId('')
@@ -238,6 +248,47 @@ export default function AdminVetting() {
             )
           })}
         </div>
+
+        {/* New Registrations panel */}
+        {(() => {
+          const newRegs: any[] = newRegsData?.candidates || []
+          if (newRegs.length === 0) return null
+          return (
+            <div className="mb-8 bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="w-4 h-4 text-blue-600" />
+                <h2 className="text-sm font-semibold text-blue-800">New Registrations — Not yet enrolled</h2>
+                <span className="ml-auto text-xs text-blue-600 font-medium">{newRegs.length} candidate{newRegs.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {newRegs.map((c: any) => (
+                  <div key={c.id} className="flex items-center gap-3 bg-white border border-blue-100 rounded-lg px-3 py-2 shadow-sm">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {c.firstName?.[0]}{c.lastName?.[0]}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 leading-tight">{c.firstName} {c.lastName}</p>
+                      <p className="text-xs text-gray-400 truncate max-w-[140px]">{c.email}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEnrollCandidateId(c.id)
+                        setCandidateSearch(`${c.firstName} ${c.lastName}`)
+                        setEnrollRoleText('')
+                        setEnrollJobId('')
+                        setEnrollNotes('')
+                        setEnrollOpen(true)
+                      }}
+                      className="ml-2 px-2.5 py-1 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 shrink-0"
+                    >
+                      Enroll
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
 
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
