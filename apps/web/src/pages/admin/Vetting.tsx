@@ -60,15 +60,13 @@ const TIER_OPTIONS = ['Tier 1', 'Tier 2', 'Tier 3']
 
 export default function AdminVetting() {
   const queryClient = useQueryClient()
+  const [enrollingId, setEnrollingId] = useState<string | null>(null)
   const [tierModal, setTierModal] = useState<{ appId: string; candidateName: string } | null>(null)
   const [selectedTier, setSelectedTier] = useState('Tier 1')
   const [rejectModal, setRejectModal] = useState<{ appId: string; candidateName: string } | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [enrollCandidateId, setEnrollCandidateId] = useState('')
-  const [enrollJobId, setEnrollJobId] = useState('')       // set when user picks from suggestions
-  const [enrollRoleText, setEnrollRoleText] = useState('') // what's typed in the role field
-  const [showRoleSuggestions, setShowRoleSuggestions] = useState(false)
   const [enrollNotes, setEnrollNotes] = useState('')
   const [candidateSearch, setCandidateSearch] = useState('')
   const [contractModal, setContractModal] = useState<{ appId: string; candidateName: string } | null>(null)
@@ -102,15 +100,6 @@ export default function AdminVetting() {
     enabled: enrollOpen,
     staleTime: 0,      // always fetch fresh when modal opens
     gcTime: 0,         // don't cache between modal opens
-  })
-
-  const { data: jobsData } = useQuery({
-    queryKey: ['activeJobs'],
-    queryFn: async () => {
-      const res = await api.get('/jobs?status=active&limit=50')
-      return res.data
-    },
-    enabled: enrollOpen,
   })
 
   const { data: templatesData } = useQuery({
@@ -152,8 +141,6 @@ export default function AdminVetting() {
       queryClient.invalidateQueries({ queryKey: ['newRegistrations'] })
       setEnrollOpen(false)
       setEnrollCandidateId('')
-      setEnrollJobId('')
-      setEnrollRoleText('')
       setEnrollNotes('')
       setCandidateSearch('')
     },
@@ -271,17 +258,22 @@ export default function AdminVetting() {
                       <p className="text-xs text-gray-400 truncate max-w-[140px]">{c.email}</p>
                     </div>
                     <button
-                      onClick={() => {
-                        setEnrollCandidateId(c.id)
-                        setCandidateSearch(`${c.firstName} ${c.lastName}`)
-                        setEnrollRoleText('')
-                        setEnrollJobId('')
-                        setEnrollNotes('')
-                        setEnrollOpen(true)
+                      disabled={enrollingId === c.id}
+                      onClick={async () => {
+                        setEnrollingId(c.id)
+                        try {
+                          await api.post('/applications/admin/enroll', { candidateId: c.id })
+                          await Promise.all([
+                            queryClient.invalidateQueries({ queryKey: ['vettingPipeline'] }),
+                            queryClient.invalidateQueries({ queryKey: ['newRegistrations'] }),
+                          ])
+                        } finally {
+                          setEnrollingId(null)
+                        }
                       }}
-                      className="ml-2 px-2.5 py-1 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 shrink-0"
+                      className="ml-2 px-2.5 py-1 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 shrink-0 disabled:opacity-50"
                     >
-                      Enroll
+                      {enrollingId === c.id ? '...' : 'Enroll'}
                     </button>
                   </div>
                 ))}
@@ -695,58 +687,6 @@ export default function AdminVetting() {
                   )}
                 </div>
 
-                {/* Role combo-box: type freely or pick from existing jobs */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
-                  <p className="text-xs text-gray-400 mb-2">Type a role name or select an existing job below.</p>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="e.g. Senior Backend Engineer"
-                      value={enrollRoleText}
-                      onChange={e => {
-                        setEnrollRoleText(e.target.value)
-                        setEnrollJobId('') // clear job link when user edits manually
-                        setShowRoleSuggestions(true)
-                      }}
-                      onFocus={() => setShowRoleSuggestions(true)}
-                      onBlur={() => setTimeout(() => setShowRoleSuggestions(false), 150)}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    />
-                    {enrollJobId && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-primary font-medium">linked</span>
-                    )}
-                    {/* Suggestions dropdown */}
-                    {showRoleSuggestions && enrollRoleText.trim() && (() => {
-                      const matches = (jobsData?.jobs || []).filter((j: any) =>
-                        j.title.toLowerCase().includes(enrollRoleText.toLowerCase())
-                      )
-                      return matches.length > 0 ? (
-                        <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                          {matches.map((job: any) => (
-                            <div
-                              key={job.id}
-                              onMouseDown={() => {
-                                setEnrollRoleText(job.title)
-                                setEnrollJobId(job.id)
-                                setShowRoleSuggestions(false)
-                              }}
-                              className="px-4 py-2 text-sm text-gray-800 hover:bg-primary/5 cursor-pointer border-b last:border-0"
-                            >
-                              {job.title}
-                            </div>
-                          ))}
-                        </div>
-                      ) : null
-                    })()}
-                  </div>
-                  {enrollJobId && (
-                    <p className="text-xs text-primary mt-1">Matched to existing job posting.</p>
-                  )}
-                  {enrollRoleText.trim() && !enrollJobId && (
-                    <p className="text-xs text-amber-600 mt-1">New role — will be created as a placeholder if it doesn't exist.</p>
-                  )}
-                </div>
 
                 {/* Notes */}
                 <div>
@@ -774,10 +714,9 @@ export default function AdminVetting() {
                 <button
                   onClick={() => enrollMutation.mutate({
                     candidateId: enrollCandidateId,
-                    ...(enrollJobId ? { jobId: enrollJobId } : { customRole: enrollRoleText.trim() }),
                     notes: enrollNotes,
                   })}
-                  disabled={!enrollCandidateId || !enrollRoleText.trim() || enrollMutation.isPending}
+                  disabled={!enrollCandidateId || enrollMutation.isPending}
                   className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
                 >
                   {enrollMutation.isPending ? (

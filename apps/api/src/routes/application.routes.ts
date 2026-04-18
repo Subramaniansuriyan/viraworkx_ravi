@@ -473,15 +473,12 @@ router.post('/admin/enroll', authenticateToken, requireRole('admin'), async (req
     if (!candidateId) {
       return res.status(400).json({ error: 'candidateId is required' })
     }
-    if (!requestedJobId && !customRole?.trim()) {
-      return res.status(400).json({ error: 'Either jobId or customRole is required' })
-    }
 
     let resolvedJobId = requestedJobId
 
-    // If no jobId but a custom role title was provided, find or create a placeholder job
-    if (!resolvedJobId && customRole?.trim()) {
-      const roleTitle = customRole.trim()
+    // Resolve a job: custom role title → find/create, or no role → General Talent Pool
+    if (!resolvedJobId) {
+      const roleTitle = customRole?.trim() || 'General Talent Pool'
 
       // Find any existing job with this title (any client, any status)
       const existingJob = await prisma.job.findFirst({
