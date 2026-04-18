@@ -84,13 +84,15 @@ export default function AdminVetting() {
     refetchInterval: 30000,
   })
 
-  const { data: candidatesData } = useQuery({
+  const { data: candidatesData, isLoading: candidatesLoading, isError: candidatesError } = useQuery({
     queryKey: ['allCandidates'],
     queryFn: async () => {
-      const res = await api.get('/candidates?limit=200')
+      const res = await api.get('/candidates', { params: { limit: 500 } })
       return res.data
     },
     enabled: enrollOpen,
+    staleTime: 0,      // always fetch fresh when modal opens
+    gcTime: 0,         // don't cache between modal opens
   })
 
   const { data: jobsData } = useQuery({
@@ -615,8 +617,15 @@ export default function AdminVetting() {
                     />
                   </div>
                   <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
-                    {filteredCandidates.length === 0 ? (
-                      <p className="text-sm text-gray-400 text-center py-4">No candidates found</p>
+                    {candidatesLoading ? (
+                      <div className="flex items-center justify-center gap-2 py-4 text-gray-400 text-sm">
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+                        Loading candidates...
+                      </div>
+                    ) : candidatesError ? (
+                      <p className="text-sm text-red-500 text-center py-4">Failed to load candidates. Please close and reopen this modal.</p>
+                    ) : filteredCandidates.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4">{candidateSearch ? 'No candidates match your search' : 'No candidates found'}</p>
                     ) : filteredCandidates.map((c: any) => (
                       <div
                         key={c.id}

@@ -115,11 +115,12 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
 
     if (search) {
       const q = (search as string).trim()
-      where.OR = [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName: { contains: q, mode: 'insensitive' } },
-        { user: { email: { contains: q, mode: 'insensitive' } } },
-      ]
+      // Split multi-word queries so "Sakthi Kumar" matches first+last name separately
+      const words = q.split(/\s+/).filter(Boolean)
+      where.OR = words.flatMap((word) => [
+        { firstName: { contains: word, mode: 'insensitive' } },
+        { lastName: { contains: word, mode: 'insensitive' } },
+      ])
     }
 
     if (skills) {
