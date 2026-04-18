@@ -164,7 +164,7 @@ router.get('/', authenticateToken, requireRole('admin', 'client'), async (req: A
       },
       take: parsedLimit,
       skip: parsedOffset,
-      orderBy: { profileScore: 'desc' }
+      orderBy: { createdAt: 'desc' }
     })
 
     const total = await prisma.candidate.count({ where })
