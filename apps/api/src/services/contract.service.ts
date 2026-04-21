@@ -104,13 +104,22 @@ class ContractService {
     if (!application) throw new Error('Application not found')
 
     const clientOwnerId = application.job.client.clientUsers[0]?.userId
-    if (!clientOwnerId) throw new Error('Client has no owner user')
 
-    // Determine ViraWorkx signer: env var or fallback to client owner
-    const viraworkxSignerId = process.env.VIRAWORKX_SIGNER_USER_ID || clientOwnerId
+    // Determine ViraWorkx signer: env var → client owner → any admin
+    let viraworkxSignerId = process.env.VIRAWORKX_SIGNER_USER_ID || clientOwnerId
+    if (!viraworkxSignerId) {
+      const adminUser = await prisma.user.findFirst({
+        where: { userType: 'admin', status: 'active' },
+        orderBy: { createdAt: 'asc' },
+      })
+      if (!adminUser) throw new Error('No admin user found to sign as ViraWorkx')
+      viraworkxSignerId = adminUser.id
+    }
 
     const candidateName = `${application.candidate.firstName} ${application.candidate.lastName}`
-    const companyName = application.job.client.companyName
+    // Use 'ViraWorkx' for internal placeholder clients
+    const rawCompany = application.job.client.companyName
+    const companyName = rawCompany.toLowerCase().includes('viraworkx internal') ? 'ViraWorkx' : rawCompany
     const dateStr = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
