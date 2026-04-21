@@ -103,10 +103,15 @@ class PdfService {
     let y = pageHeight - margin
 
     // -- Header --
-    currentPage.drawText(params.title, {
-      x: margin, y, size: titleFontSize, font: helveticaBold, color: rgb(0.1, 0.1, 0.1),
-    })
-    y -= 28
+    // Wrap title across multiple lines if it exceeds content width
+    const titleLines = this.wrapText(params.title, contentWidth, helveticaBold, titleFontSize)
+    for (const titleLine of titleLines) {
+      currentPage.drawText(titleLine, {
+        x: margin, y, size: titleFontSize, font: helveticaBold, color: rgb(0.1, 0.1, 0.1),
+      })
+      y -= 24
+    }
+    y -= 8
 
     const headerLines = [
       `Date: ${params.date}`,
@@ -115,10 +120,14 @@ class PdfService {
       `Position: ${params.jobTitle}`,
     ]
     for (const line of headerLines) {
-      currentPage.drawText(line, {
-        x: margin, y, size: bodyFontSize, font: helvetica, color: rgb(0.3, 0.3, 0.3),
-      })
-      y -= 18
+      // Wrap header lines too in case company/candidate name is long
+      const wrappedHeaderLines = this.wrapText(line, contentWidth, helvetica, bodyFontSize)
+      for (const wl of wrappedHeaderLines) {
+        currentPage.drawText(wl, {
+          x: margin, y, size: bodyFontSize, font: helvetica, color: rgb(0.3, 0.3, 0.3),
+        })
+        y -= 18
+      }
     }
     y -= 12
 
