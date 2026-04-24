@@ -61,6 +61,7 @@ const TIER_OPTIONS = ['Tier 1', 'Tier 2', 'Tier 3']
 export default function AdminVetting() {
   const queryClient = useQueryClient()
   const [enrollingId, setEnrollingId] = useState<string | null>(null)
+  const [enrollingError, setEnrollingError] = useState<{ id: string; msg: string } | null>(null)
   const [tierModal, setTierModal] = useState<{ appId: string; candidateName: string } | null>(null)
   const [selectedTier, setSelectedTier] = useState('Tier 1')
   const [rejectModal, setRejectModal] = useState<{ appId: string; candidateName: string } | null>(null)
@@ -261,12 +262,16 @@ export default function AdminVetting() {
                       disabled={enrollingId === c.id}
                       onClick={async () => {
                         setEnrollingId(c.id)
+                        setEnrollingError(null)
                         try {
                           await api.post('/applications/admin/enroll', { candidateId: c.id })
                           await Promise.all([
                             queryClient.invalidateQueries({ queryKey: ['vettingPipeline'] }),
                             queryClient.invalidateQueries({ queryKey: ['newRegistrations'] }),
                           ])
+                        } catch (err: any) {
+                          const msg = err?.response?.data?.error || 'Enrollment failed'
+                          setEnrollingError({ id: c.id, msg })
                         } finally {
                           setEnrollingId(null)
                         }
@@ -275,6 +280,9 @@ export default function AdminVetting() {
                     >
                       {enrollingId === c.id ? '...' : 'Enroll'}
                     </button>
+                    {enrollingError?.id === c.id && (
+                      <p className="w-full mt-1 text-xs text-red-600">{enrollingError.msg}</p>
+                    )}
                   </div>
                 ))}
               </div>

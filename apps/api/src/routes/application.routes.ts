@@ -520,7 +520,36 @@ router.post('/admin/enroll', authenticateToken, requireRole('admin'), async (req
       prisma.candidate.findUnique({ where: { id: candidateId } }),
       prisma.job.findUnique({ where: { id: jobId } }),
     ])
-    if (!candidate) return res.status(404).json({ error: 'Candidate not found' })
+    if (!candidate) {
+      // Candidate record may be missing if they registered with an empty name.
+      // Auto-create the Candidate row from their User record so enrollment can proceed.
+      const user = await prisma.user.findFirst({
+        where: { id: candidateId, userType: 'candidate' },
+      })
+      if (!user) return res.status(404).json({ error: 'Candidate not found' })
+      const namePart = user.email.split('@')[0]
+      const created = await prisma.candidate.create({
+        data: {
+          userId: user.id,
+          firstName: namePart,
+          lastName: '',
+        },
+      })
+      // Retry with the freshly created record
+      const [reCandidate, reJob] = await Promise.all([
+        prisma.candidate.findUnique({ where: { id: created.id } }),
+        prisma.job.findUnique({ where: { id: jobId } }),
+      ])
+      if (!reCandidate || !reJob) return res.status(404).json({ error: 'Failed to resolve candidate or job' })
+      const application = await prisma.application.create({
+        data: { candidateId: reCandidate.id, jobId, stage: 'new', source: 'admin', matchScore: 0, notes: notes || null },
+        include: {
+          candidate: { include: { user: { select: { email: true } } } },
+          job: { include: { client: { select: { companyName: true } } } },
+        },
+      })
+      return res.status(201).json({ application })
+    }
     if (!job) return res.status(404).json({ error: 'Job not found' })
 
     // Prevent duplicate applications — allow re-enroll if previously rejected/withdrawn
