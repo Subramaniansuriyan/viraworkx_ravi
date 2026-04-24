@@ -280,7 +280,7 @@ export default function AdminVetting() {
                     >
                       {enrollingId === c.id ? '...' : 'Enroll'}
                     </button>
-                    {enrollingError?.id === c.id && (
+                    {enrollingError?.id === c.id && enrollingError && (
                       <p className="w-full mt-1 text-xs text-red-600">{enrollingError.msg}</p>
                     )}
                   </div>
