@@ -4,17 +4,17 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#2563eb',
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          DEFAULT: '#9D4EDD',
+          50: '#f5eeff',
+          100: '#ead9ff',
+          200: '#d5b3ff',
+          300: '#bf8dff',
+          400: '#aa66ff',
+          500: '#9D4EDD',
+          600: '#8040c0',
+          700: '#6633a3',
+          800: '#4d2687',
+          900: '#33196a',
         },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
@@ -27,6 +27,8 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         heading: ['Plus Jakarta Sans', 'sans-serif'],
+        display: ['Playfair Display', 'serif'],
+        paragraph: ['Inter', 'sans-serif'],
         signature: ['Dancing Script', 'cursive'],
       },
       borderRadius: {

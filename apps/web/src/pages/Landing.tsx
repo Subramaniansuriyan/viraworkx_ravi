@@ -1,261 +1,886 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle, Users, Award, Clock, Briefcase, Globe, ArrowRight, Zap, Shield, Target } from 'lucide-react'
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
+import {
+  ArrowUpRight, Menu, X, Zap, CheckCircle, XCircle, ChevronDown,
+  Shield, Clock, Target, Code2, Server, Layout, Cloud, Brain, Smartphone,
+} from 'lucide-react'
+
+// ── Hardcoded content ──────────────────────────────────────────────────────────
+
+const PROCESS_STEPS = [
+  {
+    id: 1,
+    phase: 'Phase 01',
+    title: 'Define Your Ideal Engineer',
+    description:
+      'Tell us the role, tech stack, and team culture. Our intake process is designed to capture signal fast — no lengthy forms, no account setup required.',
+  },
+  {
+    id: 2,
+    phase: 'Phase 02',
+    title: 'We Match in 24 Hours',
+    description:
+      'Our vetting engine surfaces the top 3–5 pre-screened engineers based on your requirements. Every candidate has passed technical assessment and communication screening.',
+  },
+  {
+    id: 3,
+    phase: 'Phase 03',
+    title: '1-Week Paid Trial',
+    description:
+      'Work with the engineer for one week before committing. Not the right fit? We replace them within 48 hours at no extra cost. Zero risk, maximum velocity.',
+  },
+  {
+    id: 4,
+    phase: 'Phase 04',
+    title: 'Deploy with Confidence',
+    description:
+      "Once you've found your match, we handle contracts, compliance, IP agreements, and full onboarding. Your new engineer is ready to ship on Day 1.",
+  },
+]
+
+const VALUE_PROPS = [
+  {
+    Icon: Zap,
+    title: '48-Hour Turnaround',
+    description:
+      'First engineer introductions in under 48 hours. No endless sourcing cycles, no waiting weeks for a recruiter to call back.',
+    benefit: 'First match in 48 hours',
+  },
+  {
+    Icon: Shield,
+    title: 'Pre-Vetted Only',
+    description:
+      'Every engineer passes a rigorous technical assessment before joining our network. You only meet candidates who are ready to perform.',
+    benefit: '100% technically assessed',
+  },
+  {
+    Icon: Target,
+    title: 'Zero Risk Trial',
+    description:
+      "Start with a 1-week paid trial. If the engineer isn't the right fit, we replace them within 48 hours — no questions asked.",
+    benefit: 'Guaranteed replacement',
+  },
+  {
+    Icon: Clock,
+    title: 'US Time Zone Overlap',
+    description:
+      'All engineers in our network maintain significant overlap with US working hours. Real-time collaboration, not async-only.',
+    benefit: '4–8 hrs daily overlap',
+  },
+  {
+    Icon: CheckCircle,
+    title: 'Full Compliance Handled',
+    description:
+      'Employment contracts, IP agreements, background checks, and compliance — all handled by our team so you can focus on building.',
+    benefit: 'Zero legal overhead',
+  },
+  {
+    Icon: ArrowUpRight,
+    title: 'Dedicated Support',
+    description:
+      'A dedicated account manager monitors every engagement. Fast escalation paths and ongoing support throughout the entire placement.',
+    benefit: 'Named account manager',
+  },
+]
+
+const COMPARISONS = [
+  { metric: 'Time to First Interview', traditional: '4–6 weeks minimum', viraworkx: 'Under 48 hours' },
+  { metric: 'Candidate Quality', traditional: 'Unverified, self-reported', viraworkx: 'Technical assessment + trial' },
+  { metric: 'Hiring Risk', traditional: 'High upfront cost, no guarantees', viraworkx: '1-week trial, free replacement' },
+  { metric: 'Time Zone', traditional: 'Complex coordination required', viraworkx: 'US overlap guaranteed' },
+  { metric: 'Compliance & Contracts', traditional: 'DIY or expensive legal fees', viraworkx: 'Fully handled by ViraWorkx' },
+  { metric: 'Recruiter Fees', traditional: '15–25% of first-year salary', viraworkx: 'Transparent flat pricing' },
+]
+
+const ROLES = [
+  { Icon: Code2, title: 'Full Stack Engineers', desc: 'React, Node.js, TypeScript, Python' },
+  { Icon: Server, title: 'Backend Engineers', desc: 'Go, Java, Python, Node.js, PostgreSQL' },
+  { Icon: Layout, title: 'Frontend Engineers', desc: 'React, Vue, Next.js, Tailwind CSS' },
+  { Icon: Cloud, title: 'DevOps / Cloud', desc: 'AWS, GCP, Kubernetes, Terraform' },
+  { Icon: Brain, title: 'ML / AI Engineers', desc: 'PyTorch, LangChain, LLMs, RAG' },
+  { Icon: Smartphone, title: 'Mobile Engineers', desc: 'React Native, Flutter, Swift, Kotlin' },
+]
+
+const FAQS = [
+  {
+    id: 1,
+    question: 'How quickly can I hire an engineer?',
+    answer:
+      'We deliver your first engineer introductions within 48 hours of receiving your brief. Most clients complete their trial and make a hiring decision within 2 weeks total.',
+  },
+  {
+    id: 2,
+    question: 'How does the 1-week paid trial work?',
+    answer:
+      "You pay a fixed weekly rate to work with the engineer on real tasks. If at any point during the first week you decide it's not the right fit, we replace the engineer within 48 hours at no additional cost.",
+  },
+  {
+    id: 3,
+    question: "What if the engineer isn't the right fit after the trial?",
+    answer:
+      'We offer ongoing replacement support. If an engineer leaves or the engagement is not working, we find a replacement quickly. Our goal is a long-term successful placement.',
+  },
+  {
+    id: 4,
+    question: 'How do you vet engineers before placing them?',
+    answer:
+      'Every engineer completes a technical assessment via iMocha covering their primary skill set, a live coding evaluation, a communication and English proficiency test, and a background verification.',
+  },
+  {
+    id: 5,
+    question: 'What roles and technologies do you specialize in?',
+    answer:
+      'We place full stack, backend, frontend, DevOps/cloud, ML/AI, and mobile engineers. Our network includes experts in React, Node.js, Python, Go, AWS, GCP, Kubernetes, PyTorch, and more.',
+  },
+  {
+    id: 6,
+    question: 'Do you handle contracts and compliance?',
+    answer:
+      'Yes — ViraWorkx manages employment agreements, IP assignment, NDAs, and all compliance requirements. You get a clean, legally sound engagement from day one.',
+  },
+]
+
+const NAV_LINKS = [
+  { label: 'How It Works', id: 'how-it-works' },
+  { label: 'Why ViraWorkx', id: 'why-viraworkx' },
+  { label: 'Roles', id: 'roles' },
+  { label: 'For Talent', id: 'for-talent' },
+  { label: 'FAQ', id: 'faq' },
+]
+
+// ── Component ──────────────────────────────────────────────────────────────────
 
 export default function Landing() {
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [activeFaq, setActiveFaq] = useState<number | null>(null)
+
+  const { scrollY } = useScroll()
+  const heroY = useTransform(scrollY, [0, 600], [0, -120])
+  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0.4])
+
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const scrollTo = (id: string) => {
+    setIsMobileMenuOpen(false)
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-gray-200/40 bg-white/80 backdrop-blur-md">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2 cursor-pointer">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold font-heading tracking-tight text-primary">ViraWorkX</span>
-          </Link>
+    <div className="min-h-screen bg-[#FAFAF9] text-[#1A0F2E] overflow-x-hidden">
 
-          <nav className="hidden md:flex items-center gap-6">
-            <a href="#features" className="text-sm font-medium text-gray-500 hover:text-primary transition-colors cursor-pointer">Features</a>
-            <a href="#how-it-works" className="text-sm font-medium text-gray-500 hover:text-primary transition-colors cursor-pointer">How it Works</a>
-            <a href="#pricing" className="text-sm font-medium text-gray-500 hover:text-primary transition-colors cursor-pointer">For Candidates</a>
-          </nav>
+      {/* ── HEADER ── */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled ? 'bg-[#FAFAF9] shadow-lg' : 'bg-[#FAFAF9]/95'
+        }`}
+      >
+        <div className="max-w-[120rem] mx-auto px-6 md:px-12 py-4">
+          <div className="flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <div className="h-9 w-9 rounded bg-primary flex items-center justify-center">
+                <Zap className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-display text-xl font-black text-[#1A0F2E]">ViraWorkx</span>
+            </Link>
 
-          <div className="flex items-center gap-3">
-            <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors hidden sm:inline-block">
-              Sign In
-            </Link>
-            <Link to="/register" className="bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors shadow-lg shadow-primary/25">
-              Get Started
-            </Link>
+            <nav className="hidden lg:flex items-center gap-8">
+              {NAV_LINKS.map(({ label, id }) => (
+                <button
+                  key={id}
+                  onClick={() => scrollTo(id)}
+                  className="font-paragraph text-sm font-medium text-[#1A0F2E] hover:text-primary transition-colors"
+                >
+                  {label}
+                </button>
+              ))}
+              <Link
+                to="/login"
+                className="font-paragraph text-sm font-medium text-[#1A0F2E] hover:text-primary transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="font-display text-sm font-bold uppercase tracking-wide py-3 px-6 bg-primary text-white hover:bg-primary/90 transition-colors"
+              >
+                Hire Now
+              </Link>
+            </nav>
+
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden text-[#1A0F2E] hover:text-primary transition-colors"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
           </div>
+
+          <AnimatePresence>
+            {isMobileMenuOpen && (
+              <motion.nav
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="lg:hidden mt-4 pb-4 space-y-3 overflow-hidden border-t border-[#1A0F2E]/10 pt-4"
+              >
+                {NAV_LINKS.map(({ label, id }) => (
+                  <button
+                    key={id}
+                    onClick={() => scrollTo(id)}
+                    className="block w-full text-left font-paragraph text-sm font-medium text-[#1A0F2E] hover:text-primary py-2"
+                  >
+                    {label}
+                  </button>
+                ))}
+                <Link
+                  to="/login"
+                  className="block font-paragraph text-sm font-medium text-[#1A0F2E] hover:text-primary py-2"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="block text-center font-display text-sm font-bold uppercase tracking-wide py-3 px-6 bg-primary text-white hover:bg-primary/90 transition-colors mt-2"
+                >
+                  Hire Now
+                </Link>
+              </motion.nav>
+            )}
+          </AnimatePresence>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative pt-12 lg:pt-20 pb-16 lg:pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-grid-pattern opacity-50 pointer-events-none" />
+      {/* ── HERO ── */}
+      <section className="relative w-full min-h-[90vh] flex items-center pt-32 pb-20 overflow-hidden">
+        {/* Backgrounds */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#FAFAF9] via-[#FAFAF9] to-primary/8" />
+          <div className="absolute top-0 right-0 w-[32rem] h-[32rem] bg-primary/15 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-[32rem] h-[32rem] bg-primary/10 rounded-full blur-3xl" />
+        </div>
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.025] z-0"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, #9D4EDD 1px, transparent 1px), linear-gradient(to bottom, #9D4EDD 1px, transparent 1px)',
+            backgroundSize: '4rem 4rem',
+          }}
+        />
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid sm:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
-
-            {/* Image column — order-1 on mobile (top), order-2 on desktop (right) */}
-            <div className="relative order-1 sm:order-2 animate-slide-right">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200/50 glass-card">
-                <img
-                  src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80"
-                  alt="Team collaboration"
-                  className="w-full h-48 sm:h-full lg:h-auto object-cover hover:scale-105 transition-transform duration-700"
-                />
-              </div>
-
-              {/* Floating Card - Bottom Left — hidden on small screens to avoid overflow */}
-              <div className="hidden sm:flex absolute -bottom-6 -left-6 bg-white p-3 lg:p-4 rounded-xl shadow-xl border border-gray-100 animate-fade-zoom delay-500 animate-float items-center gap-3">
-                <div className="h-9 w-9 lg:h-10 lg:w-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 shrink-0">
-                  <Award className="w-4 h-4 lg:w-5 lg:h-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Screening Score</p>
-                  <p className="text-base lg:text-lg font-bold text-gray-900">94%</p>
-                </div>
-              </div>
-
-              {/* Floating Card - Top Right — hidden on small screens to avoid overflow */}
-              <div className="hidden sm:flex absolute top-8 lg:top-12 -right-4 lg:-right-6 bg-white p-3 lg:p-4 rounded-xl shadow-xl border border-gray-100 animate-fade-zoom delay-700 animate-float items-center gap-3" style={{ animationDelay: '1.5s' }}>
-                <div className="h-9 w-9 lg:h-10 lg:w-10 bg-blue-100 rounded-full flex items-center justify-center text-primary shrink-0">
-                  <Users className="w-4 h-4 lg:w-5 lg:h-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Talent Pool</p>
-                  <p className="text-base lg:text-lg font-bold text-gray-900">12K+</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Text column — order-2 on mobile (below image), order-1 on desktop (left) */}
-            <div className="space-y-5 sm:space-y-6 lg:space-y-8 order-2 sm:order-1 animate-slide-left">
-              <span className="inline-flex px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20">
-                AI-Powered Recruiting Platform
+        <motion.div
+          style={{ y: heroY, opacity: heroOpacity }}
+          className="relative z-10 w-full max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
+        >
+          {/* Left: headline */}
+          <div className="lg:col-span-8 flex flex-col items-start">
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#2D1B4E] text-[#F5F3FF] rounded-full mb-8 border border-primary/30"
+            >
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary" />
               </span>
+              <span className="font-paragraph text-xs uppercase tracking-widest font-bold">
+                Elite Hiring Protocol Active
+              </span>
+            </motion.div>
 
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-heading leading-[1.1] tracking-tight text-gray-900">
-                Connecting Top{' '}
-                <span className="text-primary">Indian Engineers</span>
-                {' '}with US Startups
-              </h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="font-display text-4xl md:text-6xl lg:text-7xl font-black leading-[0.95] tracking-tight mb-8 text-[#1A0F2E]"
+            >
+              HIRE PRE-VETTED
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/70">
+                INDIAN ENGINEERS
+              </span>
+              <br />
+              IN{' '}
+              <span className="text-primary relative inline-block">
+                48 HOURS
+                <svg
+                  className="absolute -bottom-2 left-0 w-full h-4 text-primary"
+                  viewBox="0 0 100 20"
+                  preserveAspectRatio="none"
+                >
+                  <path d="M0,10 Q50,20 100,10" fill="none" stroke="currentColor" strokeWidth="4" />
+                </svg>
+              </span>
+            </motion.h1>
 
-              <p className="text-base lg:text-xl text-gray-500 leading-relaxed max-w-lg">
-                Pre-vetted candidates, technical assessments, and seamless onboarding.
-                <span className="block mt-2 font-medium text-gray-700">
-                  Hire exceptional talent in days, not months.
+            <motion.p
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="font-paragraph text-lg md:text-xl text-[#1A0F2E]/70 max-w-2xl mb-12 leading-relaxed border-l-4 border-primary pl-6"
+            >
+              Pre-vetted Indian software engineers for US startups. Start with a 1-week paid trial. Not
+              satisfied? We replace within 48 hours. Zero risk. Maximum velocity.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col sm:flex-row gap-4"
+            >
+              <Link
+                to="/register"
+                className="group relative inline-flex items-center justify-center px-8 py-5 font-display text-base font-bold uppercase tracking-wider bg-primary text-white overflow-hidden transition-all hover:scale-[1.02] shadow-lg"
+              >
+                <span className="absolute inset-0 w-full h-full bg-[#1A0F2E] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                <span className="relative flex items-center gap-2 group-hover:text-white transition-colors duration-300">
+                  Hire Talent Now <ArrowUpRight className="w-5 h-5" />
                 </span>
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 pt-2 lg:pt-4">
-                <Link to="/register" className="inline-flex items-center justify-center gap-2 h-11 lg:h-12 px-6 lg:px-8 text-sm lg:text-base font-medium bg-primary text-white rounded-lg shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:bg-primary-700 transition-all">
-                  Start Hiring <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link to="/register?type=candidate" className="inline-flex items-center justify-center h-11 lg:h-12 px-6 lg:px-8 text-sm lg:text-base font-medium bg-white/50 backdrop-blur-sm border border-gray-200 text-gray-700 rounded-lg hover:bg-white hover:border-gray-300 transition-all">
-                  Join as Candidate
-                </Link>
-              </div>
-
-              <div className="flex items-center gap-6 text-sm text-gray-500">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 shrink-0" />
-                  <span>Skill Verified</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 shrink-0" />
-                  <span>Assessment Certified</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-
-      {/* Features Section */}
-      <section id="features" className="py-14 md:py-24 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold font-heading mb-4 text-gray-900">Why Choose ViraWorkX?</h2>
-            <p className="text-gray-500 text-lg">
-              Our AI-powered platform streamlines the entire hiring process from sourcing to onboarding.
-            </p>
+              </Link>
+              <Link
+                to="/register?type=candidate"
+                className="inline-flex items-center justify-center px-8 py-5 font-paragraph text-sm font-bold uppercase tracking-widest border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+              >
+                Apply as Talent
+              </Link>
+            </motion.div>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-5 sm:gap-8">
-            {/* Feature 1 */}
-            <div className="bg-white border border-gray-200/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-              <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 mb-4">
-                <Target className="w-6 h-6" />
+          {/* Right: status card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="lg:col-span-4 relative hidden lg:block"
+          >
+            <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full" />
+            <div className="relative bg-[#2D1B4E] p-8 border border-primary/30 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
+              <div className="flex items-center justify-between mb-8 pb-8 border-b border-primary/20">
+                <span className="font-paragraph text-xs text-[#F5F3FF]/50 uppercase tracking-widest">
+                  System Status
+                </span>
+                <span className="flex items-center gap-2 font-paragraph text-xs text-primary uppercase tracking-widest font-bold">
+                  <Zap className="w-4 h-4" /> Operational
+                </span>
               </div>
-              <h3 className="text-xl font-bold font-heading mb-2 text-gray-900">Skill Assessments</h3>
-              <p className="text-gray-500">
-                Technical assessments verify candidate skills with industry-standard tests and proctoring.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="bg-white border border-gray-200/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-              <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center text-primary mb-4">
-                <Shield className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold font-heading mb-2 text-gray-900">AI Screening</h3>
-              <p className="text-gray-500">
-                Our AI agents automatically screen, rank, and shortlist candidates based on your job requirements.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="bg-white border border-gray-200/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-              <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center text-green-600 mb-4">
-                <Clock className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold font-heading mb-2 text-gray-900">Fast Onboarding</h3>
-              <p className="text-gray-500">
-                Streamlined onboarding process with automated scheduling, document collection, and compliance checks.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How it Works Section */}
-      <section id="how-it-works" className="py-14 md:py-24 bg-gray-50/50">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold font-heading mb-4 text-gray-900">How It Works</h2>
-            <p className="text-gray-500 text-lg">
-              Get started in minutes and find your perfect match
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-            {[
-              { step: '01', title: 'Post a Job', desc: 'Create detailed job listings with skill requirements', icon: Briefcase },
-              { step: '02', title: 'AI Matching', desc: 'Our AI finds and ranks the best candidates', icon: Target },
-              { step: '03', title: 'Assess Skills', desc: 'Candidates complete verified assessments', icon: Award },
-              { step: '04', title: 'Hire & Onboard', desc: 'Make offers and onboard seamlessly', icon: Users },
-            ].map((item, i) => (
-              <div key={i} className="text-center">
-                <div className="relative mb-6">
-                  <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                    <item.icon className="w-7 h-7 text-primary" />
+              <div className="space-y-8">
+                {[
+                  { label: 'Hiring Speed', value: '48 Hours' },
+                  { label: 'Trial Period', value: '1 Week' },
+                  { label: 'Replacement', value: 'Guaranteed' },
+                ].map((stat, i) => (
+                  <div key={i} className="flex flex-col">
+                    <span className="font-paragraph text-sm text-[#F5F3FF]/50 mb-1">{stat.label}</span>
+                    <span className="font-display text-3xl font-black text-primary">{stat.value}</span>
                   </div>
-                  <span className="absolute -top-2 -right-2 bg-primary text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
-                    {item.step}
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold font-heading mb-2 text-gray-900">{item.title}</h3>
-                <p className="text-gray-500 text-sm">{item.desc}</p>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          </motion.div>
+        </motion.div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-14 md:py-24 bg-primary">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
-            {[
-              { value: '25+', label: 'Verified Engineers' },
-              { value: '3+', label: 'Companies Hiring' },
-              { value: '100%', label: 'Placement Rate' },
-              { value: '2 Days', label: 'Avg. Time to Hire' },
-            ].map((stat, i) => (
-              <div key={i}>
-                <p className="text-2xl sm:text-4xl font-bold font-heading text-white mb-1 sm:mb-2">{stat.value}</p>
-                <p className="text-blue-100">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── TICKER ── */}
+      <div className="w-full bg-primary py-4 overflow-hidden flex whitespace-nowrap border-y border-primary/30">
+        <motion.div
+          animate={{ x: ['0%', '-50%'] }}
+          transition={{ repeat: Infinity, ease: 'linear', duration: 28 }}
+          className="flex items-center font-display text-xl font-black uppercase tracking-widest text-white"
+        >
+          {Array.from({ length: 10 }).map((_, i) => (
+            <span key={i} className="flex items-center">
+              <span className="mx-8">48-Hour Hiring</span>
+              <span className="mx-4 text-white/40">•</span>
+              <span className="mx-8">Pre-Vetted Engineers</span>
+              <span className="mx-4 text-white/40">•</span>
+              <span className="mx-8">Zero Risk Trial</span>
+              <span className="mx-4 text-white/40">•</span>
+              <span className="mx-8">US Timezone Overlap</span>
+              <span className="mx-4 text-white/40">•</span>
+            </span>
+          ))}
+        </motion.div>
+      </div>
 
-      {/* CTA Section */}
-      <section className="py-14 md:py-24 bg-white">
-        <div className="container mx-auto px-4 text-center max-w-3xl">
-          <h2 className="text-3xl md:text-4xl font-bold font-heading mb-6 text-gray-900">
-            Ready to Build Your Dream Team?
-          </h2>
-          <p className="text-xl text-gray-500 mb-8">
-            Join hundreds of startups already hiring top Indian talent through ViraWorkX.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/register" className="inline-flex items-center justify-center gap-2 h-14 px-10 text-lg font-medium bg-primary text-white rounded-lg shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:bg-primary-700 transition-all">
-              Start Hiring Today <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link to="/register?type=candidate" className="inline-flex items-center justify-center h-14 px-10 text-lg font-medium border-2 border-gray-200 text-gray-700 rounded-lg hover:border-primary hover:text-primary transition-all">
-              I'm a Candidate
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* ── HOW IT WORKS ── */}
+      <section id="how-it-works" className="w-full bg-[#2D1B4E] py-32">
+        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
 
-      {/* Footer */}
-      <footer className="py-12 bg-gray-900 text-gray-400">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
+            {/* Sticky left */}
+            <div className="lg:col-span-5">
+              <div className="lg:sticky lg:top-32">
+                <motion.div
+                  initial={{ opacity: 0, x: -40 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: '-100px' }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <h2 className="font-display text-5xl md:text-7xl font-black text-[#F5F3FF] mb-6 leading-tight">
+                    THE
+                    <br />
+                    <span className="text-primary">VELOCITY</span>
+                    <br />
+                    PROTOCOL
+                  </h2>
+                  <p className="font-paragraph text-lg text-[#F5F3FF]/70 mb-12 max-w-md">
+                    We've engineered a frictionless pipeline to connect you with elite pre-vetted Indian
+                    talent faster than traditional agencies can schedule a kickoff call.
+                  </p>
+                  <div className="p-6 bg-[#FAFAF9] border-l-4 border-primary">
+                    <p className="font-display text-xl font-bold text-[#1A0F2E] uppercase">
+                      Not satisfied? We replace within 48 hours — no questions asked.
+                    </p>
+                  </div>
+                </motion.div>
               </div>
-              <span className="text-xl font-bold font-heading text-white">ViraWorkX</span>
             </div>
 
-            <div className="flex items-center gap-6 text-sm">
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
-              <a href="#" className="hover:text-white transition-colors">Contact</a>
+            {/* Scrolling right */}
+            <div className="lg:col-span-7 flex flex-col gap-8">
+              {PROCESS_STEPS.map((step, index) => (
+                <motion.div
+                  key={step.id}
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-100px' }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  className="group relative bg-[#FAFAF9] p-8 md:p-12 border border-primary/20 hover:border-primary transition-colors duration-300"
+                >
+                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none">
+                    <span className="font-display text-8xl font-black text-primary">{step.id}</span>
+                  </div>
+                  <div className="relative z-10">
+                    <div className="font-paragraph text-sm text-primary font-bold uppercase tracking-widest mb-4">
+                      {step.phase}
+                    </div>
+                    <h3 className="font-display text-3xl md:text-4xl font-black text-[#1A0F2E] mb-6">
+                      {step.title}
+                    </h3>
+                    <p className="font-paragraph text-lg text-[#1A0F2E]/70 max-w-xl">{step.description}</p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
+          </div>
+        </div>
+      </section>
 
-            <p className="text-sm">
-              © 2026 ViraWorkX. All rights reserved.
+      {/* ── WHY VIRAWORKX ── */}
+      <section id="why-viraworkx" className="w-full py-32 bg-[#FAFAF9]">
+        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-20 flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-primary/20 pb-12"
+          >
+            <h2 className="font-display text-5xl md:text-7xl font-black text-[#1A0F2E] leading-tight">
+              ENGINEERED FOR
+              <br />
+              <span className="text-primary">FOUNDERS</span>
+            </h2>
+            <p className="font-paragraph text-lg text-[#1A0F2E]/70 max-w-md">
+              We eliminated the friction, risk, and delays of traditional hiring to build a system that
+              scales at the speed of your startup.
             </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-primary/10 border border-primary/20">
+            {VALUE_PROPS.map(({ Icon, title, description, benefit }, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="bg-[#FAFAF9] p-10 group hover:bg-[#2D1B4E] transition-colors duration-500 flex flex-col"
+              >
+                <div className="mb-8 p-4 bg-primary/10 inline-block group-hover:bg-primary transition-colors duration-500">
+                  <Icon className="w-8 h-8 text-primary group-hover:text-white" />
+                </div>
+                <h3 className="font-display text-2xl font-bold text-[#1A0F2E] group-hover:text-[#F5F3FF] mb-4 transition-colors duration-500">
+                  {title}
+                </h3>
+                <p className="font-paragraph text-base text-[#1A0F2E]/70 group-hover:text-[#F5F3FF]/70 mb-8 flex-grow transition-colors duration-500">
+                  {description}
+                </p>
+                <div className="mt-auto pt-6 border-t border-primary/20 group-hover:border-[#F5F3FF]/20 transition-colors duration-500">
+                  <p className="font-paragraph text-sm font-bold text-primary uppercase tracking-widest">
+                    {benefit}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── ROLES ── */}
+      <section id="roles" className="w-full py-32 bg-[#2D1B4E]">
+        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-20 border-b border-primary/20 pb-12"
+          >
+            <h2 className="font-display text-5xl md:text-7xl font-black text-[#F5F3FF] leading-tight">
+              TALENT
+              <br />
+              <span className="text-primary">VECTORS</span>
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-primary/20 border border-primary/20">
+            {ROLES.map(({ Icon, title, desc }, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.08 }}
+                className="group bg-[#2D1B4E] p-8 hover:bg-[#FAFAF9] transition-colors duration-500 flex items-start gap-6 cursor-default"
+              >
+                <div className="p-3 bg-primary/20 group-hover:bg-primary transition-colors duration-500 shrink-0">
+                  <Icon className="w-6 h-6 text-primary group-hover:text-white" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-[#F5F3FF] group-hover:text-[#1A0F2E] mb-2 transition-colors duration-500">
+                    {title}
+                  </h3>
+                  <p className="font-paragraph text-sm text-[#F5F3FF]/60 group-hover:text-[#1A0F2E]/60 transition-colors duration-500">
+                    {desc}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── COMPARISON ── */}
+      <section className="w-full py-32 bg-[#FAFAF9]">
+        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
+          <div className="text-center mb-20">
+            <h2 className="font-display text-5xl md:text-7xl font-black text-[#1A0F2E] mb-6">
+              THE OLD WAY VS{' '}
+              <span className="text-primary">VIRAWORKX</span>
+            </h2>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="hidden md:grid grid-cols-12 gap-4 mb-4 px-8">
+              <div className="col-span-4 font-paragraph text-sm font-bold uppercase tracking-widest text-[#1A0F2E]/40">
+                Metric
+              </div>
+              <div className="col-span-4 font-paragraph text-sm font-bold uppercase tracking-widest text-red-500/80 text-center">
+                Traditional Hiring
+              </div>
+              <div className="col-span-4 font-paragraph text-sm font-bold uppercase tracking-widest text-primary text-center">
+                ViraWorkx Protocol
+              </div>
+            </div>
+
+            {COMPARISONS.map((row, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.08 }}
+                className="grid grid-cols-1 md:grid-cols-12 gap-4"
+              >
+                <div className="md:col-span-4 bg-[#2D1B4E] p-6 md:p-8 flex items-center border border-primary/20">
+                  <h4 className="font-display text-xl font-bold text-[#F5F3FF]">{row.metric}</h4>
+                </div>
+                <div className="md:col-span-4 bg-red-50 p-6 md:p-8 flex flex-col justify-center items-center text-center border border-red-200 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-red-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                  <XCircle className="w-6 h-6 text-red-500 mb-3 relative z-10" />
+                  <p className="font-paragraph text-base text-[#1A0F2E]/80 relative z-10">{row.traditional}</p>
+                </div>
+                <div className="md:col-span-4 bg-primary/5 p-6 md:p-8 flex flex-col justify-center items-center text-center border border-primary/30 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-primary/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                  <CheckCircle className="w-6 h-6 text-primary mb-3 relative z-10" />
+                  <p className="font-paragraph text-lg font-bold text-[#1A0F2E] relative z-10">{row.viraworkx}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOR TALENT ── */}
+      <section id="for-talent" className="w-full bg-[#2D1B4E] border-y border-primary/20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[80vh]">
+          <div className="p-12 md:p-24 flex flex-col justify-center">
+            <motion.div
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="font-paragraph text-sm text-primary font-bold uppercase tracking-widest mb-6">
+                For Professionals
+              </div>
+              <h2 className="font-display text-5xl md:text-7xl font-black text-[#F5F3FF] mb-8 leading-tight">
+                ACCESS GLOBAL
+                <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/50">
+                  OPPORTUNITIES
+                </span>
+              </h2>
+              <div className="space-y-6 mb-12">
+                {[
+                  'Get matched with top US startups',
+                  'Work remotely on your terms',
+                  'Accelerate your global career trajectory',
+                  'Streamlined placement process',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full shrink-0" />
+                    <p className="font-paragraph text-lg text-[#F5F3FF]/80">{item}</p>
+                  </div>
+                ))}
+              </div>
+              <Link
+                to="/register?type=candidate"
+                className="inline-flex items-center justify-center px-8 py-4 font-display text-base font-bold uppercase tracking-wider bg-primary text-white hover:bg-primary/90 transition-colors"
+              >
+                Apply to Network
+              </Link>
+            </motion.div>
+          </div>
+
+          <div className="bg-[#FAFAF9] p-12 md:p-24 flex flex-col justify-center border-l border-primary/20">
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-12"
+            >
+              {[
+                { value: '25+', label: 'Talent Placed' },
+                { value: '5+', label: 'Startups Served' },
+                { value: '48hrs', label: 'Avg. Placement' },
+                { value: '100%', label: 'Remote Work' },
+              ].map((stat, i) => (
+                <div key={i}>
+                  <div className="font-display text-6xl md:text-7xl font-black text-primary mb-2">
+                    {stat.value}
+                  </div>
+                  <div className="h-px w-12 bg-primary mb-4" />
+                  <p className="font-paragraph text-sm uppercase tracking-widest text-[#1A0F2E]/60">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section id="faq" className="w-full py-32 bg-[#2D1B4E] border-t border-primary/20">
+        <div className="max-w-[80rem] mx-auto px-6 md:px-12">
+          <div className="text-center mb-20">
+            <h2 className="font-display text-5xl md:text-7xl font-black text-[#F5F3FF] mb-6">
+              SYSTEM <span className="text-primary">QUERIES</span>
+            </h2>
+          </div>
+
+          <div className="space-y-2">
+            {FAQS.map((faq, index) => (
+              <motion.div
+                key={faq.id}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+                className="border border-primary/20 bg-[#FAFAF9] overflow-hidden"
+              >
+                <button
+                  onClick={() => setActiveFaq(activeFaq === faq.id ? null : faq.id)}
+                  className="w-full flex items-center justify-between p-6 md:p-8 text-left focus:outline-none group"
+                >
+                  <span className="font-display text-xl md:text-2xl font-bold text-[#1A0F2E] group-hover:text-primary transition-colors pr-8">
+                    {faq.question}
+                  </span>
+                  <motion.div
+                    animate={{ rotate: activeFaq === faq.id ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-shrink-0 text-primary"
+                  >
+                    <ChevronDown className="w-6 h-6" />
+                  </motion.div>
+                </button>
+                <AnimatePresence>
+                  {activeFaq === faq.id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    >
+                      <div className="p-6 md:p-8 pt-0 border-t border-primary/10">
+                        <p className="font-paragraph text-lg text-[#1A0F2E]/70 leading-relaxed">
+                          {faq.answer}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="w-full py-32 bg-primary">
+        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="font-display text-5xl md:text-7xl font-black text-white mb-8 leading-tight">
+              READY TO HIRE?
+              <br />
+              <span className="text-white/70">START TODAY.</span>
+            </h2>
+            <p className="font-paragraph text-xl text-white/80 max-w-2xl mx-auto mb-12">
+              Join US startups already hiring pre-vetted Indian engineers through ViraWorkx. First
+              introductions in 48 hours.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-6 justify-center">
+              <Link
+                to="/register"
+                className="group relative inline-flex items-center justify-center px-10 py-5 font-display text-lg font-bold uppercase tracking-wider bg-white text-primary overflow-hidden transition-all hover:scale-[1.02] shadow-lg"
+              >
+                <span className="absolute inset-0 w-full h-full bg-[#1A0F2E] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                <span className="relative flex items-center gap-2 group-hover:text-white transition-colors duration-300">
+                  Hire Talent Now <ArrowUpRight className="w-5 h-5" />
+                </span>
+              </Link>
+              <Link
+                to="/register?type=candidate"
+                className="inline-flex items-center justify-center px-10 py-5 font-paragraph text-sm font-bold uppercase tracking-widest border-2 border-white text-white hover:bg-white hover:text-primary transition-colors"
+              >
+                Apply as Talent
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer className="w-full py-16 bg-[#1A0F2E]">
+        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-16 pb-16 border-b border-white/10">
+            <div className="max-w-xs">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="h-9 w-9 rounded bg-primary flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-display text-xl font-black text-white">ViraWorkx</span>
+              </div>
+              <p className="font-paragraph text-sm text-white/50 leading-relaxed">
+                AI-powered recruiting platform connecting US startups with pre-vetted Indian engineering
+                talent.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-12">
+              <div>
+                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
+                  Platform
+                </h4>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => scrollTo('how-it-works')}
+                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
+                  >
+                    How It Works
+                  </button>
+                  <button
+                    onClick={() => scrollTo('why-viraworkx')}
+                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
+                  >
+                    Why ViraWorkx
+                  </button>
+                  <button
+                    onClick={() => scrollTo('roles')}
+                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
+                  >
+                    Talent Vectors
+                  </button>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
+                  For Talent
+                </h4>
+                <div className="space-y-3">
+                  <Link
+                    to="/register?type=candidate"
+                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
+                  >
+                    Apply to Network
+                  </Link>
+                  <button
+                    onClick={() => scrollTo('faq')}
+                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
+                  >
+                    FAQ
+                  </button>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
+                  Company
+                </h4>
+                <div className="space-y-3">
+                  <Link
+                    to="/login"
+                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
+                  >
+                    Get Started
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="font-paragraph text-sm text-white/40">© 2026 ViraWorkx. All rights reserved.</p>
+            <div className="flex items-center gap-6">
+              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">
+                Privacy
+              </a>
+              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">
+                Terms
+              </a>
+              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">
+                Contact
+              </a>
+            </div>
           </div>
         </div>
       </footer>
