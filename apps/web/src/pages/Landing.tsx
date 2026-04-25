@@ -3,37 +3,36 @@ import { Link } from 'react-router-dom'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import {
   ArrowUpRight, Menu, X, Zap, CheckCircle, XCircle, ChevronDown,
-  Shield, Clock, Target, Code2, Server, Layout, Cloud, Brain, Smartphone,
+  Code2, Server, Layout, Cloud, Brain, Smartphone,
 } from 'lucide-react'
-// Zap kept for hero status card
 
 // ── Hardcoded content ──────────────────────────────────────────────────────────
 
 const PROCESS_STEPS = [
   {
     id: 1,
-    phase: 'Phase 01',
+    step: 'Step 01',
     title: 'Define Your Ideal Engineer',
     description:
       'Tell us the role, tech stack, and team culture. Our intake process is designed to capture signal fast — no lengthy forms, no account setup required.',
   },
   {
     id: 2,
-    phase: 'Phase 02',
+    step: 'Step 02',
     title: 'We Match in 24 Hours',
     description:
       'Our vetting engine surfaces the top 3–5 pre-screened engineers based on your requirements. Every candidate has passed technical assessment and communication screening.',
   },
   {
     id: 3,
-    phase: 'Phase 03',
+    step: 'Step 03',
     title: '1-Week Paid Trial',
     description:
-      'Work with the engineer for one week before committing. Not the right fit? We replace them within 48 hours at no extra cost. Zero risk, maximum velocity.',
+      "Work with the engineer for one week before committing. Not the right fit? We replace them within 48 hours at no extra cost. Zero risk, maximum velocity.",
   },
   {
     id: 4,
-    phase: 'Phase 04',
+    step: 'Step 04',
     title: 'Deploy with Confidence',
     description:
       "Once you've found your match, we handle contracts, compliance, IP agreements, and full onboarding. Your new engineer is ready to ship on Day 1.",
@@ -42,42 +41,36 @@ const PROCESS_STEPS = [
 
 const VALUE_PROPS = [
   {
-    Icon: Zap,
     title: '48-Hour Turnaround',
     description:
       'First engineer introductions in under 48 hours. No endless sourcing cycles, no waiting weeks for a recruiter to call back.',
     benefit: 'First match in 48 hours',
   },
   {
-    Icon: Shield,
     title: 'Pre-Vetted Only',
     description:
       'Every engineer passes a rigorous technical assessment before joining our network. You only meet candidates who are ready to perform.',
-    benefit: '100% technically assessed',
+    benefit: '~3% of applicants pass vetting',
   },
   {
-    Icon: Target,
     title: 'Zero Risk Trial',
     description:
       "Start with a 1-week paid trial. If the engineer isn't the right fit, we replace them within 48 hours — no questions asked.",
     benefit: 'Guaranteed replacement',
   },
   {
-    Icon: Clock,
     title: 'US Time Zone Overlap',
     description:
-      'All engineers in our network maintain significant overlap with US working hours. Real-time collaboration, not async-only.',
+      'All engineers in our network maintain 4–8 hours of overlap with US working hours. Real-time collaboration, not async-only.',
     benefit: '4–8 hrs daily overlap',
   },
   {
-    Icon: CheckCircle,
     title: 'Full Compliance Handled',
     description:
       'Employment contracts, IP agreements, background checks, and compliance — all handled by our team so you can focus on building.',
     benefit: 'Zero legal overhead',
   },
   {
-    Icon: ArrowUpRight,
     title: 'Dedicated Support',
     description:
       'A dedicated account manager monitors every engagement. Fast escalation paths and ongoing support throughout the entire placement.',
@@ -95,12 +88,12 @@ const COMPARISONS = [
 ]
 
 const ROLES = [
-  { Icon: Code2, title: 'Full Stack Engineers', desc: 'React, Node.js, TypeScript, Python' },
-  { Icon: Server, title: 'Backend Engineers', desc: 'Go, Java, Python, Node.js, PostgreSQL' },
-  { Icon: Layout, title: 'Frontend Engineers', desc: 'React, Vue, Next.js, Tailwind CSS' },
-  { Icon: Cloud, title: 'DevOps / Cloud', desc: 'AWS, GCP, Kubernetes, Terraform' },
-  { Icon: Brain, title: 'ML / AI Engineers', desc: 'PyTorch, LangChain, LLMs, RAG' },
-  { Icon: Smartphone, title: 'Mobile Engineers', desc: 'React Native, Flutter, Swift, Kotlin' },
+  { Icon: Code2, title: 'Full Stack Engineers', desc: 'React, Node.js, TypeScript, Python', seniority: 'Senior to Staff · 5–10 yrs' },
+  { Icon: Server, title: 'Backend Engineers', desc: 'Go, Java, Python, Node.js, PostgreSQL', seniority: 'Mid to Staff · 4–10 yrs' },
+  { Icon: Layout, title: 'Frontend Engineers', desc: 'React, Vue, Next.js, Tailwind CSS', seniority: 'Senior to Staff · 5–9 yrs' },
+  { Icon: Cloud, title: 'DevOps / Cloud', desc: 'AWS, GCP, Kubernetes, Terraform', seniority: 'Senior to Principal · 5–12 yrs' },
+  { Icon: Brain, title: 'ML / AI Engineers', desc: 'PyTorch, LangChain, LLMs, RAG', seniority: 'Senior to Staff · 4–8 yrs' },
+  { Icon: Smartphone, title: 'Mobile Engineers', desc: 'React Native, Flutter, Swift, Kotlin', seniority: 'Senior to Staff · 5–9 yrs' },
 ]
 
 const FAQS = [
@@ -126,7 +119,7 @@ const FAQS = [
     id: 4,
     question: 'How do you vet engineers before placing them?',
     answer:
-      'Every engineer completes a technical assessment via iMocha covering their primary skill set, a live coding evaluation, a communication and English proficiency test, and a background verification.',
+      'Every engineer completes a technical assessment covering their primary skill set, a live coding evaluation, a communication and English proficiency test, and a background verification. Roughly 3% of applicants make it through.',
   },
   {
     id: 5,
@@ -140,6 +133,13 @@ const FAQS = [
     answer:
       'Yes — ViraWorkx manages employment agreements, IP assignment, NDAs, and all compliance requirements. You get a clean, legally sound engagement from day one.',
   },
+]
+
+const OPERATIONAL_STATS = [
+  { value: '~3%', label: 'of applicants pass vetting' },
+  { value: '<48hr', label: 'median time to first match' },
+  { value: '4–8hr', label: 'daily US timezone overlap' },
+  { value: '7-day', label: 'trial built into every engagement' },
 ]
 
 const NAV_LINKS = [
@@ -203,11 +203,12 @@ export default function Landing() {
               >
                 Sign In
               </Link>
+              {/* TODO: replace /register with your Calendly link */}
               <Link
                 to="/register"
-                className="font-display text-sm font-bold uppercase tracking-wide py-3 px-6 bg-primary text-white hover:bg-primary/90 transition-colors"
+                className="font-paragraph text-sm font-semibold py-3 px-6 bg-primary text-white hover:bg-primary/90 transition-colors"
               >
-                Hire Now
+                Book a 20-min Call
               </Link>
             </nav>
 
@@ -245,9 +246,9 @@ export default function Landing() {
                 </Link>
                 <Link
                   to="/register"
-                  className="block text-center font-display text-sm font-bold uppercase tracking-wide py-3 px-6 bg-primary text-white hover:bg-primary/90 transition-colors mt-2"
+                  className="block text-center font-paragraph text-sm font-semibold py-3 px-6 bg-primary text-white hover:bg-primary/90 transition-colors mt-2"
                 >
-                  Hire Now
+                  Book a 20-min Call
                 </Link>
               </motion.nav>
             )}
@@ -257,7 +258,6 @@ export default function Landing() {
 
       {/* ── HERO ── */}
       <section className="relative w-full min-h-[90vh] flex items-center pt-32 pb-20 overflow-hidden">
-        {/* Backgrounds */}
         <div className="absolute inset-0 pointer-events-none z-0">
           <div className="absolute inset-0 bg-gradient-to-br from-[#FAFAF9] via-[#FAFAF9] to-primary/8" />
           <div className="absolute top-0 right-0 w-[32rem] h-[32rem] bg-primary/15 rounded-full blur-3xl" />
@@ -284,12 +284,8 @@ export default function Landing() {
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-[#2D1B4E] text-[#F5F3FF] rounded-full mb-8 border border-primary/30"
             >
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary" />
-              </span>
-              <span className="font-paragraph text-xs uppercase tracking-widest font-bold">
-                Elite Hiring Protocol Active
+              <span className="font-paragraph text-xs uppercase tracking-widest font-semibold">
+                Now placing senior engineers · Q2 2026
               </span>
             </motion.div>
 
@@ -325,7 +321,7 @@ export default function Landing() {
               className="font-paragraph text-lg md:text-xl text-[#1A0F2E]/70 max-w-2xl mb-12 leading-relaxed border-l-4 border-primary pl-6"
             >
               Pre-vetted Indian software engineers for US startups. Start with a 1-week paid trial. Not
-              satisfied? We replace within 48 hours. Zero risk. Maximum velocity.
+              satisfied? We replace within 48 hours. Zero risk.
             </motion.p>
 
             <motion.div
@@ -334,25 +330,26 @@ export default function Landing() {
               transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-col sm:flex-row gap-4"
             >
+              {/* TODO: replace /register with your Calendly link */}
               <Link
                 to="/register"
-                className="group relative inline-flex items-center justify-center px-8 py-5 font-display text-base font-bold uppercase tracking-wider bg-primary text-white overflow-hidden transition-all hover:scale-[1.02] shadow-lg"
+                className="group relative inline-flex items-center justify-center px-8 py-5 font-paragraph text-base font-semibold bg-primary text-white overflow-hidden transition-all hover:scale-[1.02] shadow-lg"
               >
                 <span className="absolute inset-0 w-full h-full bg-[#1A0F2E] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
                 <span className="relative flex items-center gap-2 group-hover:text-white transition-colors duration-300">
-                  Hire Talent Now <ArrowUpRight className="w-5 h-5" />
+                  Book a 20-min Call <ArrowUpRight className="w-5 h-5" />
                 </span>
               </Link>
               <Link
                 to="/register?type=candidate"
-                className="inline-flex items-center justify-center px-8 py-5 font-paragraph text-sm font-bold uppercase tracking-widest border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+                className="inline-flex items-center justify-center px-8 py-5 font-paragraph text-sm font-semibold border-2 border-[#1A0F2E]/30 text-[#1A0F2E] hover:border-primary hover:text-primary transition-colors"
               >
-                Apply as Talent
+                Apply to Network
               </Link>
             </motion.div>
           </div>
 
-          {/* Right: status card */}
+          {/* Right: "What you get" card — flat, no tilt */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -360,60 +357,114 @@ export default function Landing() {
             className="lg:col-span-4 relative hidden lg:block"
           >
             <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full" />
-            <div className="relative bg-[#2D1B4E] p-8 border border-primary/30 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
-              <div className="flex items-center justify-between mb-8 pb-8 border-b border-primary/20">
+            <div className="relative bg-[#2D1B4E] p-8 border border-primary/30 shadow-2xl">
+              <div className="mb-8 pb-8 border-b border-primary/20">
                 <span className="font-paragraph text-xs text-[#F5F3FF]/50 uppercase tracking-widest">
-                  System Status
-                </span>
-                <span className="flex items-center gap-2 font-paragraph text-xs text-primary uppercase tracking-widest font-bold">
-                  <Zap className="w-4 h-4" /> Operational
+                  What you get
                 </span>
               </div>
               <div className="space-y-8">
-                {[
-                  { label: 'Hiring Speed', value: '48 Hours' },
-                  { label: 'Trial Period', value: '1 Week' },
-                  { label: 'Replacement', value: 'Guaranteed' },
-                ].map((stat, i) => (
-                  <div key={i} className="flex flex-col">
-                    <span className="font-paragraph text-sm text-[#F5F3FF]/50 mb-1">{stat.label}</span>
-                    <span className="font-display text-3xl font-black text-primary">{stat.value}</span>
+                {/* Primary stat — largest */}
+                <div className="flex flex-col">
+                  <span className="font-display text-5xl font-black text-primary leading-none mb-1">48 hrs</span>
+                  <span className="font-paragraph text-sm text-[#F5F3FF]/60">to your first engineer match</span>
+                </div>
+                {/* Secondary stats — visibly smaller */}
+                <div className="flex flex-col gap-4 pt-4 border-t border-primary/20">
+                  <div className="flex items-center justify-between">
+                    <span className="font-paragraph text-sm text-[#F5F3FF]/60">Trial period</span>
+                    <span className="font-heading text-base font-bold text-[#F5F3FF]">1 week</span>
                   </div>
-                ))}
+                  <div className="flex items-center justify-between">
+                    <span className="font-paragraph text-sm text-[#F5F3FF]/60">Replacement</span>
+                    <span className="font-heading text-base font-bold text-[#F5F3FF]">Guaranteed</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-paragraph text-sm text-[#F5F3FF]/60">Vetting pass rate</span>
+                    <span className="font-heading text-base font-bold text-[#F5F3FF]">~3%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
         </motion.div>
       </section>
 
-      {/* ── TICKER ── */}
-      <div className="w-full bg-primary py-4 overflow-hidden flex whitespace-nowrap border-y border-primary/30">
-        <motion.div
-          animate={{ x: ['0%', '-50%'] }}
-          transition={{ repeat: Infinity, ease: 'linear', duration: 28 }}
-          className="flex items-center font-display text-xl font-black uppercase tracking-widest text-white"
-        >
-          {Array.from({ length: 10 }).map((_, i) => (
-            <span key={i} className="flex items-center">
-              <span className="mx-8">48-Hour Hiring</span>
-              <span className="mx-4 text-white/40">•</span>
-              <span className="mx-8">Pre-Vetted Engineers</span>
-              <span className="mx-4 text-white/40">•</span>
-              <span className="mx-8">Zero Risk Trial</span>
-              <span className="mx-4 text-white/40">•</span>
-              <span className="mx-8">US Timezone Overlap</span>
-              <span className="mx-4 text-white/40">•</span>
-            </span>
-          ))}
-        </motion.div>
+      {/* ── PROOF STRIP ── replaces scrolling marquee */}
+      <div className="w-full bg-[#2D1B4E] border-y border-primary/30 py-5">
+        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24 flex flex-col sm:flex-row items-center justify-center gap-3 text-center">
+          <p className="font-paragraph text-sm text-[#F5F3FF]/80">
+            Currently placing engineers across US-based SaaS startups in fintech, devtools, and AI.
+          </p>
+          <Link
+            to="/register"
+            className="font-paragraph text-sm font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap underline underline-offset-4"
+          >
+            Request a reference →
+          </Link>
+        </div>
       </div>
 
-      {/* ── HOW IT WORKS ── */}
-      <section id="how-it-works" className="w-full bg-[#2D1B4E] py-32">
+      {/* ── COMPARISON — moved up, highest converting section ── */}
+      <section className="w-full py-24 md:py-32 bg-[#FAFAF9]">
+        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-[#1A0F2E] mb-4">
+              THE OLD WAY VS{' '}
+              <span className="text-primary">VIRAWORKX</span>
+            </h2>
+            <p className="font-paragraph text-lg text-[#1A0F2E]/60 max-w-xl mx-auto">
+              The case for switching — built for the conversation with your co-founder or CFO.
+            </p>
+          </motion.div>
+
+          <div className="flex flex-col gap-3">
+            <div className="hidden md:grid grid-cols-12 gap-3 mb-2 px-6">
+              <div className="col-span-4 font-paragraph text-xs font-bold uppercase tracking-widest text-[#1A0F2E]/40">Metric</div>
+              <div className="col-span-4 font-paragraph text-xs font-bold uppercase tracking-widest text-red-500 text-center">Traditional Hiring</div>
+              <div className="col-span-4 font-paragraph text-xs font-bold uppercase tracking-widest text-primary text-center">ViraWorkx</div>
+            </div>
+
+            {COMPARISONS.map((row, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.07 }}
+                className="grid grid-cols-1 md:grid-cols-12 gap-3"
+              >
+                {/* Metric label — light bg for legibility */}
+                <div className="md:col-span-4 bg-[#F5F3FF] border border-primary/20 p-5 md:p-7 flex items-center">
+                  <h4 className="font-heading text-base font-bold text-[#1A0F2E]">{row.metric}</h4>
+                </div>
+                <div className="md:col-span-4 bg-red-50 p-5 md:p-7 flex flex-col justify-center items-center text-center border border-red-100 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-red-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                  <XCircle className="w-5 h-5 text-red-400 mb-2 relative z-10" />
+                  <p className="font-paragraph text-sm text-[#1A0F2E]/70 relative z-10">{row.traditional}</p>
+                </div>
+                <div className="md:col-span-4 bg-primary/5 p-5 md:p-7 flex flex-col justify-center items-center text-center border border-primary/20 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-primary/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                  <CheckCircle className="w-5 h-5 text-primary mb-2 relative z-10" />
+                  <p className="font-paragraph text-base font-semibold text-[#1A0F2E] relative z-10">{row.viraworkx}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── (formerly "Velocity Protocol") */}
+      <section id="how-it-works" className="w-full bg-[#2D1B4E] py-24 md:py-32">
         <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
 
-            {/* Sticky left */}
+            {/* Sticky left — collapses to tight intro on mobile */}
             <div className="lg:col-span-5">
               <div className="lg:sticky lg:top-32">
                 <motion.div
@@ -422,19 +473,17 @@ export default function Landing() {
                   viewport={{ once: true, margin: '-100px' }}
                   transition={{ duration: 0.6 }}
                 >
-                  <h2 className="font-display text-5xl md:text-7xl font-black text-[#F5F3FF] mb-6 leading-tight">
-                    THE
+                  <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-[#F5F3FF] mb-6 leading-tight">
+                    HOW IT
                     <br />
-                    <span className="text-primary">VELOCITY</span>
-                    <br />
-                    PROTOCOL
+                    <span className="text-primary">WORKS</span>
                   </h2>
-                  <p className="font-paragraph text-lg text-[#F5F3FF]/70 mb-12 max-w-md">
-                    We've engineered a frictionless pipeline to connect you with elite pre-vetted Indian
-                    talent faster than traditional agencies can schedule a kickoff call.
+                  <p className="font-paragraph text-base text-[#F5F3FF]/70 mb-8 max-w-md hidden md:block">
+                    A straightforward process from brief to deployed engineer — faster than most agencies
+                    can schedule a kickoff call.
                   </p>
-                  <div className="p-6 bg-[#FAFAF9] border-l-4 border-primary">
-                    <p className="font-display text-xl font-bold text-[#1A0F2E] uppercase">
+                  <div className="p-5 bg-[#FAFAF9] border-l-4 border-primary hidden md:block">
+                    <p className="font-heading text-base font-bold text-[#1A0F2E]">
                       Not satisfied? We replace within 48 hours — no questions asked.
                     </p>
                   </div>
@@ -442,28 +491,28 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Scrolling right */}
-            <div className="lg:col-span-7 flex flex-col gap-8">
+            {/* Scrolling steps */}
+            <div className="lg:col-span-7 flex flex-col gap-6">
               {PROCESS_STEPS.map((step, index) => (
                 <motion.div
                   key={step.id}
                   initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-100px' }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="group relative bg-[#FAFAF9] p-8 md:p-12 border border-primary/20 hover:border-primary transition-colors duration-300"
+                  transition={{ duration: 0.6, delay: index * 0.08 }}
+                  className="group relative bg-[#FAFAF9] p-8 md:p-10 border border-primary/20 hover:border-primary transition-colors duration-300"
                 >
-                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none">
-                    <span className="font-display text-8xl font-black text-primary">{step.id}</span>
+                  <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none">
+                    <span className="font-display text-7xl font-black text-primary">{step.id}</span>
                   </div>
                   <div className="relative z-10">
-                    <div className="font-paragraph text-sm text-primary font-bold uppercase tracking-widest mb-4">
-                      {step.phase}
+                    <div className="font-paragraph text-xs text-primary font-bold uppercase tracking-widest mb-3">
+                      {step.step}
                     </div>
-                    <h3 className="font-display text-3xl md:text-4xl font-black text-[#1A0F2E] mb-6">
+                    <h3 className="font-heading text-2xl md:text-3xl font-bold text-[#1A0F2E] mb-4">
                       {step.title}
                     </h3>
-                    <p className="font-paragraph text-lg text-[#1A0F2E]/70 max-w-xl">{step.description}</p>
+                    <p className="font-paragraph text-base text-[#1A0F2E]/70 max-w-xl">{step.description}</p>
                   </div>
                 </motion.div>
               ))}
@@ -472,47 +521,44 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── WHY VIRAWORKX ── */}
-      <section id="why-viraworkx" className="w-full py-32 bg-[#FAFAF9]">
+      {/* ── WHY VIRAWORKX — typography-led, no icons ── */}
+      <section id="why-viraworkx" className="w-full py-24 md:py-32 bg-[#FAFAF9]">
         <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-20 flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-primary/20 pb-12"
+            className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-primary/20 pb-12"
           >
-            <h2 className="font-display text-5xl md:text-7xl font-black text-[#1A0F2E] leading-tight">
+            <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-[#1A0F2E] leading-tight">
               ENGINEERED FOR
               <br />
               <span className="text-primary">FOUNDERS</span>
             </h2>
-            <p className="font-paragraph text-lg text-[#1A0F2E]/70 max-w-md">
+            <p className="font-paragraph text-base text-[#1A0F2E]/60 max-w-sm">
               We eliminated the friction, risk, and delays of traditional hiring to build a system that
               scales at the speed of your startup.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-primary/10 border border-primary/20">
-            {VALUE_PROPS.map(({ Icon, title, description, benefit }, index) => (
+            {VALUE_PROPS.map(({ title, description, benefit }, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-[#FAFAF9] p-10 group hover:bg-[#2D1B4E] transition-colors duration-500 flex flex-col"
+                transition={{ duration: 0.5, delay: index * 0.08 }}
+                className="bg-[#FAFAF9] p-8 md:p-10 group hover:bg-[#2D1B4E] transition-colors duration-500 flex flex-col"
               >
-                <div className="mb-8 p-4 bg-primary/10 inline-block group-hover:bg-primary transition-colors duration-500">
-                  <Icon className="w-8 h-8 text-primary group-hover:text-white" />
-                </div>
-                <h3 className="font-display text-2xl font-bold text-[#1A0F2E] group-hover:text-[#F5F3FF] mb-4 transition-colors duration-500">
+                <h3 className="font-heading text-xl font-bold text-[#1A0F2E] group-hover:text-[#F5F3FF] mb-3 transition-colors duration-500">
                   {title}
                 </h3>
-                <p className="font-paragraph text-base text-[#1A0F2E]/70 group-hover:text-[#F5F3FF]/70 mb-8 flex-grow transition-colors duration-500">
+                <p className="font-paragraph text-sm text-[#1A0F2E]/60 group-hover:text-[#F5F3FF]/60 mb-8 flex-grow leading-relaxed transition-colors duration-500">
                   {description}
                 </p>
-                <div className="mt-auto pt-6 border-t border-primary/20 group-hover:border-[#F5F3FF]/20 transition-colors duration-500">
-                  <p className="font-paragraph text-sm font-bold text-primary uppercase tracking-widest">
+                <div className="mt-auto pt-5 border-t border-primary/20 group-hover:border-[#F5F3FF]/20 transition-colors duration-500">
+                  <p className="font-paragraph text-xs font-bold text-primary uppercase tracking-widest">
                     {benefit}
                   </p>
                 </div>
@@ -522,93 +568,57 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── ROLES ── */}
-      <section id="roles" className="w-full py-32 bg-[#2D1B4E]">
+      {/* ── ROLES WE PLACE ── (formerly "Talent Vectors") */}
+      <section id="roles" className="w-full py-24 md:py-32 bg-[#2D1B4E]">
         <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-20 border-b border-primary/20 pb-12"
+            className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-primary/20 pb-12"
           >
-            <h2 className="font-display text-5xl md:text-7xl font-black text-[#F5F3FF] leading-tight">
-              TALENT
+            <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-[#F5F3FF] leading-tight">
+              ROLES WE
               <br />
-              <span className="text-primary">VECTORS</span>
+              <span className="text-primary">PLACE</span>
             </h2>
+            <p className="font-paragraph text-base text-[#F5F3FF]/60 max-w-sm">
+              Senior-to-staff engineers across the modern stack. All placements include a 7-day paid trial.
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-primary/20 border border-primary/20">
-            {ROLES.map(({ Icon, title, desc }, index) => (
+            {ROLES.map(({ Icon, title, desc, seniority }, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.08 }}
-                className="group bg-[#2D1B4E] p-8 hover:bg-[#FAFAF9] transition-colors duration-500 flex items-start gap-6 cursor-default"
+                transition={{ duration: 0.4, delay: index * 0.07 }}
+                className="group bg-[#2D1B4E] p-8 hover:bg-[#FAFAF9] transition-colors duration-500 flex flex-col gap-4"
               >
-                <div className="p-3 bg-primary/20 group-hover:bg-primary transition-colors duration-500 shrink-0">
-                  <Icon className="w-6 h-6 text-primary group-hover:text-white" />
-                </div>
-                <div>
-                  <h3 className="font-display text-xl font-bold text-[#F5F3FF] group-hover:text-[#1A0F2E] mb-2 transition-colors duration-500">
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 bg-primary/20 group-hover:bg-primary transition-colors duration-500 shrink-0">
+                    <Icon className="w-5 h-5 text-primary group-hover:text-white" />
+                  </div>
+                  <h3 className="font-heading text-lg font-bold text-[#F5F3FF] group-hover:text-[#1A0F2E] transition-colors duration-500">
                     {title}
                   </h3>
-                  <p className="font-paragraph text-sm text-[#F5F3FF]/60 group-hover:text-[#1A0F2E]/60 transition-colors duration-500">
-                    {desc}
-                  </p>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── COMPARISON ── */}
-      <section className="w-full py-32 bg-[#FAFAF9]">
-        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
-          <div className="text-center mb-20">
-            <h2 className="font-display text-5xl md:text-7xl font-black text-[#1A0F2E] mb-6">
-              THE OLD WAY VS{' '}
-              <span className="text-primary">VIRAWORKX</span>
-            </h2>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <div className="hidden md:grid grid-cols-12 gap-4 mb-4 px-8">
-              <div className="col-span-4 font-paragraph text-sm font-bold uppercase tracking-widest text-[#1A0F2E]/40">
-                Metric
-              </div>
-              <div className="col-span-4 font-paragraph text-sm font-bold uppercase tracking-widest text-red-500/80 text-center">
-                Traditional Hiring
-              </div>
-              <div className="col-span-4 font-paragraph text-sm font-bold uppercase tracking-widest text-primary text-center">
-                ViraWorkx Protocol
-              </div>
-            </div>
-
-            {COMPARISONS.map((row, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.08 }}
-                className="grid grid-cols-1 md:grid-cols-12 gap-4"
-              >
-                <div className="md:col-span-4 bg-[#2D1B4E] p-6 md:p-8 flex items-center border border-primary/20">
-                  <h4 className="font-display text-xl font-bold text-[#F5F3FF]">{row.metric}</h4>
-                </div>
-                <div className="md:col-span-4 bg-red-50 p-6 md:p-8 flex flex-col justify-center items-center text-center border border-red-200 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-red-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                  <XCircle className="w-6 h-6 text-red-500 mb-3 relative z-10" />
-                  <p className="font-paragraph text-base text-[#1A0F2E]/80 relative z-10">{row.traditional}</p>
-                </div>
-                <div className="md:col-span-4 bg-primary/5 p-6 md:p-8 flex flex-col justify-center items-center text-center border border-primary/30 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-primary/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                  <CheckCircle className="w-6 h-6 text-primary mb-3 relative z-10" />
-                  <p className="font-paragraph text-lg font-bold text-[#1A0F2E] relative z-10">{row.viraworkx}</p>
+                <p className="font-paragraph text-sm text-[#F5F3FF]/60 group-hover:text-[#1A0F2E]/60 transition-colors duration-500">
+                  {desc}
+                </p>
+                <div className="mt-auto pt-4 border-t border-primary/20 group-hover:border-[#1A0F2E]/10 transition-colors duration-500 flex items-center justify-between">
+                  <span className="font-paragraph text-xs text-[#F5F3FF]/50 group-hover:text-[#1A0F2E]/50 transition-colors duration-500">
+                    {seniority}
+                  </span>
+                  <Link
+                    to="/register"
+                    className="font-paragraph text-xs font-semibold text-primary hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    View rates →
+                  </Link>
                 </div>
               </motion.div>
             ))}
@@ -626,58 +636,54 @@ export default function Landing() {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <div className="font-paragraph text-sm text-primary font-bold uppercase tracking-widest mb-6">
-                For Professionals
+              <div className="font-paragraph text-xs text-primary font-bold uppercase tracking-widest mb-6">
+                For Engineers
               </div>
-              <h2 className="font-display text-5xl md:text-7xl font-black text-[#F5F3FF] mb-8 leading-tight">
+              <h2 className="font-display text-4xl md:text-6xl font-black text-[#F5F3FF] mb-8 leading-tight">
                 ACCESS GLOBAL
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/50">
                   OPPORTUNITIES
                 </span>
               </h2>
-              <div className="space-y-6 mb-12">
+              <div className="space-y-5 mb-12">
                 {[
                   'Get matched with top US startups',
                   'Work remotely on your terms',
                   'Accelerate your global career trajectory',
-                  'Streamlined placement process',
+                  'Transparent process from assessment to offer',
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-4">
                     <div className="w-1.5 h-1.5 bg-primary rounded-full shrink-0" />
-                    <p className="font-paragraph text-lg text-[#F5F3FF]/80">{item}</p>
+                    <p className="font-paragraph text-base text-[#F5F3FF]/80">{item}</p>
                   </div>
                 ))}
               </div>
               <Link
                 to="/register?type=candidate"
-                className="inline-flex items-center justify-center px-8 py-4 font-display text-base font-bold uppercase tracking-wider bg-primary text-white hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center justify-center px-8 py-4 font-paragraph text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-colors"
               >
                 Apply to Network
               </Link>
             </motion.div>
           </div>
 
+          {/* Operational stats — replaces vanity numbers */}
           <div className="bg-[#FAFAF9] p-12 md:p-24 flex flex-col justify-center border-l border-primary/20">
             <motion.div
               initial={{ opacity: 0, x: 40 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-12"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-10"
             >
-              {[
-                { value: '25+', label: 'Talent Placed' },
-                { value: '5+', label: 'Startups Served' },
-                { value: '48hrs', label: 'Avg. Placement' },
-                { value: '100%', label: 'Remote Work' },
-              ].map((stat, i) => (
+              {OPERATIONAL_STATS.map((stat, i) => (
                 <div key={i}>
-                  <div className="font-display text-6xl md:text-7xl font-black text-primary mb-2">
+                  <div className="font-display text-5xl md:text-6xl font-black text-primary mb-2 leading-none">
                     {stat.value}
                   </div>
-                  <div className="h-px w-12 bg-primary mb-4" />
-                  <p className="font-paragraph text-sm uppercase tracking-widest text-[#1A0F2E]/60">
+                  <div className="h-px w-10 bg-primary mb-3" />
+                  <p className="font-paragraph text-xs uppercase tracking-widest text-[#1A0F2E]/60">
                     {stat.label}
                   </p>
                 </div>
@@ -687,12 +693,14 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── FAQ ── */}
-      <section id="faq" className="w-full py-32 bg-[#2D1B4E] border-t border-primary/20">
+      {/* ── FAQ ── (formerly "System Queries") */}
+      <section id="faq" className="w-full py-24 md:py-32 bg-[#2D1B4E] border-t border-primary/20">
         <div className="max-w-[80rem] mx-auto px-6 md:px-12">
-          <div className="text-center mb-20">
-            <h2 className="font-display text-5xl md:text-7xl font-black text-[#F5F3FF] mb-6">
-              SYSTEM <span className="text-primary">QUERIES</span>
+          <div className="text-center mb-16">
+            <h2 className="font-display text-4xl md:text-6xl font-black text-[#F5F3FF] mb-4">
+              FREQUENTLY ASKED
+              <br />
+              <span className="text-primary">QUESTIONS</span>
             </h2>
           </div>
 
@@ -710,7 +718,7 @@ export default function Landing() {
                   onClick={() => setActiveFaq(activeFaq === faq.id ? null : faq.id)}
                   className="w-full flex items-center justify-between p-6 md:p-8 text-left focus:outline-none group"
                 >
-                  <span className="font-display text-xl md:text-2xl font-bold text-[#1A0F2E] group-hover:text-primary transition-colors pr-8">
+                  <span className="font-heading text-lg md:text-xl font-bold text-[#1A0F2E] group-hover:text-primary transition-colors pr-8">
                     {faq.question}
                   </span>
                   <motion.div
@@ -730,7 +738,7 @@ export default function Landing() {
                       transition={{ duration: 0.3, ease: 'easeInOut' }}
                     >
                       <div className="p-6 md:p-8 pt-0 border-t border-primary/10">
-                        <p className="font-paragraph text-lg text-[#1A0F2E]/70 leading-relaxed">
+                        <p className="font-paragraph text-base text-[#1A0F2E]/70 leading-relaxed">
                           {faq.answer}
                         </p>
                       </div>
@@ -744,7 +752,7 @@ export default function Landing() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="w-full py-32 bg-primary">
+      <section className="w-full py-24 md:py-32 bg-primary">
         <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -752,30 +760,29 @@ export default function Landing() {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="font-display text-5xl md:text-7xl font-black text-white mb-8 leading-tight">
+            <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-tight">
               READY TO HIRE?
-              <br />
-              <span className="text-white/70">START TODAY.</span>
             </h2>
-            <p className="font-paragraph text-xl text-white/80 max-w-2xl mx-auto mb-12">
-              Join US startups already hiring pre-vetted Indian engineers through ViraWorkx. First
-              introductions in 48 hours.
+            <p className="font-paragraph text-lg text-white/80 max-w-xl mx-auto mb-10">
+              Book a 20-minute call. We'll scope your role, confirm fit, and make your first intro within
+              48 hours.
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {/* TODO: replace /register with your Calendly link */}
               <Link
                 to="/register"
-                className="group relative inline-flex items-center justify-center px-10 py-5 font-display text-lg font-bold uppercase tracking-wider bg-white text-primary overflow-hidden transition-all hover:scale-[1.02] shadow-lg"
+                className="group relative inline-flex items-center justify-center px-10 py-5 font-paragraph text-base font-semibold bg-white text-primary overflow-hidden transition-all hover:scale-[1.02] shadow-lg"
               >
                 <span className="absolute inset-0 w-full h-full bg-[#1A0F2E] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
                 <span className="relative flex items-center gap-2 group-hover:text-white transition-colors duration-300">
-                  Hire Talent Now <ArrowUpRight className="w-5 h-5" />
+                  Book a 20-min Call <ArrowUpRight className="w-5 h-5" />
                 </span>
               </Link>
               <Link
                 to="/register?type=candidate"
-                className="inline-flex items-center justify-center px-10 py-5 font-paragraph text-sm font-bold uppercase tracking-widest border-2 border-white text-white hover:bg-white hover:text-primary transition-colors"
+                className="inline-flex items-center justify-center px-10 py-5 font-paragraph text-sm font-semibold border-2 border-white text-white hover:bg-white hover:text-primary transition-colors"
               >
-                Apply as Talent
+                Apply to Network
               </Link>
             </div>
           </motion.div>
@@ -791,73 +798,38 @@ export default function Landing() {
                 <img src="/logo.png" alt="ViraWorkX" className="h-14 w-auto" />
               </div>
               <p className="font-paragraph text-sm text-white/50 leading-relaxed">
-                AI-powered recruiting platform connecting US startups with pre-vetted Indian engineering
-                talent.
+                Connecting US startups with pre-vetted Indian engineering talent. 48-hour matching,
+                7-day paid trial, guaranteed replacement.
               </p>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-12">
               <div>
-                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
+                <h4 className="font-heading text-sm font-bold uppercase tracking-widest text-white mb-6">
                   Platform
                 </h4>
                 <div className="space-y-3">
-                  <button
-                    onClick={() => scrollTo('how-it-works')}
-                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    How It Works
-                  </button>
-                  <button
-                    onClick={() => scrollTo('why-viraworkx')}
-                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    Why ViraWorkx
-                  </button>
-                  <button
-                    onClick={() => scrollTo('roles')}
-                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    Talent Vectors
-                  </button>
+                  <button onClick={() => scrollTo('how-it-works')} className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">How It Works</button>
+                  <button onClick={() => scrollTo('why-viraworkx')} className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">Why ViraWorkx</button>
+                  <button onClick={() => scrollTo('roles')} className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">Roles We Place</button>
                 </div>
               </div>
               <div>
-                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
+                <h4 className="font-heading text-sm font-bold uppercase tracking-widest text-white mb-6">
                   For Talent
                 </h4>
                 <div className="space-y-3">
-                  <Link
-                    to="/register?type=candidate"
-                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    Apply to Network
-                  </Link>
-                  <button
-                    onClick={() => scrollTo('faq')}
-                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    FAQ
-                  </button>
+                  <Link to="/register?type=candidate" className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">Apply to Network</Link>
+                  <button onClick={() => scrollTo('faq')} className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">FAQ</button>
                 </div>
               </div>
               <div>
-                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
+                <h4 className="font-heading text-sm font-bold uppercase tracking-widest text-white mb-6">
                   Company
                 </h4>
                 <div className="space-y-3">
-                  <Link
-                    to="/login"
-                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    Get Started
-                  </Link>
+                  <Link to="/login" className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">Sign In</Link>
+                  <Link to="/register" className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">Book a Call</Link>
                 </div>
               </div>
             </div>
@@ -866,15 +838,9 @@ export default function Landing() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="font-paragraph text-sm text-white/40">© 2026 ViraWorkx. All rights reserved.</p>
             <div className="flex items-center gap-6">
-              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">
-                Privacy
-              </a>
-              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">
-                Terms
-              </a>
-              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">
-                Contact
-              </a>
+              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Privacy</a>
+              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Terms</a>
+              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Contact</a>
             </div>
           </div>
         </div>
