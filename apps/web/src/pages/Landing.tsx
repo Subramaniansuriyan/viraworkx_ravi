@@ -184,7 +184,7 @@ export default function Landing() {
         <div className="max-w-[120rem] mx-auto px-6 md:px-12 py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="hover:opacity-80 transition-opacity">
-              <img src="/logo.png" alt="ViraWorkX" className="h-12 w-auto" />
+              <img src="/logo.png" alt="ViraWorkX" className="h-12 w-auto mix-blend-multiply" />
             </Link>
 
             <nav className="hidden lg:flex items-center gap-8">
