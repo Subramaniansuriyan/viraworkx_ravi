@@ -373,15 +373,15 @@ export default function Landing() {
                 <div className="flex flex-col gap-4 pt-4 border-t border-primary/20">
                   <div className="flex items-center justify-between">
                     <span className="font-paragraph text-sm text-[#F5F3FF]/60">Trial period</span>
-                    <span className="font-heading text-base font-bold text-[#F5F3FF]">1 week</span>
+                    <span className="font-display text-base font-bold text-[#F5F3FF]">1 week</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="font-paragraph text-sm text-[#F5F3FF]/60">Replacement</span>
-                    <span className="font-heading text-base font-bold text-[#F5F3FF]">Guaranteed</span>
+                    <span className="font-display text-base font-bold text-[#F5F3FF]">Guaranteed</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="font-paragraph text-sm text-[#F5F3FF]/60">Vetting pass rate</span>
-                    <span className="font-heading text-base font-bold text-[#F5F3FF]">~3%</span>
+                    <span className="font-display text-base font-bold text-[#F5F3FF]">~3%</span>
                   </div>
                 </div>
               </div>
@@ -441,7 +441,7 @@ export default function Landing() {
               >
                 {/* Metric label — light bg for legibility */}
                 <div className="md:col-span-4 bg-[#F5F3FF] border border-primary/20 p-5 md:p-7 flex items-center">
-                  <h4 className="font-heading text-base font-bold text-[#1A0F2E]">{row.metric}</h4>
+                  <h4 className="font-display text-base font-bold text-[#1A0F2E]">{row.metric}</h4>
                 </div>
                 <div className="md:col-span-4 bg-red-50 p-5 md:p-7 flex flex-col justify-center items-center text-center border border-red-100 relative overflow-hidden group">
                   <div className="absolute inset-0 bg-red-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
@@ -483,7 +483,7 @@ export default function Landing() {
                     can schedule a kickoff call.
                   </p>
                   <div className="p-5 bg-[#FAFAF9] border-l-4 border-primary hidden md:block">
-                    <p className="font-heading text-base font-bold text-[#1A0F2E]">
+                    <p className="font-display text-base font-bold text-[#1A0F2E]">
                       Not satisfied? We replace within 48 hours — no questions asked.
                     </p>
                   </div>
@@ -509,7 +509,7 @@ export default function Landing() {
                     <div className="font-paragraph text-xs text-primary font-bold uppercase tracking-widest mb-3">
                       {step.step}
                     </div>
-                    <h3 className="font-heading text-2xl md:text-3xl font-bold text-[#1A0F2E] mb-4">
+                    <h3 className="font-display text-2xl md:text-3xl font-bold text-[#1A0F2E] mb-4">
                       {step.title}
                     </h3>
                     <p className="font-paragraph text-base text-[#1A0F2E]/70 max-w-xl">{step.description}</p>
@@ -551,7 +551,7 @@ export default function Landing() {
                 transition={{ duration: 0.5, delay: index * 0.08 }}
                 className="bg-[#FAFAF9] p-8 md:p-10 group hover:bg-[#2D1B4E] transition-colors duration-500 flex flex-col"
               >
-                <h3 className="font-heading text-xl font-bold text-[#1A0F2E] group-hover:text-[#F5F3FF] mb-3 transition-colors duration-500">
+                <h3 className="font-display text-xl font-bold text-[#1A0F2E] group-hover:text-[#F5F3FF] mb-3 transition-colors duration-500">
                   {title}
                 </h3>
                 <p className="font-paragraph text-sm text-[#1A0F2E]/60 group-hover:text-[#F5F3FF]/60 mb-8 flex-grow leading-relaxed transition-colors duration-500">
@@ -601,7 +601,7 @@ export default function Landing() {
                   <div className="p-2.5 bg-primary/20 group-hover:bg-primary transition-colors duration-500 shrink-0">
                     <Icon className="w-5 h-5 text-primary group-hover:text-white" />
                   </div>
-                  <h3 className="font-heading text-lg font-bold text-[#F5F3FF] group-hover:text-[#1A0F2E] transition-colors duration-500">
+                  <h3 className="font-display text-lg font-bold text-[#F5F3FF] group-hover:text-[#1A0F2E] transition-colors duration-500">
                     {title}
                   </h3>
                 </div>
@@ -718,7 +718,7 @@ export default function Landing() {
                   onClick={() => setActiveFaq(activeFaq === faq.id ? null : faq.id)}
                   className="w-full flex items-center justify-between p-6 md:p-8 text-left focus:outline-none group"
                 >
-                  <span className="font-heading text-lg md:text-xl font-bold text-[#1A0F2E] group-hover:text-primary transition-colors pr-8">
+                  <span className="font-display text-lg md:text-xl font-bold text-[#1A0F2E] group-hover:text-primary transition-colors pr-8">
                     {faq.question}
                   </span>
                   <motion.div
@@ -805,7 +805,7 @@ export default function Landing() {
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-12">
               <div>
-                <h4 className="font-heading text-sm font-bold uppercase tracking-widest text-white mb-6">
+                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
                   Platform
                 </h4>
                 <div className="space-y-3">
@@ -815,7 +815,7 @@ export default function Landing() {
                 </div>
               </div>
               <div>
-                <h4 className="font-heading text-sm font-bold uppercase tracking-widest text-white mb-6">
+                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
                   For Talent
                 </h4>
                 <div className="space-y-3">
@@ -824,7 +824,7 @@ export default function Landing() {
                 </div>
               </div>
               <div>
-                <h4 className="font-heading text-sm font-bold uppercase tracking-widest text-white mb-6">
+                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
                   Company
                 </h4>
                 <div className="space-y-3">
