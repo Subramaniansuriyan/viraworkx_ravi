@@ -5,6 +5,7 @@ import {
   ArrowUpRight, Menu, X, Zap, CheckCircle, XCircle, ChevronDown,
   Shield, Clock, Target, Code2, Server, Layout, Cloud, Brain, Smartphone,
 } from 'lucide-react'
+// Zap kept for hero status card
 
 // ── Hardcoded content ──────────────────────────────────────────────────────────
 
@@ -182,11 +183,8 @@ export default function Landing() {
       >
         <div className="max-w-[120rem] mx-auto px-6 md:px-12 py-4">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="h-9 w-9 rounded bg-primary flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-display text-xl font-black text-[#1A0F2E]">ViraWorkx</span>
+            <Link to="/" className="hover:opacity-80 transition-opacity">
+              <img src="/logo.png" alt="ViraWorkX" className="h-12 w-auto" />
             </Link>
 
             <nav className="hidden lg:flex items-center gap-8">
@@ -789,11 +787,8 @@ export default function Landing() {
         <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
           <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-16 pb-16 border-b border-white/10">
             <div className="max-w-xs">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="h-9 w-9 rounded bg-primary flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <span className="font-display text-xl font-black text-white">ViraWorkx</span>
+              <div className="mb-6">
+                <img src="/logo.png" alt="ViraWorkX" className="h-14 w-auto" />
               </div>
               <p className="font-paragraph text-sm text-white/50 leading-relaxed">
                 AI-powered recruiting platform connecting US startups with pre-vetted Indian engineering
