@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import {
   ArrowUpRight, Menu, X, Zap, CheckCircle, XCircle, ChevronDown,
-  Code2, Server, Layout, Cloud, Brain, Smartphone,
+  Code2, Server, Layout, Brain, Smartphone, Paintbrush,
 } from 'lucide-react'
 
 // ── Hardcoded content ──────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ const ROLES = [
   { Icon: Code2, title: 'Full Stack Engineers', desc: 'React, Node.js, TypeScript, Python', seniority: 'Senior to Staff · 5–10 yrs' },
   { Icon: Server, title: 'Backend Engineers', desc: 'Go, Java, Python, Node.js, PostgreSQL', seniority: 'Mid to Staff · 4–10 yrs' },
   { Icon: Layout, title: 'Frontend Engineers', desc: 'React, Vue, Next.js, Tailwind CSS', seniority: 'Senior to Staff · 5–9 yrs' },
-  { Icon: Cloud, title: 'DevOps / Cloud', desc: 'AWS, GCP, Kubernetes, Terraform', seniority: 'Senior to Principal · 5–12 yrs' },
+  { Icon: Paintbrush, title: 'UX / UI Designers', desc: 'Figma, Design Systems, Prototyping, User Research', seniority: 'Mid to Senior · 4–8 yrs' },
   { Icon: Brain, title: 'ML / AI Engineers', desc: 'PyTorch, LangChain, LLMs, RAG', seniority: 'Senior to Staff · 4–8 yrs' },
   { Icon: Smartphone, title: 'Mobile Engineers', desc: 'React Native, Flutter, Swift, Kotlin', seniority: 'Senior to Staff · 5–9 yrs' },
 ]
