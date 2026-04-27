@@ -1,0 +1,38 @@
+name: Read Cloud Run Logs
+
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'Log filter'
+        default: 'login'
+
+env:
+  GCP_REGION: us-central1
+  API_SERVICE: viraworkx-api
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  read-logs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Read recent API logs
+        run: |
+          gcloud logging read \
+            'resource.type="cloud_run_revision" AND resource.labels.service_name="viraworkx-api" AND severity>=ERROR' \
+            --project=viraworkx-489818 \
+            --limit=20 \
+            --format='table(timestamp,jsonPayload.message,textPayload)' \
+            --freshness=30m
