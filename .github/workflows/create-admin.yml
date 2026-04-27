@@ -1,0 +1,77 @@
+name: Create / Reset Admin User
+
+on:
+  workflow_dispatch:
+    inputs:
+      admin_email:
+        description: 'Admin email address'
+        required: true
+        default: 'admin@viraworkx.ai'
+      admin_password:
+        description: 'Admin password (min 8 chars)'
+        required: true
+
+env:
+  GCP_REGION: us-central1
+  API_SERVICE: viraworkx-api
+  ARTIFACT_REPO: viraworkx
+
+jobs:
+  create-admin:
+    name: Upsert Admin User
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get Cloud SQL connection
+        id: sql
+        run: |
+          SQL_CONN=$(gcloud run services describe ${{ env.API_SERVICE }} \
+            --region=${{ env.GCP_REGION }} \
+            --format='value(spec.template.metadata.annotations["run.googleapis.com/cloudsql-instances"])' 2>/dev/null || echo "")
+          echo "conn=$SQL_CONN" >> $GITHUB_OUTPUT
+
+      - name: Get latest API image
+        id: image
+        run: |
+          IMAGE=$(gcloud run services describe ${{ env.API_SERVICE }} \
+            --region=${{ env.GCP_REGION }} \
+            --format='value(spec.template.spec.containers[0].image)')
+          echo "uri=$IMAGE" >> $GITHUB_OUTPUT
+
+      - name: Run create-admin script via Cloud Run job
+        run: |
+          JOB_NAME=viraworkx-create-admin
+
+          ARGS='--image=${{ steps.image.outputs.uri }}'
+          ARGS="$ARGS --region=${{ env.GCP_REGION }}"
+          ARGS="$ARGS --service-account=${{ secrets.GCP_SERVICE_ACCOUNT }}"
+          ARGS="$ARGS --set-secrets=DATABASE_URL=viraworkx-database-url:latest"
+          ARGS="$ARGS --set-env-vars=NODE_ENV=production,ADMIN_EMAIL=${{ github.event.inputs.admin_email }},ADMIN_PASSWORD=${{ github.event.inputs.admin_password }}"
+          ARGS="$ARGS --command=node"
+          ARGS="$ARGS --args=packages/db/create-admin.mjs"
+          ARGS="$ARGS --max-retries=0"
+
+          if [[ -n "${{ steps.sql.outputs.conn }}" ]]; then
+            ARGS="$ARGS --add-cloudsql-instances=${{ steps.sql.outputs.conn }}"
+          fi
+
+          # Create or update the job
+          gcloud run jobs create $JOB_NAME $ARGS --quiet 2>/dev/null || \
+          gcloud run jobs update $JOB_NAME $ARGS --quiet
+
+          # Execute and wait
+          gcloud run jobs execute $JOB_NAME \
+            --region=${{ env.GCP_REGION }} \
+            --wait
+
+          echo "Admin user created/updated successfully."
