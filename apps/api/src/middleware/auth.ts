@@ -30,10 +30,12 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
   } catch (error) {
     const ip = req.ip || req.socket.remoteAddress || 'unknown'
     if (error instanceof jwt.TokenExpiredError) {
-      recordInvalidToken(ip)
-      logSecurityEvent('invalid_token', req, { reason: 'expired' })
+      // Expired tokens are normal session behaviour — do NOT penalise the IP.
+      // The admin portal fires many parallel queries; one expiry would otherwise
+      // burn through the invalid-token threshold for an entire office network.
       return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' })
     }
+    // Only genuinely tampered / invalid-signature tokens are suspicious
     recordInvalidToken(ip)
     logSecurityEvent('invalid_token', req, { reason: 'invalid_signature' })
     return res.status(401).json({ error: 'Invalid token' })
