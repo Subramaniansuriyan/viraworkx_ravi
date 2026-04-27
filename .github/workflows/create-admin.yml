@@ -16,6 +16,10 @@ env:
   API_SERVICE: viraworkx-api
   ARTIFACT_REPO: viraworkx
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   create-admin:
     name: Upsert Admin User
