@@ -329,10 +329,11 @@ app.put('/api/v1/me/profile', authenticateToken, async (req: AuthRequest, res) =
 // Error handler — sanitize in production
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack)
-  const isProduction = process.env.NODE_ENV === 'production'
+  // TEMP DEBUG: expose error details to diagnose admin login 500
   res.status(500).json({
     error: 'Internal Server Error',
-    ...(isProduction ? {} : { message: err.message }),
+    _debug_msg: err.message,
+    _debug_stack: err.stack?.split('\n').slice(0, 4).join(' | '),
   })
 })
 
