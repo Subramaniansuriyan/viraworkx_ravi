@@ -148,8 +148,7 @@ router.post('/login', async (req: Request, res: Response) => {
           code: 'EMAIL_NOT_VERIFIED',
         })
       }
-      console.error('[login] unexpected error:', error.message, error.stack)
-      return res.status(500).json({ error: error.message, _debug: error.stack?.split('\n').slice(0, 3).join(' | ') })
+      return res.status(500).json({ error: error.message })
     }
     const msg = typeof error === 'string' ? error : JSON.stringify(error)
     console.error('Login error (non-Error throw):', msg)
