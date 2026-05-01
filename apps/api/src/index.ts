@@ -29,7 +29,7 @@ import applicationRoutes from './routes/application.routes.js'
 import interviewRoutes from './routes/interview.routes.js'
 import clientRoutes from './routes/client.routes.js'
 import notificationRoutes from './routes/notification.routes.js'
-import aiRoutes from './routes/ai.routes.js'
+import aiRoutes, { jobDescriptionRouter } from './routes/ai.routes.js'
 import analyticsRoutes from './routes/analytics.routes.js'
 import contractRoutes from './routes/contract.routes.js'
 import paymentRoutes from './routes/payment.routes.js'
@@ -193,7 +193,9 @@ app.use('/api/v1/clients', clientRoutes)
 // Notification routes
 app.use('/api/v1/notifications', notificationRoutes)
 
-// AI routes (require active subscription for client users)
+// Job description AI — no subscription gate (creation utility)
+app.use('/api/v1/ai', jobDescriptionRouter)
+// All other AI features require an active subscription for client users
 app.use('/api/v1/ai', authenticateToken, requireActiveSubscription, aiRoutes)
 
 // Analytics routes

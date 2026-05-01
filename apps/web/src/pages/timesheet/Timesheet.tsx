@@ -543,7 +543,15 @@ export default function ViraWorkXTimesheetV3() {
                 return (
                   <div key={i}>
                     <div
-                      onClick={() => editingDay !== i && setSelectedDay(selectedDay === i ? null : i)}
+                      onClick={() => {
+                        if (editingDay === i) return
+                        if (view === 'talent' && (status === 'pending' || status === 'revision')) {
+                          setEditingDay(i)
+                          setEditForm({ ...entry })
+                        } else {
+                          setSelectedDay(selectedDay === i ? null : i)
+                        }
+                      }}
                       style={{
                         display: "grid",
                         gridTemplateColumns: view === "client" ? "120px 1fr 90px 90px 60px 50px 40px 50px" : "120px 1fr 90px 90px 60px 50px 40px",

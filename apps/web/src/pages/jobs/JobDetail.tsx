@@ -29,6 +29,22 @@ export default function JobDetail() {
   const [showApplyModal, setShowApplyModal] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const handleShare = async () => {
+    const url = window.location.href
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Job at ViraWorkx', url })
+      } catch {
+        // user cancelled or share failed — fall through to clipboard
+      }
+      return
+    }
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['job', id],
@@ -125,7 +141,11 @@ export default function JobDetail() {
               Back to jobs
             </Link>
             <div className="flex items-center gap-2">
-              <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+              <button
+                onClick={handleShare}
+                title={copied ? 'Link copied!' : 'Share job'}
+                className={`p-2 rounded-lg hover:bg-gray-100 transition-colors ${copied ? 'text-green-600' : 'text-gray-400 hover:text-gray-600'}`}
+              >
                 <Share2 className="w-5 h-5" />
               </button>
               {isAuthenticated && user?.userType === 'candidate' && (

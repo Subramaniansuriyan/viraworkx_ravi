@@ -7,6 +7,9 @@ import { authenticateToken, AuthRequest, requireRole } from '../middleware/auth.
 const router = Router()
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// ── Job description router (no subscription gate — it's a creation utility) ──
+export const jobDescriptionRouter = Router()
+
 // AI Screening Schema
 const screenCandidateSchema = z.object({
   candidateId: z.string().uuid(),
@@ -397,7 +400,7 @@ Best regards`
  * POST /api/v1/ai/job-description
  * Generate a full job description using Claude
  */
-router.post('/job-description', authenticateToken, requireRole('client', 'admin'), async (req: AuthRequest, res: Response) => {
+jobDescriptionRouter.post('/job-description', authenticateToken, requireRole('client', 'admin'), async (req: AuthRequest, res: Response) => {
   try {
     const input = z.object({
       title: z.string().min(2).max(200),

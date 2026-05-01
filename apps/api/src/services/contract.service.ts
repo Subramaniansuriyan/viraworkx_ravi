@@ -272,46 +272,52 @@ class ContractService {
       },
     })
     if (!contract) throw new Error('Contract not found')
-    if (contract.status !== 'draft') {
+
+    const isResend = contract.status === 'pending_signatures'
+    if (!isResend && contract.status !== 'draft') {
       throw new Error('Contract must be in draft status')
     }
 
-    const updated = await prisma.contract.update({
-      where: { id: contractId },
-      data: { status: 'pending_signatures' },
-      include: { signatures: true },
-    })
+    let updated = contract as any
 
-    // Auto-apply ViraWorkx CEO signature (Rahul Ramachandran)
-    const viraworkxSig = contract.signatures.find((s) => s.signerRole === 'viraworkx')
-    if (viraworkxSig && !viraworkxSig.signedAt && contract.pdfData) {
-      const signedDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric', month: 'long', day: 'numeric',
-      })
-      const updatedPdf = await pdfService.embedSignatureInPdf({
-        existingPdfBytes: Buffer.from(contract.pdfData),
-        signerRole: 'viraworkx',
-        signedName: 'Rahul Ramachandran',
-        signedDate,
-      })
-      await prisma.contractSignature.update({
-        where: { id: viraworkxSig.id },
-        data: { signedName: 'Rahul Ramachandran', signedAt: new Date() },
-      })
-      await prisma.contract.update({
+    if (!isResend) {
+      updated = await prisma.contract.update({
         where: { id: contractId },
-        data: { pdfData: updatedPdf },
+        data: { status: 'pending_signatures' },
+        include: { signatures: true },
       })
+
+      // Auto-apply ViraWorkx CEO signature (Rahul Ramachandran)
+      const viraworkxSig = contract.signatures.find((s) => s.signerRole === 'viraworkx')
+      if (viraworkxSig && !viraworkxSig.signedAt && contract.pdfData) {
+        const signedDate = new Date().toLocaleDateString('en-US', {
+          year: 'numeric', month: 'long', day: 'numeric',
+        })
+        const updatedPdf = await pdfService.embedSignatureInPdf({
+          existingPdfBytes: Buffer.from(contract.pdfData),
+          signerRole: 'viraworkx',
+          signedName: 'Rahul Ramachandran',
+          signedDate,
+        })
+        await prisma.contractSignature.update({
+          where: { id: viraworkxSig.id },
+          data: { signedName: 'Rahul Ramachandran', signedAt: new Date() },
+        })
+        await prisma.contract.update({
+          where: { id: contractId },
+          data: { pdfData: updatedPdf },
+        })
+      }
     }
 
-    // Notify the candidate in-app and by email
+    // Notify the candidate in-app and by email (always — also for resend)
     const candidateUserId = contract.application?.candidate?.userId
     if (candidateUserId) {
       await prisma.notification.create({
         data: {
           userId: candidateUserId,
           type: 'contract_ready',
-          title: 'Contract ready to sign',
+          title: isResend ? 'Contract reminder: awaiting your signature' : 'Contract ready to sign',
           message: 'Your ViraWorkx Talent Agreement is ready. Please review and sign it to proceed.',
           data: { contractId },
           channel: 'in_app',

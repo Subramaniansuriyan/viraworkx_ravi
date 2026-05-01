@@ -132,6 +132,16 @@ export default function AdminVetting() {
     },
   })
 
+  const resendContractMutation = useMutation({
+    mutationFn: async (contractId: string) => {
+      await api.post(`/contracts/${contractId}/send-for-signatures`)
+      return contractId
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vettingPipeline'] })
+    },
+  })
+
   const enrollMutation = useMutation({
     mutationFn: async (data: { candidateId: string; jobId?: string; customRole?: string; notes: string }) => {
       const res = await api.post('/applications/admin/enroll', data)
@@ -374,10 +384,36 @@ export default function AdminVetting() {
                           )}
                           {col.key === 'tiered' && (() => {
                             const existingContract = app.contracts?.[0]
+                            if (existingContract?.status === 'active') {
+                              return (
+                                <div className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium bg-green-100 text-green-700 rounded-lg mb-2 cursor-default">
+                                  <FileText className="w-3 h-3" />
+                                  Contract Active
+                                </div>
+                              )
+                            }
+                            if (existingContract?.status === 'pending_signatures') {
+                              return (
+                                <div className="mb-2 space-y-1">
+                                  <div className="w-full flex items-center justify-center gap-1.5 py-1 text-xs font-medium bg-yellow-50 text-yellow-700 rounded-lg cursor-default border border-yellow-200">
+                                    <FileText className="w-3 h-3" />
+                                    Awaiting Candidate Signature
+                                  </div>
+                                  <button
+                                    onClick={() => resendContractMutation.mutate(existingContract.id)}
+                                    disabled={resendContractMutation.isPending}
+                                    className="w-full flex items-center justify-center gap-1.5 py-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 disabled:opacity-50"
+                                  >
+                                    <Send className="w-3 h-3" />
+                                    {resendContractMutation.isPending ? 'Sending…' : 'Resend Email'}
+                                  </button>
+                                </div>
+                              )
+                            }
                             return existingContract ? (
                               <div className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium bg-green-100 text-green-700 rounded-lg mb-2 cursor-default">
                                 <FileText className="w-3 h-3" />
-                                Contract {existingContract.status === 'active' ? 'Active' : existingContract.status === 'pending_signatures' ? 'Sent' : existingContract.status}
+                                Contract {existingContract.status}
                               </div>
                             ) : (
                               <button

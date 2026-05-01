@@ -35,7 +35,7 @@ export default function AdminDashboard() {
     },
     refetchInterval: 60000,
   })
-  const overview = overviewData || {}
+  const overview = overviewData?.overview || {}
 
   const { data: invitesData } = useQuery({
     queryKey: ['activeInvites'],

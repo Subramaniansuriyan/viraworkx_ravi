@@ -195,7 +195,7 @@ export default function ClientDashboard() {
                 support@viraworkx.ai
               </a>
               <a
-                href="https://wa.me/message/viraworkx"
+                href="https://wa.me/14085551234"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full text-center px-4 py-2 mt-2 border border-primary/30 text-primary rounded-lg text-sm font-medium hover:bg-primary/5 transition-colors"

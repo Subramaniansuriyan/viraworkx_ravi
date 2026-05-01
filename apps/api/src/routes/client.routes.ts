@@ -22,6 +22,44 @@ const inviteUserSchema = z.object({
 })
 
 /**
+ * GET /api/v1/clients
+ * List all clients (admin only)
+ */
+router.get('/', authenticateToken, requireRole('admin'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { search, tier, page = '1', limit = '10' } = req.query
+    const take = parseInt(limit as string)
+    const skip = (parseInt(page as string) - 1) * take
+
+    const where: any = {}
+    if (search) {
+      where.companyName = { contains: search as string, mode: 'insensitive' }
+    }
+    if (tier) {
+      where.planTier = tier
+    }
+
+    const [clients, total] = await Promise.all([
+      prisma.client.findMany({
+        where,
+        include: {
+          _count: { select: { jobs: true, clientUsers: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+      }),
+      prisma.client.count({ where }),
+    ])
+
+    res.json({ clients, total })
+  } catch (error) {
+    console.error('Error listing clients:', error)
+    res.status(500).json({ error: 'Failed to list clients' })
+  }
+})
+
+/**
  * GET /api/v1/clients/me
  * Get current client's profile (resolved from token)
  */

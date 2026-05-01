@@ -230,7 +230,7 @@ router.post('/', authenticateToken, requireRole('client', 'admin'), async (req: 
       data: { stage: 'interview', stageUpdatedAt: new Date() }
     })
 
-    // Send real-time notification
+    // Send real-time notification + persist in-app notification
     const candidateUserId = application.candidate?.userId
     if (candidateUserId) {
       socketService.notifyInterviewScheduled(
@@ -239,6 +239,18 @@ router.post('/', authenticateToken, requireRole('client', 'admin'), async (req: 
         interview.scheduledAt.toISOString(),
         candidateUserId
       )
+
+      // Persist so candidate sees it in the notification bell even when offline
+      prisma.notification.create({
+        data: {
+          userId: candidateUserId,
+          type: 'interview_scheduled',
+          title: 'Interview Scheduled',
+          message: `Your interview for ${interview.application?.job?.title || 'a position'} has been scheduled on ${interview.scheduledAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at ${interview.scheduledAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: input.timezone || 'UTC' })} ${input.timezone || 'UTC'}.`,
+          data: { interviewId: interview.id, applicationId: input.applicationId },
+          channel: 'in_app',
+        },
+      }).catch(err => console.error('[interview] Failed to create notification:', err))
     }
 
     // Send interview scheduled email to candidate

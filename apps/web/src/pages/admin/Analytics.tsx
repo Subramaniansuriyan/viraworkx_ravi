@@ -180,14 +180,16 @@ export default function AdminAnalytics() {
                         cx="50%"
                         cy="50%"
                         outerRadius={90}
-                        label={(props: any) => `${props.stage?.replace(/_/g, ' ')}: ${props.rate}%`}
-                        labelLine={false}
                       >
                         {conversions.map((_: any, index: number) => (
                           <Cell key={index} fill={PIPELINE_COLORS[index % PIPELINE_COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip formatter={(value) => `${value}%`} />
+                      <Legend
+                        formatter={(value) => value.replace(/_/g, ' ')}
+                        wrapperStyle={{ fontSize: 11 }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (

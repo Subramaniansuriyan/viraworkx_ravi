@@ -3,6 +3,8 @@ import { useAuthStore } from './stores/authStore'
 
 // Pages
 import Landing from './pages/Landing'
+import Privacy from './pages/Privacy'
+import Terms from './pages/Terms'
 import ClientDashboard from './pages/client/Dashboard'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
@@ -89,6 +91,10 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+
+      {/* Legal pages */}
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
 
       {/* Public job routes */}
       <Route path="/jobs" element={<JobList />} />

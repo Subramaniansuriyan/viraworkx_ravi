@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { FileCheck, Search, FileText, Clock, CheckCircle, XCircle, UserCheck } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { FileCheck, Search, FileText, Clock, CheckCircle, XCircle, UserCheck, Send } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import api from '../../services/api'
 
@@ -94,8 +94,22 @@ function SignerPill({ role, signed, signedAt }: { role: string; signed: boolean;
 }
 
 export default function AdminContracts() {
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'candidate_signed'>('all')
+  const [resentId, setResentId] = useState<string | null>(null)
+
+  const resendMutation = useMutation({
+    mutationFn: async (contractId: string) => {
+      await api.post(`/contracts/${contractId}/send-for-signatures`)
+      return contractId
+    },
+    onSuccess: (contractId) => {
+      setResentId(contractId)
+      setTimeout(() => setResentId(null), 3000)
+      queryClient.invalidateQueries({ queryKey: ['admin-contracts'] })
+    },
+  })
 
   const { data, isLoading, isError } = useQuery<{ contracts: Contract[] }>({
     queryKey: ['admin-contracts'],
@@ -223,6 +237,7 @@ export default function AdminContracts() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Created At
                     </th>
+                    <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -273,6 +288,23 @@ export default function AdminContracts() {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
                           {createdDate}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          {contract.status === 'pending_signatures' && !candidateSigned && (
+                            resentId === contract.id ? (
+                              <span className="text-xs text-green-600 font-medium">Email sent</span>
+                            ) : (
+                              <button
+                                onClick={() => resendMutation.mutate(contract.id)}
+                                disabled={resendMutation.isPending}
+                                title="Resend signing email to candidate"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 disabled:opacity-50"
+                              >
+                                <Send className="w-3 h-3" />
+                                Resend Email
+                              </button>
+                            )
+                          )}
                         </td>
                       </tr>
                     )

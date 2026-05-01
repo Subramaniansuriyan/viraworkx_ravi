@@ -713,9 +713,9 @@ export default function CandidateProfile() {
                                 </div>
                               )}
 
-                              {assessment.status === 'invited' && (
+                              {assessment.status === 'invited' && (assessment.invitationUrl || assessment.imochaInvitationId) && (
                                 <a
-                                  href={`https://assessment.imocha.io/test/${assessment.imochaInvitationId}`}
+                                  href={assessment.invitationUrl || `https://assessment.imocha.io/test/${assessment.imochaInvitationId}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-700 flex items-center gap-2"

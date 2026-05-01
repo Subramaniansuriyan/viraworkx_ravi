@@ -838,9 +838,9 @@ export default function Landing() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="font-paragraph text-sm text-white/40">© 2026 ViraWorkx. All rights reserved.</p>
             <div className="flex items-center gap-6">
-              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Terms</a>
-              <a href="#" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Contact</a>
+              <a href="/privacy" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Privacy</a>
+              <a href="/terms" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Terms</a>
+              <a href="mailto:support@viraworkx.ai" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Contact</a>
             </div>
           </div>
         </div>
