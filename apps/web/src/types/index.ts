@@ -133,6 +133,7 @@ export interface Assessment {
   imochaTestId: string
   imochaInvitationId?: string
   imochaAttemptId?: string
+  invitationUrl?: string
   testName?: string
   status: AssessmentStatus
   score?: number
