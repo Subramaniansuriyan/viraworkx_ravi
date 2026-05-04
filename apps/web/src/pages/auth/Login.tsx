@@ -177,9 +177,9 @@ export default function Login() {
         {/* Footer */}
         <p className="mt-8 text-center text-sm text-gray-400">
           By signing in, you agree to our{' '}
-          <a href="#" className="text-gray-500 hover:text-primary transition-colors">Terms of Service</a>
+          <Link to="/terms" className="text-gray-500 hover:text-primary transition-colors">Terms of Service</Link>
           {' '}and{' '}
-          <a href="#" className="text-gray-500 hover:text-primary transition-colors">Privacy Policy</a>
+          <Link to="/privacy" className="text-gray-500 hover:text-primary transition-colors">Privacy Policy</Link>
         </p>
       </div>
     </div>

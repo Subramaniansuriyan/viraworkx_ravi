@@ -10,6 +10,7 @@ export default function Billing() {
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [invoices, setInvoices] = useState<PaymentInvoice[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [actionLoading, setActionLoading] = useState('')
 
   useEffect(() => { loadData() }, [])
@@ -24,6 +25,7 @@ export default function Billing() {
       setInvoices(invRes.data.invoices)
     } catch (err) {
       console.error('Failed to load billing data:', err)
+      setError(true)
     } finally {
       setLoading(false)
     }
@@ -76,7 +78,25 @@ export default function Billing() {
         </div>
 
         {/* Current Subscription Status */}
-        {subscription && (
+        {error ? (
+          <div className="mb-8 p-6 rounded-2xl border border-red-500/30 bg-red-500/5">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-6 h-6 text-red-400" />
+              <p className="text-red-300">Unable to load billing information. Please refresh or contact <a href="mailto:billing@viraworkx.ai" className="underline">billing@viraworkx.ai</a>.</p>
+            </div>
+          </div>
+        ) : !subscription ? (
+          <div className="mb-8 p-6 rounded-2xl border border-slate-700/50 bg-slate-800/30">
+            <div className="flex items-center gap-4">
+              <AlertCircle className="w-8 h-8 text-slate-400" />
+              <div>
+                <h2 className="text-lg font-semibold text-slate-300">No Active Subscription</h2>
+                <p className="text-sm text-slate-400 mt-1">Your account is on the ViraWorkx managed plan. Billing is handled directly by the ViraWorkx team based on active placements.</p>
+                <p className="text-sm text-slate-500 mt-1">Questions? Email <a href="mailto:billing@viraworkx.ai" className="text-blue-400 hover:underline">billing@viraworkx.ai</a></p>
+              </div>
+            </div>
+          </div>
+        ) : (
           <div className={`mb-8 p-6 rounded-2xl border ${isActive ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">

@@ -111,7 +111,7 @@ export default function AdminDashboard() {
     },
     {
       label: 'Placements',
-      value: overview.totalPlacements || 0,
+      value: overview.totalHiredFromOffers || 0,
       icon: UserCheck,
       bgColor: 'bg-amber-100',
       iconColor: 'text-amber-600',

@@ -16,7 +16,7 @@ const createInterviewSchema = z.object({
   scheduledAt: z.string().datetime(),
   durationMinutes: z.number().int().min(15).max(480).default(60),
   timezone: z.string().default('UTC'),
-  meetingUrl: z.string().url().optional(),
+  meetingUrl: z.union([z.literal(""), z.string().url()]).optional().transform(v => v || undefined),
   meetingProvider: z.string().optional(),
   location: z.string().optional(),
   interviewerIds: z.array(z.string().uuid()).optional(),

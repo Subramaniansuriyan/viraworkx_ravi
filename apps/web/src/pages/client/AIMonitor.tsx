@@ -248,6 +248,7 @@ export default function AIMonitor() {
             AI Pipeline Monitor
           </h1>
           <p className="text-gray-600 mt-1">Human-in-the-Loop oversight for AI recruiting actions</p>
+          <p className="text-gray-400 text-sm mt-0.5">Review and approve AI-generated candidate screenings, job matches, and outreach before they are sent. Actions requiring approval are flagged in yellow.</p>
         </div>
 
         {/* Stats Cards */}
@@ -390,7 +391,8 @@ export default function AIMonitor() {
           ) : actions.length === 0 ? (
             <div className="p-12 text-center">
               <Bot className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600">No AI actions found</p>
+              <p className="text-gray-600 font-medium">No AI actions logged yet</p>
+              <p className="text-gray-400 text-sm mt-2 max-w-md mx-auto">This monitor shows all AI-driven actions on the platform (screenings, matches, outreach). Actions will appear here once candidates apply and the AI pipeline processes them.</p>
             </div>
           ) : (
             <div className="divide-y">
