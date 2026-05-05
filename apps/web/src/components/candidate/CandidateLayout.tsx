@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
-  Zap, LogOut, TrendingUp, User, Briefcase, FileText, Award,
+  LogOut, TrendingUp, User, Briefcase, FileText, Award,
   Calendar, Menu, X, Clock, Bell, DollarSign
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -70,11 +70,8 @@ export default function CandidateLayout({ children }: CandidateLayoutProps) {
   const SidebarContent = () => (
     <>
       <div className="p-6 border-b flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center shrink-0">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold text-primary">ViraWorkX</span>
+        <Link to="/" className="flex items-center">
+          <img src="/logo-lockup.png" alt="ViraWorkX" className="h-9 w-auto" />
         </Link>
         <button
           onClick={() => setSidebarOpen(false)}
@@ -95,14 +92,14 @@ export default function CandidateLayout({ children }: CandidateLayoutProps) {
                 to={to}
                 className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                   isActive(to)
-                    ? 'text-primary bg-primary/10 font-medium'
+                    ? 'text-brand bg-lavender font-medium'
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 <Icon className="w-5 h-5 mr-3 shrink-0" />
                 <span className="truncate flex-1">{label}</span>
                 {to === '/candidate/notifications' && unreadCount > 0 && (
-                  <span className="ml-auto bg-primary text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                  <span className="ml-auto bg-brand text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
@@ -114,7 +111,7 @@ export default function CandidateLayout({ children }: CandidateLayoutProps) {
 
       <div className="p-4 border-t">
         <div className="flex items-center gap-3 mb-3 px-2">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium shrink-0">
+          <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center text-white font-medium shrink-0">
             {getUserInitials()}
           </div>
           <div className="flex-1 min-w-0">
@@ -145,11 +142,8 @@ export default function CandidateLayout({ children }: CandidateLayoutProps) {
         >
           <Menu className="w-6 h-6" />
         </button>
-        <Link to="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-lg font-bold text-primary">ViraWorkX</span>
+        <Link to="/" className="flex items-center">
+          <img src="/logo-lockup.png" alt="ViraWorkX" className="h-8 w-auto" />
         </Link>
         <NotificationBell />
       </header>

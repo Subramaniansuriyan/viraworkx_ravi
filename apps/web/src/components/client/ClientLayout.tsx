@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
-  Zap, LogOut, TrendingUp, Briefcase, Plus, FileText, CreditCard,
+  LogOut, TrendingUp, Briefcase, Plus, FileText, CreditCard,
   Menu, X, Users, Building2
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
@@ -51,11 +51,8 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   const SidebarContent = () => (
     <>
       <div className="p-6 border-b flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center shrink-0">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold text-primary">ViraWorkX</span>
+        <Link to="/" className="flex items-center">
+          <img src="/logo-lockup.png" alt="ViraWorkX" className="h-9 w-auto" />
         </Link>
         <button
           onClick={() => setSidebarOpen(false)}
@@ -76,7 +73,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
                 to={to}
                 className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                   isActive(to)
-                    ? 'text-primary bg-primary/10 font-medium'
+                    ? 'text-brand bg-lavender font-medium'
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
@@ -90,7 +87,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 
       <div className="p-4 border-t">
         <div className="flex items-center gap-3 mb-3 px-2">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium shrink-0">
+          <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center text-white font-medium shrink-0">
             {getUserInitials()}
           </div>
           <div className="flex-1 min-w-0">
@@ -121,11 +118,8 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         >
           <Menu className="w-6 h-6" />
         </button>
-        <Link to="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-lg font-bold text-primary">ViraWorkX</span>
+        <Link to="/" className="flex items-center">
+          <img src="/logo-lockup.png" alt="ViraWorkX" className="h-8 w-auto" />
         </Link>
         <NotificationBell />
       </header>

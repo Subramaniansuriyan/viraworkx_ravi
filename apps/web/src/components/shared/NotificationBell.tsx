@@ -69,7 +69,7 @@ export default function NotificationBell() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="p-2 text-gray-400 hover:text-gray-600 relative"
+        className="relative p-2 text-ink-mute hover:text-ink"
       >
         <Bell className="w-6 h-6" />
         {unreadCount > 0 && (
@@ -80,28 +80,28 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="fixed right-4 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-gray-100 z-[100]" style={{ top: ref.current ? ref.current.getBoundingClientRect().bottom + 8 : 'auto' }}>
-          <div className="flex items-center justify-between p-4 border-b">
+        <div className="fixed right-4 z-[100] mt-2 w-80 rounded-xl border border-paper-line bg-paper shadow-xl sm:w-96" style={{ top: ref.current ? ref.current.getBoundingClientRect().bottom + 8 : 'auto' }}>
+          <div className="flex items-center justify-between border-b border-paper-line p-4">
             <div>
-              <h3 className="font-semibold text-gray-900">Notifications</h3>
+              <h3 className="font-semibold text-ink">Notifications</h3>
               {unreadCount > 0 && (
-                <p className="text-xs text-gray-500">{unreadCount} unread</p>
+                <p className="text-xs text-ink-mute">{unreadCount} unread</p>
               )}
             </div>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
                 <button
                   onClick={() => markAllReadMutation.mutate()}
-                  className="text-xs text-primary hover:underline flex items-center gap-1"
+                  className="flex items-center gap-1 text-xs text-brand hover:underline"
                 >
                   <CheckCheck className="w-3 h-3" /> Mark all read
                 </button>
               )}
               <button
                 onClick={() => setOpen(false)}
-                className="p-1 hover:bg-gray-100 rounded"
+                className="rounded p-1 hover:bg-soft-gray"
               >
-                <X className="w-4 h-4 text-gray-400" />
+                <X className="h-4 w-4 text-ink-mute" />
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Zap, Mail, AlertCircle, CheckCircle } from 'lucide-react'
+import { Mail, AlertCircle, CheckCircle } from 'lucide-react'
 import axios from 'axios'
 
 export default function ForgotPassword() {
@@ -30,11 +30,8 @@ export default function ForgotPassword() {
 
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold font-heading text-primary">ViraWorkX</span>
+          <Link to="/" className="inline-flex items-center">
+            <img src="/logo-lockup.png" alt="ViraWorkX" className="h-10 w-auto" />
           </Link>
           <p className="mt-3 text-gray-500">Reset your password</p>
         </div>

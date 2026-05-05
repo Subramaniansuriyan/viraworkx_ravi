@@ -1,91 +1,87 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800;900&family=Dancing+Script:wght@600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --border: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
+body {
+  font-family: 'Geist', 'Inter', sans-serif;
+  background: #ffffff;
+  color: #18141f;
+  margin: 0;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");
 }
 
 * {
-  border-color: hsl(var(--border));
+  border-color: #ebe7e0;
 }
 
-body {
-  font-family: 'Inter', sans-serif;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  margin: 0;
-  -webkit-font-smoothing: antialiased;
-}
-
-.font-heading {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-.font-display {
-  font-family: 'Playfair Display', serif;
-}
-
+.font-heading,
 .font-paragraph {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Geist', 'Inter', sans-serif;
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
+.font-display,
+.font-signature {
+  font-family: 'Instrument Serif', serif;
 }
 
-.bg-grid-pattern {
-  background-image:
-    linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-@keyframes slide-in-left {
-  from { opacity: 0; transform: translateX(-20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slide-in-right {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slide-in-bottom {
-  from { opacity: 0; transform: translateY(20px); }
+@keyframes vwx-rise {
+  from { opacity: 0; transform: translateY(28px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes fade-zoom {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+@keyframes vwx-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(124, 58, 237, 0); }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+@layer utilities {
+  .font-serif-italic-em {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    color: #512682;
+  }
+  .animate-vwx-rise {
+    animation: vwx-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-vwx-pulse {
+    animation: vwx-pulse 2s ease-in-out infinite;
+  }
+  .vwx-surface {
+    @apply bg-soft-gray border border-paper-line rounded-2xl;
+  }
+  /* Global soft migration layer for existing pages */
+  .bg-gray-50 { background-color: #f8f7f5 !important; }
+  .bg-white { background-color: #ffffff !important; }
+  .text-gray-900 { color: #18141f !important; }
+  .text-gray-700,
+  .text-gray-600,
+  .text-gray-500 { color: #6b6376 !important; }
+  .border-gray-200,
+  .border-gray-100,
+  .border-slate-700,
+  .border-slate-800 { border-color: #ebe7e0 !important; }
+  .bg-slate-900,
+  .bg-slate-950 { background-color: #0e0719 !important; }
+  .bg-slate-800 { background-color: #1a0d2e !important; }
+  .text-slate-300,
+  .text-slate-400,
+  .text-slate-500 { color: #a8a2b3 !important; }
+  .text-slate-900 { color: #18141f !important; }
 }
-
-.animate-slide-left { animation: slide-in-left 0.7s ease-out forwards; }
-.animate-slide-right { animation: slide-in-right 0.7s ease-out forwards; animation-delay: 0.2s; opacity: 0; }
-.animate-slide-bottom { animation: slide-in-bottom 0.5s ease-out forwards; }
-.animate-fade-zoom { animation: fade-zoom 1s ease-out forwards; opacity: 0; }
-.animate-float { animation: float 3s ease-in-out infinite; }
-
-.delay-300 { animation-delay: 0.3s; }
-.delay-500 { animation-delay: 0.5s; }
-.delay-700 { animation-delay: 0.7s; }

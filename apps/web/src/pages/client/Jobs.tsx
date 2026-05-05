@@ -18,7 +18,6 @@ import {
   Eye,
   Pause,
   Play,
-  Zap,
   ChevronDown,
   LogOut,
   Copy,
@@ -147,11 +146,8 @@ export default function ClientJobs() {
         <div className="max-w-7xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
-              <Link to="/" className="flex items-center gap-2">
-                <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold font-heading text-primary">ViraWorkX</span>
+              <Link to="/" className="flex items-center">
+                <img src="/logo-lockup.png" alt="ViraWorkX" className="h-9 w-auto" />
               </Link>
 
               <nav className="hidden md:flex items-center gap-6">
