@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Zap, CheckCircle, AlertCircle } from 'lucide-react'
+import { CheckCircle, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import api from '../../services/api'
 
@@ -36,11 +36,8 @@ export default function VerifyEmail() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md text-center">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold font-heading text-primary">ViraWorkX</span>
+          <Link to="/" className="inline-flex items-center">
+            <img src="/logo-lockup.png" alt="ViraWorkX" className="h-10 w-auto" />
           </Link>
         </div>
 

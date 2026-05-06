@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Zap, LogOut, Bot, Activity, Shield, Eye, ClipboardCheck,
+  LogOut, Bot, Activity, Shield, Eye, ClipboardCheck,
   Building2, Users, Briefcase, BarChart3, FileText, Layers, Target,
   GitBranch, Video, Menu, X, CheckSquare, FileCheck
 } from 'lucide-react'
@@ -97,14 +97,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         to={to}
         className={`flex items-center px-3 py-1.5 rounded-lg transition-colors text-sm ${
           isActive(to)
-            ? 'text-white bg-slate-800 font-medium'
-            : 'text-slate-300 hover:bg-slate-800'
+            ? 'text-white bg-brand font-medium'
+            : 'text-slate-300 hover:bg-plum'
         }`}
       >
         <Icon className="w-5 h-5 mr-3 shrink-0" />
         <span className="truncate">{label}</span>
         {badge !== undefined && badge > 0 && (
-          <span className="ml-auto bg-yellow-500 text-slate-900 text-xs font-bold px-2 py-0.5 rounded-full shrink-0">
+          <span className="ml-auto bg-accent text-white text-xs font-bold px-2 py-0.5 rounded-full shrink-0">
             {badge}
           </span>
         )}
@@ -114,15 +114,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const SidebarContent = () => (
     <>
-      <div className="p-4 border-b border-slate-700 shrink-0 flex items-center justify-between">
+      <div className="p-4 border-b border-paper-line shrink-0 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center shrink-0">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="text-xl font-bold">ViraWorkX</span>
-            <p className="text-xs text-slate-400">Admin Console</p>
-          </div>
+          <img src="/logo-lockup.png" alt="ViraWorkX" className="h-9 w-auto" />
+          <p className="text-xs text-slate-400">Admin Console</p>
         </Link>
         <button
           onClick={() => setSidebarOpen(false)}
@@ -168,12 +163,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-slate-700 shrink-0 overflow-visible">
+      <div className="p-4 border-t border-paper-line shrink-0 overflow-visible">
         <div className="flex items-center justify-center mb-3 relative z-[60]">
           <NotificationBell />
         </div>
         <div className="flex items-center gap-3 mb-3 px-2">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium shrink-0">
+          <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center text-white font-medium shrink-0">
             {getUserInitials()}
           </div>
           <div className="flex-1 min-w-0">
@@ -185,7 +180,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
         <button
           onClick={() => logout()}
-          className="flex items-center w-full px-4 py-2 text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
+          className="flex items-center w-full px-4 py-2 text-red-400 hover:bg-plum rounded-lg transition-colors"
         >
           <LogOut className="w-5 h-5 mr-3" />
           Log out
@@ -197,18 +192,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile top bar */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-30 h-16 bg-slate-900 flex items-center justify-between px-4 border-b border-slate-700">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-30 h-16 bg-plum-deep flex items-center justify-between px-4 border-b border-paper-line">
         <button
           onClick={() => setSidebarOpen(true)}
           className="p-2 text-slate-300 hover:text-white"
         >
           <Menu className="w-6 h-6" />
         </button>
-        <Link to="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-lg font-bold text-white">ViraWorkX</span>
+        <Link to="/" className="flex items-center">
+          <img src="/logo-lockup.png" alt="ViraWorkX" className="h-8 w-auto" />
         </Link>
         <NotificationBell />
       </header>
@@ -223,7 +215,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full w-64 bg-slate-900 text-white z-50 flex flex-col transition-transform duration-300
+        className={`fixed left-0 top-0 h-full w-64 bg-plum-deep text-white z-50 flex flex-col transition-transform duration-300
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0`}
       >

@@ -13,7 +13,6 @@ import {
   Award,
   Mail,
   Calendar,
-  Zap,
   Bell,
   ChevronDown,
   LogOut,
@@ -172,11 +171,8 @@ export default function Pipeline() {
               >
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
               </Link>
-              <div className="flex items-center gap-2">
-                <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold font-heading text-primary">ViraWorkX</span>
+              <div className="flex items-center">
+                <img src="/logo-lockup.png" alt="ViraWorkX" className="h-9 w-auto" />
               </div>
               {job && (
                 <div className="ml-4 pl-4 border-l">

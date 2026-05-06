@@ -1,850 +1,859 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
-import {
-  ArrowUpRight, Menu, X, Zap, CheckCircle, XCircle, ChevronDown,
-  Code2, Server, Layout, Brain, Smartphone, Paintbrush,
-} from 'lucide-react'
+// @ts-nocheck
+// ViraWorkXLanding.jsx
+// Drop-in React component for ViraWorkX marketing page.
+// Default export, no required props, no external CSS dependency.
+// Uses Inter from Google Fonts (loaded via <link>) and inline styles.
+//
+// IMAGE ASSETS: Place these files in your /public folder before deploying:
+//   /public/logo-lockup.png   (V/X mark + "ViraWorkX" wordmark, used in nav)
+//   /public/logo-full.png     (V/X mark + "ViraWorkX" + "Startup Ready Talent" tagline, used in footer)
+//   /public/founder-rahul.jpg (Rahul's headshot, used in hero card and founder bio)
+//
+// Usage:
+//   import ViraWorkXLanding from './ViraWorkXLanding'
+//   <ViraWorkXLanding />
+//
+// Note: For SEO and social previews, this component should ideally render
+// server-side (Next.js, Astro, Vite SSR). Client-side rendering means crawlers,
+// LinkedIn previews, and email scanners will see blank content until JS executes.
 
-// ── Hardcoded content ──────────────────────────────────────────────────────────
+import React, { useEffect, useState } from 'react';
 
-const PROCESS_STEPS = [
-  {
-    id: 1,
-    step: 'Step 01',
-    title: 'Define Your Ideal Engineer',
-    description:
-      'Tell us the role, tech stack, and team culture. Our intake process is designed to capture signal fast — no lengthy forms, no account setup required.',
-  },
-  {
-    id: 2,
-    step: 'Step 02',
-    title: 'We Match in 24 Hours',
-    description:
-      'Our vetting engine surfaces the top 3–5 pre-screened engineers based on your requirements. Every candidate has passed technical assessment and communication screening.',
-  },
-  {
-    id: 3,
-    step: 'Step 03',
-    title: '1-Week Paid Trial',
-    description:
-      "Work with the engineer for one week before committing. Not the right fit? We replace them within 48 hours at no extra cost. Zero risk, maximum velocity.",
-  },
-  {
-    id: 4,
-    step: 'Step 04',
-    title: 'Deploy with Confidence',
-    description:
-      "Once you've found your match, we handle contracts, compliance, IP agreements, and full onboarding. Your new engineer is ready to ship on Day 1.",
-  },
-]
+// ============================================================
+// EMBEDDED ASSETS (extract to /public folder if you want smaller bundle)
+// ============================================================
+const LOGO_LOCKUP = '/logo-lockup.png';
+const LOGO_FULL = '/logo-full.png';
+const FOUNDER_PHOTO = '/founder-rahul.jpg';
 
-const VALUE_PROPS = [
-  {
-    title: '48-Hour Turnaround',
-    description:
-      'First engineer introductions in under 48 hours. No endless sourcing cycles, no waiting weeks for a recruiter to call back.',
-    benefit: 'First match in 48 hours',
-  },
-  {
-    title: 'Pre-Vetted Only',
-    description:
-      'Every engineer passes a rigorous technical assessment before joining our network. You only meet candidates who are ready to perform.',
-    benefit: '~3% of applicants pass vetting',
-  },
-  {
-    title: 'Zero Risk Trial',
-    description:
-      "Start with a 1-week paid trial. If the engineer isn't the right fit, we replace them within 48 hours — no questions asked.",
-    benefit: 'Guaranteed replacement',
-  },
-  {
-    title: 'US Time Zone Overlap',
-    description:
-      'All engineers in our network maintain 4–8 hours of overlap with US working hours. Real-time collaboration, not async-only.',
-    benefit: '4–8 hrs daily overlap',
-  },
-  {
-    title: 'Full Compliance Handled',
-    description:
-      'Employment contracts, IP agreements, background checks, and compliance — all handled by our team so you can focus on building.',
-    benefit: 'Zero legal overhead',
-  },
-  {
-    title: 'Dedicated Support',
-    description:
-      'A dedicated account manager monitors every engagement. Fast escalation paths and ongoing support throughout the entire placement.',
-    benefit: 'Named account manager',
-  },
-]
+const CALENDLY_URL = 'https://calendly.com/rahul-viraworkx/30min';
 
-const COMPARISONS = [
-  { metric: 'Time to First Interview', traditional: '4–6 weeks minimum', viraworkx: 'Under 48 hours' },
-  { metric: 'Candidate Quality', traditional: 'Unverified, self-reported', viraworkx: 'Technical assessment + trial' },
-  { metric: 'Hiring Risk', traditional: 'High upfront cost, no guarantees', viraworkx: '1-week trial, free replacement' },
-  { metric: 'Time Zone', traditional: 'Complex coordination required', viraworkx: 'US overlap guaranteed' },
-  { metric: 'Compliance & Contracts', traditional: 'DIY or expensive legal fees', viraworkx: 'Fully handled by ViraWorkx' },
-  { metric: 'Recruiter Fees', traditional: '15–25% of first-year salary', viraworkx: 'Transparent flat pricing' },
-]
+// ============================================================
+// DESIGN TOKENS
+// ============================================================
+const tokens = {
+  ink: '#18141f',
+  inkSoft: '#2a2434',
+  inkMute: '#6b6376',
+  inkFaint: '#a8a2b3',
+  paper: '#ffffff',
+  paperLine: '#ebe7e0',
+  lavender: '#f5f2ff',
+  lavenderLine: '#e0d6ff',
+  softGray: '#f8f7f5',
+  brandPurple: '#512682',
+  brandPurpleDeep: '#3D1A65',
+  brandPurpleSoft: '#7d4eb8',
+  accent: '#7c3aed',
+  accentSoft: '#a78bfa',
+  accentDeep: '#5b21b6',
+  sans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
+};
 
-const ROLES = [
-  { Icon: Code2, title: 'Full Stack Engineers', desc: 'React, Node.js, TypeScript, Python', seniority: 'Senior to Staff · 5–10 yrs' },
-  { Icon: Server, title: 'Backend Engineers', desc: 'Go, Java, Python, Node.js, PostgreSQL', seniority: 'Mid to Staff · 4–10 yrs' },
-  { Icon: Layout, title: 'Frontend Engineers', desc: 'React, Vue, Next.js, Tailwind CSS', seniority: 'Senior to Staff · 5–9 yrs' },
-  { Icon: Paintbrush, title: 'UX / UI Designers', desc: 'Figma, Design Systems, Prototyping, User Research', seniority: 'Mid to Senior · 4–8 yrs' },
-  { Icon: Brain, title: 'ML / AI Engineers', desc: 'PyTorch, LangChain, LLMs, RAG', seniority: 'Senior to Staff · 4–8 yrs' },
-  { Icon: Smartphone, title: 'Mobile Engineers', desc: 'React Native, Flutter, Swift, Kotlin', seniority: 'Senior to Staff · 5–9 yrs' },
-]
+// ============================================================
+// CSS (injected once into <head> — handles fonts, media queries, hover, animations)
+// ============================================================
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300..700;1,300..700&display=swap');
 
-const FAQS = [
-  {
-    id: 1,
-    question: 'How quickly can I hire an engineer?',
-    answer:
-      'We deliver your first engineer introductions within 48 hours of receiving your brief. Most clients complete their trial and make a hiring decision within 2 weeks total.',
-  },
-  {
-    id: 2,
-    question: 'How does the 1-week paid trial work?',
-    answer:
-      "You pay a fixed weekly rate to work with the engineer on real tasks. If at any point during the first week you decide it's not the right fit, we replace the engineer within 48 hours at no additional cost.",
-  },
-  {
-    id: 3,
-    question: "What if the engineer isn't the right fit after the trial?",
-    answer:
-      'We offer ongoing replacement support. If an engineer leaves or the engagement is not working, we find a replacement quickly. Our goal is a long-term successful placement.',
-  },
-  {
-    id: 4,
-    question: 'How do you vet engineers before placing them?',
-    answer:
-      'Every engineer completes a technical assessment covering their primary skill set, a live coding evaluation, a communication and English proficiency test, and a background verification. Roughly 3% of applicants make it through.',
-  },
-  {
-    id: 5,
-    question: 'What roles and technologies do you specialize in?',
-    answer:
-      'We place full stack, backend, frontend, DevOps/cloud, ML/AI, and mobile engineers. Our network includes experts in React, Node.js, Python, Go, AWS, GCP, Kubernetes, PyTorch, and more.',
-  },
-  {
-    id: 6,
-    question: 'Do you handle contracts and compliance?',
-    answer:
-      'Yes — ViraWorkx manages employment agreements, IP assignment, NDAs, and all compliance requirements. You get a clean, legally sound engagement from day one.',
-  },
-]
+  .vwx * { box-sizing: border-box; }
+  .vwx { font-family: ${tokens.sans}; line-height: 1.5; color: ${tokens.ink}; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  .vwx h1, .vwx h2, .vwx h3, .vwx h4, .vwx p { margin: 0; }
+  .vwx a { color: inherit; text-decoration: none; }
 
-const OPERATIONAL_STATS = [
-  { value: '~3%', label: 'of applicants pass vetting' },
-  { value: '<48hr', label: 'median time to first match' },
-  { value: '4–8hr', label: 'daily US timezone overlap' },
-  { value: '7-day', label: 'trial built into every engagement' },
-]
-
-const NAV_LINKS = [
-  { label: 'How It Works', id: 'how-it-works' },
-  { label: 'Why ViraWorkx', id: 'why-viraworkx' },
-  { label: 'Roles', id: 'roles' },
-  { label: 'For Talent', id: 'for-talent' },
-  { label: 'FAQ', id: 'faq' },
-]
-
-// ── Component ──────────────────────────────────────────────────────────────────
-
-export default function Landing() {
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [activeFaq, setActiveFaq] = useState<number | null>(null)
-
-  const { scrollY } = useScroll()
-  const heroY = useTransform(scrollY, [0, 600], [0, -120])
-  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0.4])
-
-  useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  const scrollTo = (id: string) => {
-    setIsMobileMenuOpen(false)
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+  /* Hero animation */
+  @keyframes vwx-rise {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes vwx-float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .vwx .vwx-rise-1 { opacity: 0; animation: vwx-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.05s forwards; }
+    .vwx .vwx-rise-2 { opacity: 0; animation: vwx-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.18s forwards; }
+    .vwx .vwx-fade-1 { opacity: 0; animation: vwx-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.12s forwards; }
+    .vwx .vwx-fade-2 { opacity: 0; animation: vwx-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards; }
+    .vwx .vwx-fade-3 { opacity: 0; animation: vwx-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.28s forwards; }
+    .vwx .vwx-section-reveal { opacity: 0; animation: vwx-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .vwx .vwx-founder-photo { animation: vwx-float 4.2s ease-in-out infinite; }
+    .vwx .vwx-step { opacity: 0; animation: vwx-rise 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .vwx .vwx-steps .vwx-step:nth-child(1) { animation-delay: 0.08s; }
+    .vwx .vwx-steps .vwx-step:nth-child(2) { animation-delay: 0.16s; }
+    .vwx .vwx-steps .vwx-step:nth-child(3) { animation-delay: 0.24s; }
   }
 
+  /* Pulse dot */
+  @keyframes vwx-pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(124, 58, 237, 0); }
+  }
+  .vwx .vwx-dot { animation: vwx-pulse 2s ease-in-out infinite; }
+
+  /* Hover effects */
+  .vwx .vwx-btn-primary { transition: transform 0.15s, background 0.15s; }
+  .vwx .vwx-btn-primary:hover { background: ${tokens.accentDeep}; transform: translateY(-1px); }
+  .vwx .vwx-btn-primary svg { transition: transform 0.2s; }
+  .vwx .vwx-btn-primary:hover svg { transform: translate(2px, -2px); }
+
+  .vwx .vwx-btn-secondary { transition: background 0.15s, color 0.15s; }
+  .vwx .vwx-btn-secondary:hover { background: ${tokens.ink}; color: ${tokens.paper}; }
+
+  .vwx .vwx-cta-light { transition: transform 0.15s, background 0.15s; }
+  .vwx .vwx-cta-light:hover { background: rgba(255,255,255,0.92); transform: translateY(-1px); }
+  .vwx .vwx-cta-light svg { transition: transform 0.2s; }
+  .vwx .vwx-cta-light:hover svg { transform: translate(2px, -2px); }
+
+  .vwx .vwx-nav-cta { transition: transform 0.15s, background 0.15s, color 0.15s; }
+  .vwx .vwx-nav-cta:hover { background: ${tokens.accentDeep}; color: ${tokens.paper}; transform: translateY(-1px); }
+
+  .vwx .vwx-nav-link { transition: color 0.15s; }
+  .vwx .vwx-nav-link:hover { color: ${tokens.ink}; }
+
+  .vwx .vwx-step { transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease; }
+  .vwx .vwx-step:hover { transform: translateY(-3px); box-shadow: 0 16px 36px -18px rgba(24, 20, 31, 0.12); background: ${tokens.lavender}; }
+
+  .vwx .vwx-role { transition: background 0.2s; }
+  .vwx .vwx-role:hover { background: ${tokens.lavender}; }
+
+  .vwx .vwx-faq summary { cursor: pointer; list-style: none; transition: color 0.2s; }
+  .vwx .vwx-faq summary::-webkit-details-marker { display: none; }
+  .vwx .vwx-faq summary:hover { color: ${tokens.brandPurple}; }
+  .vwx .vwx-faq[open] .vwx-faq-icon { transform: rotate(45deg); background: ${tokens.ink}; color: ${tokens.paper}; }
+  .vwx .vwx-faq-icon { transition: transform 0.25s, background 0.2s, color 0.2s; }
+
+  .vwx .vwx-footer-link { transition: color 0.15s; }
+  .vwx .vwx-footer-link:hover { color: ${tokens.brandPurple}; }
+
+  /* Drop cap on founder bio first paragraph */
+  .vwx .vwx-founder-bio p:first-of-type::first-letter {
+    font-weight: 600;
+    font-size: 60px;
+    float: left;
+    line-height: 0.9;
+    margin-right: 10px;
+    margin-top: 6px;
+    color: ${tokens.paper};
+  }
+
+  /* ============ DESKTOP DEFAULTS ============ */
+  .vwx-hero-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 60px; align-items: start; }
+  .vwx-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .vwx-sample-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 56px; align-items: center; }
+  .vwx-founder-block { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 64px; align-items: start; }
+  .vwx-roles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: ${tokens.paperLine}; border: 1px solid ${tokens.paperLine}; border-radius: 20px; overflow: hidden; }
+  .vwx-footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 40px; }
+
+  /* Calculator slider thumb */
+  .vwx-calc-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px;
+    background: ${tokens.brandPurple};
+    border-radius: 50%; cursor: pointer;
+    border: 3px solid ${tokens.paper};
+    box-shadow: 0 2px 8px rgba(81, 38, 130, 0.4);
+    transition: transform .1s;
+  }
+  .vwx-calc-slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+  .vwx-calc-slider::-moz-range-thumb {
+    width: 22px; height: 22px;
+    background: ${tokens.brandPurple};
+    border-radius: 50%; cursor: pointer;
+    border: 3px solid ${tokens.paper};
+    box-shadow: 0 2px 8px rgba(81, 38, 130, 0.4);
+  }
+  .vwx-calc-cta { transition: transform 0.15s, background 0.15s; }
+  .vwx-calc-cta:hover { background: ${tokens.brandPurple}; transform: translateY(-1px); }
+
+  /* ============ TABLET ============ */
+  @media (max-width: 980px) {
+    .vwx-hero-grid { grid-template-columns: 1fr; gap: 40px; }
+  }
+  @media (max-width: 880px) {
+    .vwx-nav-link-hide { display: none !important; }
+    .vwx-steps { grid-template-columns: 1fr; }
+    .vwx-sample-grid { grid-template-columns: 1fr; gap: 36px; }
+    .vwx-founder-block { grid-template-columns: 1fr; gap: 40px; }
+    .vwx-roles-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ============ MOBILE ============ */
+  @media (max-width: 720px) {
+    .vwx-container { padding: 0 20px !important; }
+    .vwx-hero { padding: 40px 0 56px !important; }
+    .vwx-h1 { font-size: clamp(34px, 9vw, 44px) !important; line-height: 1.05 !important; }
+    .vwx-section-pad { padding: 56px 0 !important; }
+    .vwx-section-title { font-size: clamp(28px, 7vw, 36px) !important; line-height: 1.1 !important; }
+    .vwx-section-header { margin-bottom: 40px !important; }
+    .vwx-sample-section { padding: 40px 24px !important; margin: 0 16px !important; border-radius: 20px !important; }
+    .vwx-cta-section { padding: 44px 22px !important; margin: 0 16px !important; border-radius: 20px !important; }
+    .vwx-cta-section h2 { font-size: clamp(28px, 8vw, 38px) !important; }
+    .vwx-founder-portrait { max-width: 100% !important; aspect-ratio: 1/1.1 !important; }
+    .vwx-founder-bio-h2 { font-size: clamp(26px, 7vw, 34px) !important; line-height: 1.12 !important; }
+    .vwx-step { padding: 28px 22px !important; }
+    .vwx-role { padding: 24px 20px !important; }
+    .vwx-faq-summary { font-size: 17px !important; }
+    .vwx-roles-grid { grid-template-columns: 1fr !important; }
+    .vwx-profile-row { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
+    .vwx-profile-row > span:last-child { text-align: left !important; }
+    .vwx-profile-stack { justify-content: flex-start !important; }
+    .vwx-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
+    .vwx-footer-bottom { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; font-size: 10.5px !important; }
+    .vwx-logo-img { height: 30px !important; }
+  }
+
+  @media (max-width: 380px) {
+    .vwx-cta-row { flex-direction: column !important; align-items: stretch !important; }
+    .vwx-cta-row a { justify-content: center; width: 100%; }
+    .vwx-founder-stats { grid-template-columns: 1fr 1fr !important; row-gap: 16px !important; }
+    .vwx-founder-stats > div:last-child { grid-column: 1 / -1 !important; text-align: center; }
+  }
+`;
+
+// ============================================================
+// REUSABLE INLINE COMPONENTS
+// ============================================================
+const ArrowUpRight = ({ size = 12 }) => (
+  <svg width={size} height={size} viewBox="0 0 12 12" fill="none" style={{ display: 'inline-block' }}>
+    <path d="M2.5 9.5L9.5 2.5M9.5 2.5H4M9.5 2.5V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// Inter doesn't have a "wonk" italic like Instrument Serif, so we style emphasis with italic + brand color + slightly heavier weight
+const Em = ({ children, color = tokens.brandPurple }) => (
+  <em style={{ fontStyle: 'italic', fontWeight: 500, color }}>{children}</em>
+);
+
+// ============================================================
+// CALCULATOR SECTION
+// ============================================================
+const TIER_RATES = { '1': 45, '2': 35, '3': 27.5 };
+const TIER_LABELS = { '1': 'Tier 1 — Senior', '2': 'Tier 2 — Mid', '3': 'Tier 3 — Junior' };
+const HOURS_PER_YEAR = 1880;
+const US_BASE = 130000;
+const US_TOTAL = US_BASE + (US_BASE * 0.20) + 4000 + 9000; // $169K
+
+const fmtK = (n) => '$' + Math.round(n / 1000) + 'K';
+const fmtFull = (n) => '$' + Math.round(n).toLocaleString();
+
+const CalculatorSection = () => {
+  const [tier, setTier] = useState('1');
+  const [count, setCount] = useState(1);
+
+  const rate = TIER_RATES[tier];
+  const vwxPer = rate * HOURS_PER_YEAR;
+  const totalUs = US_TOTAL * count;
+  const totalVwx = vwxPer * count;
+  const savings = totalUs - totalVwx;
+  const pct = Math.round(((US_TOTAL - vwxPer) / US_TOTAL) * 100);
+
+  const usDisplay = count === 1 ? fmtK(US_TOTAL) : fmtK(totalUs);
+  const vwxDisplay = count === 1 ? fmtK(vwxPer) : fmtK(totalVwx);
+  const pctText = count === 1 ? `${pct}% lower than hiring in the US` : `${pct}% lower across ${count} engineers`;
+  const countLabel = count === 1 ? '1 engineer' : `${count} engineers`;
+
   return (
-    <div className="min-h-screen bg-[#FAFAF9] text-[#1A0F2E] overflow-x-hidden">
+    <section id="calculator" style={{ padding: '0 0 88px' }}>
+      <div className="vwx-sample-section" style={{
+        background: tokens.brandPurple, color: tokens.paper, borderRadius: 28,
+        padding: '56px 48px', margin: '0 32px', position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{
+          position: 'absolute', top: '-30%', left: '-10%', width: 600, height: 600,
+          background: 'radial-gradient(circle, rgba(167, 139, 250, 0.18), transparent 60%)', pointerEvents: 'none',
+        }}></div>
 
-      {/* ── HEADER ── */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? 'bg-[#FAFAF9] shadow-lg' : 'bg-[#FAFAF9]/95'
-        }`}
-      >
-        <div className="max-w-[120rem] mx-auto px-6 md:px-12 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="hover:opacity-80 transition-opacity">
-              <img src="/logo.png" alt="ViraWorkX" className="h-12 w-auto mix-blend-multiply" />
-            </Link>
-
-            <nav className="hidden lg:flex items-center gap-8">
-              {NAV_LINKS.map(({ label, id }) => (
-                <button
-                  key={id}
-                  onClick={() => scrollTo(id)}
-                  className="font-paragraph text-sm font-medium text-[#1A0F2E] hover:text-primary transition-colors"
-                >
-                  {label}
-                </button>
-              ))}
-              <Link
-                to="/login"
-                className="font-paragraph text-sm font-medium text-[#1A0F2E] hover:text-primary transition-colors"
-              >
-                Sign In
-              </Link>
-              {/* TODO: replace /register with your Calendly link */}
-              <Link
-                to="/register"
-                className="font-paragraph text-sm font-semibold py-3 px-6 bg-primary text-white hover:bg-primary/90 transition-colors"
-              >
-                Book a 20-min Call
-              </Link>
-            </nav>
-
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden text-[#1A0F2E] hover:text-primary transition-colors"
-              aria-label="Toggle menu"
-            >
-              {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-            </button>
+        <div className="vwx-sample-grid" style={{ position: 'relative', zIndex: 2 }}>
+          <div>
+            <span style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.7)', marginBottom: 20, display: 'inline-block', fontWeight: 500 }}>Burn rate calculator</span>
+            <h2 className="vwx-section-title" style={{ fontWeight: 600, fontSize: 'clamp(34px, 4.5vw, 52px)', lineHeight: 1.05, letterSpacing: '-0.02em', color: tokens.paper, marginBottom: 20 }}>
+              See what you save <em style={{ fontStyle: 'italic', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>before the call.</em>
+            </h2>
+            <p style={{ fontSize: 17, lineHeight: 1.55, color: 'rgba(255, 255, 255, 0.78)', maxWidth: 460, marginBottom: 14 }}>
+              US-based senior engineers cost $130K+ base, plus 30% loaded for benefits, taxes, equipment, recruiter fees. ViraWorkX engineers cost a fraction of that, with the same vetting bar.
+            </p>
+            <p style={{ fontSize: 17, lineHeight: 1.55, color: 'rgba(255, 255, 255, 0.78)', maxWidth: 460 }}>
+              Move the slider. We'll show you the math.
+            </p>
           </div>
 
-          <AnimatePresence>
-            {isMobileMenuOpen && (
-              <motion.nav
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="lg:hidden mt-4 pb-4 space-y-3 overflow-hidden border-t border-[#1A0F2E]/10 pt-4"
-              >
-                {NAV_LINKS.map(({ label, id }) => (
-                  <button
-                    key={id}
-                    onClick={() => scrollTo(id)}
-                    className="block w-full text-left font-paragraph text-sm font-medium text-[#1A0F2E] hover:text-primary py-2"
-                  >
-                    {label}
-                  </button>
-                ))}
-                <Link
-                  to="/login"
-                  className="block font-paragraph text-sm font-medium text-[#1A0F2E] hover:text-primary py-2"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/register"
-                  className="block text-center font-paragraph text-sm font-semibold py-3 px-6 bg-primary text-white hover:bg-primary/90 transition-colors mt-2"
-                >
-                  Book a 20-min Call
-                </Link>
-              </motion.nav>
-            )}
-          </AnimatePresence>
-        </div>
-      </header>
+          <div style={{
+            background: tokens.paper, borderRadius: 18, padding: 28,
+            boxShadow: '0 18px 50px -15px rgba(0, 0, 0, 0.25)',
+          }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 11, letterSpacing: '0.06em',
+              textTransform: 'uppercase', color: tokens.brandPurple, padding: '6px 12px',
+              border: `1px solid ${tokens.lavenderLine}`, background: tokens.lavender,
+              borderRadius: 999, marginBottom: 20, fontWeight: 500,
+            }}>
+              <span className="vwx-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a', boxShadow: '0 0 8px rgba(22, 163, 74, 0.5)' }}></span>
+              Live calculation
+            </div>
+            <div style={{ fontWeight: 600, fontSize: 22, letterSpacing: '-0.018em', lineHeight: 1.1, marginBottom: 6, color: tokens.ink }}>How much does ViraWorkX save you?</div>
+            <div style={{ fontFamily: tokens.sans, fontSize: 11.5, letterSpacing: '0.04em', textTransform: 'uppercase', color: tokens.inkMute, marginBottom: 24, fontWeight: 500 }}>Based on a 12-month engagement</div>
 
-      {/* ── HERO ── */}
-      <section className="relative w-full min-h-[90vh] flex items-center pt-32 pb-20 overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#FAFAF9] via-[#FAFAF9] to-primary/8" />
-          <div className="absolute top-0 right-0 w-[32rem] h-[32rem] bg-primary/15 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-[32rem] h-[32rem] bg-primary/10 rounded-full blur-3xl" />
-        </div>
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.025] z-0"
-          style={{
-            backgroundImage:
-              'linear-gradient(to right, #9D4EDD 1px, transparent 1px), linear-gradient(to bottom, #9D4EDD 1px, transparent 1px)',
-            backgroundSize: '4rem 4rem',
-          }}
-        />
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', color: tokens.inkMute, marginBottom: 10, fontWeight: 500 }}>
+                <span>Tier</span>
+                <span style={{ fontSize: 14, textTransform: 'none', letterSpacing: 0, color: tokens.ink, fontWeight: 600 }}>{TIER_LABELS[tier]}</span>
+              </label>
+              <select value={tier} onChange={(e) => setTier(e.target.value)} style={{
+                width: '100%', padding: '13px 14px', border: `1px solid ${tokens.paperLine}`, borderRadius: 10,
+                fontFamily: tokens.sans, fontSize: 14, color: tokens.ink, background: tokens.paper,
+                cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
+                backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b6376' d='M1 1l5 5 5-5'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center',
+              }}>
+                <option value="1">Tier 1 — Senior ($40–50/hr)</option>
+                <option value="2">Tier 2 — Mid ($30–40/hr)</option>
+                <option value="3">Tier 3 — Junior ($25–30/hr)</option>
+              </select>
+            </div>
 
-        <motion.div
-          style={{ y: heroY, opacity: heroOpacity }}
-          className="relative z-10 w-full max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
-        >
-          {/* Left: headline */}
-          <div className="lg:col-span-8 flex flex-col items-start">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#2D1B4E] text-[#F5F3FF] rounded-full mb-8 border border-primary/30"
-            >
-              <span className="font-paragraph text-xs uppercase tracking-widest font-semibold">
-                Now placing senior engineers · Q2 2026
-              </span>
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="font-display text-4xl md:text-6xl lg:text-7xl font-black leading-[0.95] tracking-tight mb-8 text-[#1A0F2E]"
-            >
-              HIRE PRE-VETTED
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/70">
-                INDIAN ENGINEERS
-              </span>
-              <br />
-              IN{' '}
-              <span className="text-primary relative inline-block">
-                48 HOURS
-                <svg
-                  className="absolute -bottom-2 left-0 w-full h-4 text-primary"
-                  viewBox="0 0 100 20"
-                  preserveAspectRatio="none"
-                >
-                  <path d="M0,10 Q50,20 100,10" fill="none" stroke="currentColor" strokeWidth="4" />
-                </svg>
-              </span>
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="font-paragraph text-lg md:text-xl text-[#1A0F2E]/70 max-w-2xl mb-12 leading-relaxed border-l-4 border-primary pl-6"
-            >
-              Pre-vetted Indian software engineers for US startups. Start with a 1-week paid trial. Not
-              satisfied? We replace within 48 hours. Zero risk.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col sm:flex-row gap-4"
-            >
-              {/* TODO: replace /register with your Calendly link */}
-              <Link
-                to="/register"
-                className="group relative inline-flex items-center justify-center px-8 py-5 font-paragraph text-base font-semibold bg-primary text-white overflow-hidden transition-all hover:scale-[1.02] shadow-lg"
-              >
-                <span className="absolute inset-0 w-full h-full bg-[#1A0F2E] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-                <span className="relative flex items-center gap-2 group-hover:text-white transition-colors duration-300">
-                  Book a 20-min Call <ArrowUpRight className="w-5 h-5" />
-                </span>
-              </Link>
-              <Link
-                to="/register?type=candidate"
-                className="inline-flex items-center justify-center px-8 py-5 font-paragraph text-sm font-semibold border-2 border-[#1A0F2E]/30 text-[#1A0F2E] hover:border-primary hover:text-primary transition-colors"
-              >
-                Apply to Network
-              </Link>
-            </motion.div>
-          </div>
-
-          {/* Right: "What you get" card — flat, no tilt */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="lg:col-span-4 relative hidden lg:block"
-          >
-            <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full" />
-            <div className="relative bg-[#2D1B4E] p-8 border border-primary/30 shadow-2xl">
-              <div className="mb-8 pb-8 border-b border-primary/20">
-                <span className="font-paragraph text-xs text-[#F5F3FF]/50 uppercase tracking-widest">
-                  What you get
-                </span>
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', color: tokens.inkMute, marginBottom: 10, fontWeight: 500 }}>
+                <span>Engineers needed</span>
+                <span style={{ fontSize: 14, textTransform: 'none', letterSpacing: 0, color: tokens.ink, fontWeight: 600 }}>{countLabel}</span>
+              </label>
+              <input
+                type="range" min="1" max="10" value={count}
+                onChange={(e) => setCount(parseInt(e.target.value))}
+                className="vwx-calc-slider"
+                style={{
+                  width: '100%', height: 6, WebkitAppearance: 'none', appearance: 'none',
+                  background: tokens.paperLine, borderRadius: 999, outline: 'none', margin: '4px 0',
+                }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 10, color: tokens.inkFaint, letterSpacing: '0.04em', fontWeight: 500 }}>
+                <span>1</span><span>3</span><span>5</span><span>7</span><span>10</span>
               </div>
-              <div className="space-y-8">
-                {/* Primary stat — largest */}
-                <div className="flex flex-col">
-                  <span className="font-display text-5xl font-black text-primary leading-none mb-1">48 hrs</span>
-                  <span className="font-paragraph text-sm text-[#F5F3FF]/60">to your first engineer match</span>
+            </div>
+
+            <div style={{ marginTop: 28, paddingTop: 24, borderTop: `1px solid ${tokens.paperLine}` }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
+                <div style={{ padding: '16px 14px', borderRadius: 12, background: '#fef3f2', border: '1px solid #fecaca' }}>
+                  <div style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#b91c1c', marginBottom: 8, fontWeight: 500 }}>Hire in US</div>
+                  <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em', color: tokens.ink, lineHeight: 1, marginBottom: 4, fontVariantNumeric: 'tabular-nums' }}>{usDisplay}</div>
+                  <div style={{ fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase', color: tokens.inkMute, fontWeight: 500 }}>per engineer / yr</div>
                 </div>
-                {/* Secondary stats — visibly smaller */}
-                <div className="flex flex-col gap-4 pt-4 border-t border-primary/20">
-                  <div className="flex items-center justify-between">
-                    <span className="font-paragraph text-sm text-[#F5F3FF]/60">Trial period</span>
-                    <span className="font-display text-base font-bold text-[#F5F3FF]">1 week</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-paragraph text-sm text-[#F5F3FF]/60">Replacement</span>
-                    <span className="font-display text-base font-bold text-[#F5F3FF]">Guaranteed</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-paragraph text-sm text-[#F5F3FF]/60">Vetting pass rate</span>
-                    <span className="font-display text-base font-bold text-[#F5F3FF]">~3%</span>
-                  </div>
+                <div style={{ padding: '16px 14px', borderRadius: 12, background: tokens.lavender, border: `1px solid ${tokens.lavenderLine}` }}>
+                  <div style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: tokens.brandPurple, marginBottom: 8, fontWeight: 500 }}>Via ViraWorkX</div>
+                  <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em', color: tokens.ink, lineHeight: 1, marginBottom: 4, fontVariantNumeric: 'tabular-nums' }}>{vwxDisplay}</div>
+                  <div style={{ fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase', color: tokens.inkMute, fontWeight: 500 }}>per engineer / yr</div>
+                </div>
+              </div>
+
+              <div style={{
+                background: `linear-gradient(135deg, ${tokens.brandPurple}, ${tokens.brandPurpleDeep})`,
+                color: tokens.paper, borderRadius: 12, padding: 20, textAlign: 'center', marginBottom: 18,
+                position: 'relative', overflow: 'hidden',
+              }}>
+                <div style={{ fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.75)', marginBottom: 8, fontWeight: 500 }}>Annual savings</div>
+                <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1, marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>{fmtFull(savings)}</div>
+                <div style={{ fontSize: 14, color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>{pctText}</div>
+              </div>
+
+              <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer" className="vwx-calc-cta" style={{
+                display: 'block', textAlign: 'center', background: tokens.ink, color: tokens.paper,
+                padding: '14px 24px', borderRadius: 999, fontSize: 14.5, fontWeight: 500, textDecoration: 'none',
+              }}>
+                Book a 30-min call →
+              </a>
+
+              <p style={{
+                marginTop: 14, fontSize: 10, letterSpacing: '0.04em', color: tokens.inkFaint,
+                textAlign: 'center', lineHeight: 1.5, fontWeight: 500,
+              }}>
+                US cost = $130K base + 30% loaded (benefits, taxes, equipment, recruiter fees). ViraWorkX cost assumes 40 hrs/week × 47 weeks (PTO included). No lock-in. No minimum commitment.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
+export default function Landing() {
+  // Inject the CSS once
+  useEffect(() => {
+    const id = 'vwx-styles';
+    if (document.getElementById(id)) return;
+    const style = document.createElement('style');
+    style.id = id;
+    style.textContent = CSS;
+    document.head.appendChild(style);
+    return () => {
+      const s = document.getElementById(id);
+      if (s) s.remove();
+    };
+  }, []);
+
+  return (
+    <div className="vwx" style={{ background: tokens.paper, color: tokens.ink, overflowX: 'hidden' }}>
+
+      {/* ============ NAV ============ */}
+      <nav style={{
+        position: 'sticky', top: 0, zIndex: 50,
+        backdropFilter: 'blur(20px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(140%)',
+        background: 'rgba(255, 255, 255, 0.82)',
+        borderBottom: '1px solid rgba(24, 20, 31, 0.06)',
+      }}>
+        <div className="vwx-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72 }}>
+          <a href="/" aria-label="ViraWorkX home" style={{ display: 'flex', alignItems: 'center' }}>
+            <img className="vwx-logo-img" src={LOGO_LOCKUP} alt="ViraWorkX" style={{ height: 36, width: 'auto', display: 'block' }} />
+          </a>
+          <div style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
+            <a href="#how" className="vwx-nav-link vwx-nav-link-hide" style={{ color: tokens.inkSoft, fontSize: 14, fontWeight: 450 }}>How It Works</a>
+            <a href="#sample" className="vwx-nav-link vwx-nav-link-hide" style={{ color: tokens.inkSoft, fontSize: 14, fontWeight: 450 }}>How We Vet</a>
+            <a href="#founder" className="vwx-nav-link vwx-nav-link-hide" style={{ color: tokens.inkSoft, fontSize: 14, fontWeight: 450 }}>Why Us</a>
+            <a href="#faq" className="vwx-nav-link vwx-nav-link-hide" style={{ color: tokens.inkSoft, fontSize: 14, fontWeight: 450 }}>FAQ</a>
+            <a href="/login" className="vwx-nav-cta" style={{
+              background: tokens.brandPurple, color: tokens.paper, padding: '11px 22px', borderRadius: 999, fontSize: 14, fontWeight: 500,
+            }}>
+              Sign In
+            </a>
+            <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer" className="vwx-nav-cta" style={{
+              background: tokens.ink, color: tokens.paper, padding: '11px 22px', borderRadius: 999, fontSize: 14, fontWeight: 500,
+            }}>Book a Call</a>
+          </div>
+        </div>
+      </nav>
+
+      {/* ============ HERO ============ */}
+      <section className="vwx-hero" style={{ padding: '56px 0 72px', position: 'relative', overflow: 'hidden' }}>
+        <div className="vwx-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', position: 'relative', zIndex: 2 }}>
+          <div className="vwx-hero-grid">
+            <div className="vwx-rise-1">
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 11.5, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase', color: tokens.inkMute, marginBottom: 22 }}>
+                <span className="vwx-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: tokens.accent }}></span>
+                <span>Pre-launch · Founder-led · Trial-protected</span>
+              </div>
+              <h1 className="vwx-h1 vwx-fade-1" style={{ fontWeight: 600, fontSize: 'clamp(40px, 6vw, 68px)', lineHeight: 1.0, letterSpacing: '-0.025em', color: tokens.ink, marginBottom: 22 }}>
+                Founders hire founders.{' '}
+                <Em>I take every first call.</Em>
+              </h1>
+              <p className="vwx-fade-2" style={{ fontSize: 17, lineHeight: 1.55, color: tokens.inkSoft, maxWidth: 540, marginBottom: 28 }}>
+                ViraWorkX pairs US founders with senior engineers — matched in 48 hours, on a paid trial week, at 30–50% below US market rate. Built by an operator with 16 years of cross-border experience. No SDRs. No agency middlemen.
+              </p>
+              <div className="vwx-cta-row vwx-fade-3" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer" className="vwx-btn-primary" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 10, background: tokens.ink, color: tokens.paper,
+                  padding: '16px 26px', borderRadius: 999, fontSize: 15, fontWeight: 500,
+                }}>
+                  Book a 30-min call
+                  <ArrowUpRight />
+                </a>
+                <a href="#sample" className="vwx-btn-secondary" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8, color: tokens.ink,
+                  padding: '16px 24px', borderRadius: 999, fontSize: 15, fontWeight: 500, border: `1px solid ${tokens.ink}`,
+                }}>How we vet</a>
+              </div>
+            </div>
+
+            {/* Founder hero card — deep brand purple */}
+            <div className="vwx-rise-2" style={{
+              background: tokens.brandPurple, color: tokens.paper, borderRadius: 24, padding: '32px 28px 28px',
+              position: 'relative', overflow: 'hidden', boxShadow: '0 24px 50px -22px rgba(81, 38, 130, 0.4)',
+            }}>
+              <div style={{
+                position: 'absolute', top: '-40%', right: '-30%', width: 380, height: 380,
+                background: 'radial-gradient(circle, rgba(167, 139, 250, 0.25), transparent 70%)', pointerEvents: 'none',
+              }}></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20, position: 'relative', zIndex: 2 }}>
+                <img className="vwx-founder-photo" src={FOUNDER_PHOTO} alt="Rahul Ramachandran, Founder" style={{
+                  width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255, 255, 255, 0.2)',
+                }} />
+                <div style={{ lineHeight: 1.35 }}>
+                  <strong style={{ fontWeight: 500, fontSize: 16, letterSpacing: '-0.015em', display: 'block', color: tokens.paper }}>Rahul Ramachandran</strong>
+                  <span style={{ fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.7)' }}>Founder · I take every first call</span>
+                </div>
+              </div>
+              <p style={{
+                fontStyle: 'italic', fontSize: 18, lineHeight: 1.5, letterSpacing: '-0.005em',
+                marginBottom: 24, position: 'relative', zIndex: 2, color: 'rgba(255, 255, 255, 0.95)',
+                fontWeight: 400,
+              }}>
+                "I've watched US founders burn $40K/month on average engineers. I've watched senior engineers get stuck in agency contracts that pay them peanuts. ViraWorkX is the network I wish existed on either side of that table."
+              </p>
+              <div className="vwx-founder-stats" style={{
+                display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, paddingTop: 22,
+                borderTop: '1px solid rgba(255, 255, 255, 0.18)', position: 'relative', zIndex: 2,
+              }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 24, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 6, color: tokens.paper }}>16<span style={{ fontSize: 16, fontWeight: 500 }}>yr</span></div>
+                  <div style={{ fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.65)', lineHeight: 1.3 }}>US-India ops</div>
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 24, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 6, color: tokens.paper }}>20→2.5K</div>
+                  <div style={{ fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.65)', lineHeight: 1.3 }}>Scaled prior team</div>
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 24, letterSpacing: '-0.015em', lineHeight: 1, marginBottom: 6, color: tokens.paper }}>700→20</div>
+                  <div style={{ fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.65)', lineHeight: 1.3 }}>Hand-vetted to network</div>
                 </div>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </section>
 
-      {/* ── PROOF STRIP ── replaces scrolling marquee */}
-      <div className="w-full bg-[#2D1B4E] border-y border-primary/30 py-5">
-        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24 flex flex-col sm:flex-row items-center justify-center gap-3 text-center">
-          <p className="font-paragraph text-sm text-[#F5F3FF]/80">
-            Currently placing engineers across US-based SaaS startups in fintech, devtools, and AI.
-          </p>
-          <Link
-            to="/register"
-            className="font-paragraph text-sm font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap underline underline-offset-4"
-          >
-            Request a reference →
-          </Link>
+      {/* ============ TICKER ============ */}
+      <div style={{
+        borderTop: `1px solid ${tokens.paperLine}`, borderBottom: `1px solid ${tokens.paperLine}`,
+        padding: '16px 0', background: tokens.softGray,
+        fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: tokens.inkMute, fontWeight: 500,
+      }}>
+        <div className="vwx-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', display: 'flex', gap: 32, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <span>Pre-vetted only</span>
+          <span style={{ color: tokens.accent }}>·</span>
+          <span>1-week paid trial</span>
+          <span style={{ color: tokens.accent }}>·</span>
+          <span>Guaranteed replacement</span>
+          <span style={{ color: tokens.accent }}>·</span>
+          <span>4–8 hr US timezone overlap</span>
+          <span style={{ color: tokens.accent }}>·</span>
+          <span>No agency markup</span>
         </div>
       </div>
 
-      {/* ── COMPARISON — moved up, highest converting section ── */}
-      <section className="w-full py-24 md:py-32 bg-[#FAFAF9]">
-        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-[#1A0F2E] mb-4">
-              THE OLD WAY VS{' '}
-              <span className="text-primary">VIRAWORKX</span>
+      {/* ============ HOW IT WORKS ============ */}
+      <section id="how" className="vwx-section-pad vwx-section-reveal" style={{ padding: '88px 0', position: 'relative', zIndex: 2 }}>
+        <div className="vwx-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
+          <div className="vwx-section-header" style={{ maxWidth: 760, marginBottom: 48 }}>
+            <span style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: tokens.brandPurple, marginBottom: 20, display: 'inline-block', fontWeight: 500 }}>How it works</span>
+            <h2 className="vwx-section-title" style={{ fontWeight: 600, fontSize: 'clamp(34px, 4.5vw, 52px)', lineHeight: 1.05, letterSpacing: '-0.02em', color: tokens.ink, marginBottom: 20 }}>
+              Brief to deployed engineer in <Em>under two weeks.</Em>
             </h2>
-            <p className="font-paragraph text-lg text-[#1A0F2E]/60 max-w-xl mx-auto">
-              The case for switching — built for the conversation with your co-founder or CFO.
-            </p>
-          </motion.div>
+            <p style={{ fontSize: 18, lineHeight: 1.55, color: tokens.inkMute, maxWidth: 600 }}>A straightforward process — faster than most agencies can schedule a kickoff call.</p>
+          </div>
 
-          <div className="flex flex-col gap-3">
-            <div className="hidden md:grid grid-cols-12 gap-3 mb-2 px-6">
-              <div className="col-span-4 font-paragraph text-xs font-bold uppercase tracking-widest text-[#1A0F2E]/40">Metric</div>
-              <div className="col-span-4 font-paragraph text-xs font-bold uppercase tracking-widest text-red-500 text-center">Traditional Hiring</div>
-              <div className="col-span-4 font-paragraph text-xs font-bold uppercase tracking-widest text-primary text-center">ViraWorkx</div>
-            </div>
-
-            {COMPARISONS.map((row, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.07 }}
-                className="grid grid-cols-1 md:grid-cols-12 gap-3"
-              >
-                {/* Metric label — light bg for legibility */}
-                <div className="md:col-span-4 bg-[#F5F3FF] border border-primary/20 p-5 md:p-7 flex items-center">
-                  <h4 className="font-display text-base font-bold text-[#1A0F2E]">{row.metric}</h4>
-                </div>
-                <div className="md:col-span-4 bg-red-50 p-5 md:p-7 flex flex-col justify-center items-center text-center border border-red-100 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-red-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                  <XCircle className="w-5 h-5 text-red-400 mb-2 relative z-10" />
-                  <p className="font-paragraph text-sm text-[#1A0F2E]/70 relative z-10">{row.traditional}</p>
-                </div>
-                <div className="md:col-span-4 bg-primary/5 p-5 md:p-7 flex flex-col justify-center items-center text-center border border-primary/20 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-primary/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                  <CheckCircle className="w-5 h-5 text-primary mb-2 relative z-10" />
-                  <p className="font-paragraph text-base font-semibold text-[#1A0F2E] relative z-10">{row.viraworkx}</p>
-                </div>
-              </motion.div>
+          <div className="vwx-steps">
+            {[
+              { num: '01', title: '30-min scoping call with me', body: "Not an SDR. Not a recruiter. You walk me through the role, your stack, and what your team is actually like. I'll tell you on the call whether we have a fit." },
+              { num: '02', title: 'I hand-match 3–5 engineers in 48 hours', body: 'I personally review every match before you see it. Each engineer has passed our technical assessment, communication screening, and reference check.' },
+              { num: '03', title: '1-week paid trial, then you decide', body: 'Work with the engineer I recommend for one week. Not the right fit? I replace within 48 hours at no extra cost. You only commit beyond the trial if you want to.' },
+            ].map((s) => (
+              <article key={s.num} className="vwx-step" style={{
+                background: tokens.softGray, border: `1px solid ${tokens.paperLine}`, borderRadius: 18,
+                padding: '32px 26px 28px',
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 500, letterSpacing: '0.08em', color: tokens.brandPurple, marginBottom: 20 }}>{s.num}</div>
+                <h3 style={{ fontWeight: 600, fontSize: 22, letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 14, color: tokens.ink }}>{s.title}</h3>
+                <p style={{ color: tokens.inkMute, fontSize: 15, lineHeight: 1.55 }}>{s.body}</p>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── (formerly "Velocity Protocol") */}
-      <section id="how-it-works" className="w-full bg-[#2D1B4E] py-24 md:py-32">
-        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-
-            {/* Sticky left — collapses to tight intro on mobile */}
-            <div className="lg:col-span-5">
-              <div className="lg:sticky lg:top-32">
-                <motion.div
-                  initial={{ opacity: 0, x: -40 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: '-100px' }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-[#F5F3FF] mb-6 leading-tight">
-                    HOW IT
-                    <br />
-                    <span className="text-primary">WORKS</span>
-                  </h2>
-                  <p className="font-paragraph text-base text-[#F5F3FF]/70 mb-8 max-w-md hidden md:block">
-                    A straightforward process from brief to deployed engineer — faster than most agencies
-                    can schedule a kickoff call.
-                  </p>
-                  <div className="p-5 bg-[#FAFAF9] border-l-4 border-primary hidden md:block">
-                    <p className="font-display text-base font-bold text-[#1A0F2E]">
-                      Not satisfied? We replace within 48 hours — no questions asked.
-                    </p>
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-
-            {/* Scrolling steps */}
-            <div className="lg:col-span-7 flex flex-col gap-6">
-              {PROCESS_STEPS.map((step, index) => (
-                <motion.div
-                  key={step.id}
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-100px' }}
-                  transition={{ duration: 0.6, delay: index * 0.08 }}
-                  className="group relative bg-[#FAFAF9] p-8 md:p-10 border border-primary/20 hover:border-primary transition-colors duration-300"
-                >
-                  <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none">
-                    <span className="font-display text-7xl font-black text-primary">{step.id}</span>
-                  </div>
-                  <div className="relative z-10">
-                    <div className="font-paragraph text-xs text-primary font-bold uppercase tracking-widest mb-3">
-                      {step.step}
-                    </div>
-                    <h3 className="font-display text-2xl md:text-3xl font-bold text-[#1A0F2E] mb-4">
-                      {step.title}
-                    </h3>
-                    <p className="font-paragraph text-base text-[#1A0F2E]/70 max-w-xl">{step.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── WHY VIRAWORKX — typography-led, no icons ── */}
-      <section id="why-viraworkx" className="w-full py-24 md:py-32 bg-[#FAFAF9]">
-        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-primary/20 pb-12"
-          >
-            <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-[#1A0F2E] leading-tight">
-              ENGINEERED FOR
-              <br />
-              <span className="text-primary">FOUNDERS</span>
-            </h2>
-            <p className="font-paragraph text-base text-[#1A0F2E]/60 max-w-sm">
-              We eliminated the friction, risk, and delays of traditional hiring to build a system that
-              scales at the speed of your startup.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-primary/10 border border-primary/20">
-            {VALUE_PROPS.map(({ title, description, benefit }, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.08 }}
-                className="bg-[#FAFAF9] p-8 md:p-10 group hover:bg-[#2D1B4E] transition-colors duration-500 flex flex-col"
-              >
-                <h3 className="font-display text-xl font-bold text-[#1A0F2E] group-hover:text-[#F5F3FF] mb-3 transition-colors duration-500">
-                  {title}
-                </h3>
-                <p className="font-paragraph text-sm text-[#1A0F2E]/60 group-hover:text-[#F5F3FF]/60 mb-8 flex-grow leading-relaxed transition-colors duration-500">
-                  {description}
-                </p>
-                <div className="mt-auto pt-5 border-t border-primary/20 group-hover:border-[#F5F3FF]/20 transition-colors duration-500">
-                  <p className="font-paragraph text-xs font-bold text-primary uppercase tracking-widest">
-                    {benefit}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── ROLES WE PLACE ── (formerly "Talent Vectors") */}
-      <section id="roles" className="w-full py-24 md:py-32 bg-[#2D1B4E]">
-        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-primary/20 pb-12"
-          >
-            <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-[#F5F3FF] leading-tight">
-              ROLES WE
-              <br />
-              <span className="text-primary">PLACE</span>
-            </h2>
-            <p className="font-paragraph text-base text-[#F5F3FF]/60 max-w-sm">
-              Senior-to-staff engineers across the modern stack. All placements include a 7-day paid trial.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-primary/20 border border-primary/20">
-            {ROLES.map(({ Icon, title, desc, seniority }, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.07 }}
-                className="group bg-[#2D1B4E] p-8 hover:bg-[#FAFAF9] transition-colors duration-500 flex flex-col gap-4"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="p-2.5 bg-primary/20 group-hover:bg-primary transition-colors duration-500 shrink-0">
-                    <Icon className="w-5 h-5 text-primary group-hover:text-white" />
-                  </div>
-                  <h3 className="font-display text-lg font-bold text-[#F5F3FF] group-hover:text-[#1A0F2E] transition-colors duration-500">
-                    {title}
-                  </h3>
-                </div>
-                <p className="font-paragraph text-sm text-[#F5F3FF]/60 group-hover:text-[#1A0F2E]/60 transition-colors duration-500">
-                  {desc}
-                </p>
-                <div className="mt-auto pt-4 border-t border-primary/20 group-hover:border-[#1A0F2E]/10 transition-colors duration-500 flex items-center justify-between">
-                  <span className="font-paragraph text-xs text-[#F5F3FF]/50 group-hover:text-[#1A0F2E]/50 transition-colors duration-500">
-                    {seniority}
-                  </span>
-                  <Link
-                    to="/register"
-                    className="font-paragraph text-xs font-semibold text-primary hover:underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    View rates →
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FOR TALENT ── */}
-      <section id="for-talent" className="w-full bg-[#2D1B4E] border-y border-primary/20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[80vh]">
-          <div className="p-12 md:p-24 flex flex-col justify-center">
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="font-paragraph text-xs text-primary font-bold uppercase tracking-widest mb-6">
-                For Engineers
-              </div>
-              <h2 className="font-display text-4xl md:text-6xl font-black text-[#F5F3FF] mb-8 leading-tight">
-                ACCESS GLOBAL
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/50">
-                  OPPORTUNITIES
-                </span>
+      {/* ============ SAMPLE PROFILE — brand purple ============ */}
+      <section id="sample" className="vwx-section-reveal" style={{ padding: '0 0 88px' }}>
+        <div className="vwx-sample-section" style={{
+          background: tokens.brandPurple, color: tokens.paper, borderRadius: 28,
+          padding: '56px 48px', margin: '0 32px', position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'absolute', top: '-30%', left: '-10%', width: 600, height: 600,
+            background: 'radial-gradient(circle, rgba(167, 139, 250, 0.18), transparent 60%)', pointerEvents: 'none',
+          }}></div>
+          <div className="vwx-sample-grid" style={{ position: 'relative', zIndex: 2 }}>
+            <div>
+              <span style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.7)', marginBottom: 20, display: 'inline-block', fontWeight: 500 }}>How we vet</span>
+              <h2 className="vwx-section-title" style={{ fontWeight: 600, fontSize: 'clamp(34px, 4.5vw, 52px)', lineHeight: 1.05, letterSpacing: '-0.02em', color: tokens.paper, marginBottom: 20 }}>
+                This is what <em style={{ fontStyle: 'italic', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>pre-vetted</em> actually looks like.
               </h2>
-              <div className="space-y-5 mb-12">
-                {[
-                  'Get matched with top US startups',
-                  'Work remotely on your terms',
-                  'Accelerate your global career trajectory',
-                  'Transparent process from assessment to offer',
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <div className="w-1.5 h-1.5 bg-primary rounded-full shrink-0" />
-                    <p className="font-paragraph text-base text-[#F5F3FF]/80">{item}</p>
-                  </div>
-                ))}
-              </div>
-              <Link
-                to="/register?type=candidate"
-                className="inline-flex items-center justify-center px-8 py-4 font-paragraph text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-colors"
-              >
-                Apply to Network
-              </Link>
-            </motion.div>
-          </div>
-
-          {/* Operational stats — replaces vanity numbers */}
-          <div className="bg-[#FAFAF9] p-12 md:p-24 flex flex-col justify-center border-l border-primary/20">
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-10"
-            >
-              {OPERATIONAL_STATS.map((stat, i) => (
-                <div key={i}>
-                  <div className="font-display text-5xl md:text-6xl font-black text-primary mb-2 leading-none">
-                    {stat.value}
-                  </div>
-                  <div className="h-px w-10 bg-primary mb-3" />
-                  <p className="font-paragraph text-xs uppercase tracking-widest text-[#1A0F2E]/60">
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FAQ ── (formerly "System Queries") */}
-      <section id="faq" className="w-full py-24 md:py-32 bg-[#2D1B4E] border-t border-primary/20">
-        <div className="max-w-[80rem] mx-auto px-6 md:px-12">
-          <div className="text-center mb-16">
-            <h2 className="font-display text-4xl md:text-6xl font-black text-[#F5F3FF] mb-4">
-              FREQUENTLY ASKED
-              <br />
-              <span className="text-primary">QUESTIONS</span>
-            </h2>
-          </div>
-
-          <div className="space-y-2">
-            {FAQS.map((faq, index) => (
-              <motion.div
-                key={faq.id}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-                className="border border-primary/20 bg-[#FAFAF9] overflow-hidden"
-              >
-                <button
-                  onClick={() => setActiveFaq(activeFaq === faq.id ? null : faq.id)}
-                  className="w-full flex items-center justify-between p-6 md:p-8 text-left focus:outline-none group"
-                >
-                  <span className="font-display text-lg md:text-xl font-bold text-[#1A0F2E] group-hover:text-primary transition-colors pr-8">
-                    {faq.question}
-                  </span>
-                  <motion.div
-                    animate={{ rotate: activeFaq === faq.id ? 180 : 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex-shrink-0 text-primary"
-                  >
-                    <ChevronDown className="w-6 h-6" />
-                  </motion.div>
-                </button>
-                <AnimatePresence>
-                  {activeFaq === faq.id && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    >
-                      <div className="p-6 md:p-8 pt-0 border-t border-primary/10">
-                        <p className="font-paragraph text-base text-[#1A0F2E]/70 leading-relaxed">
-                          {faq.answer}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section className="w-full py-24 md:py-32 bg-primary">
-        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <h2 className="font-display text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-tight">
-              READY TO HIRE?
-            </h2>
-            <p className="font-paragraph text-lg text-white/80 max-w-xl mx-auto mb-10">
-              Book a 20-minute call. We'll scope your role, confirm fit, and make your first intro within
-              48 hours.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {/* TODO: replace /register with your Calendly link */}
-              <Link
-                to="/register"
-                className="group relative inline-flex items-center justify-center px-10 py-5 font-paragraph text-base font-semibold bg-white text-primary overflow-hidden transition-all hover:scale-[1.02] shadow-lg"
-              >
-                <span className="absolute inset-0 w-full h-full bg-[#1A0F2E] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-                <span className="relative flex items-center gap-2 group-hover:text-white transition-colors duration-300">
-                  Book a 20-min Call <ArrowUpRight className="w-5 h-5" />
-                </span>
-              </Link>
-              <Link
-                to="/register?type=candidate"
-                className="inline-flex items-center justify-center px-10 py-5 font-paragraph text-sm font-semibold border-2 border-white text-white hover:bg-white hover:text-primary transition-colors"
-              >
-                Apply to Network
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer className="w-full py-16 bg-[#1A0F2E]">
-        <div className="max-w-[120rem] mx-auto px-6 md:px-12 lg:px-24">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-16 pb-16 border-b border-white/10">
-            <div className="max-w-xs">
-              <div className="mb-6">
-                <img src="/logo.png" alt="ViraWorkX" className="h-14 w-auto" />
-              </div>
-              <p className="font-paragraph text-sm text-white/50 leading-relaxed">
-                Connecting US startups with pre-vetted Indian engineering talent. 48-hour matching,
-                7-day paid trial, guaranteed replacement.
+              <p style={{ fontSize: 18, lineHeight: 1.55, color: 'rgba(255, 255, 255, 0.75)', maxWidth: 600 }}>
+                "Pre-vetted" is the most overused word in staffing. Here's what it means at ViraWorkX — the actual stages every engineer in the network has cleared before they reach you.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-12">
-              <div>
-                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
-                  Platform
-                </h4>
-                <div className="space-y-3">
-                  <button onClick={() => scrollTo('how-it-works')} className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">How It Works</button>
-                  <button onClick={() => scrollTo('why-viraworkx')} className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">Why ViraWorkx</button>
-                  <button onClick={() => scrollTo('roles')} className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">Roles We Place</button>
-                </div>
+            <div style={{
+              background: tokens.paper, border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 18,
+              padding: 28, boxShadow: '0 18px 50px -15px rgba(0, 0, 0, 0.25)',
+            }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 11, letterSpacing: '0.06em',
+                textTransform: 'uppercase', color: tokens.brandPurple, padding: '6px 12px',
+                border: `1px solid ${tokens.lavenderLine}`, background: tokens.lavender,
+                borderRadius: 999, marginBottom: 22, fontWeight: 500,
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a', boxShadow: '0 0 8px rgba(22, 163, 74, 0.5)' }}></span>
+                Our 4-stage vetting process
               </div>
-              <div>
-                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
-                  For Talent
-                </h4>
-                <div className="space-y-3">
-                  <Link to="/register?type=candidate" className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">Apply to Network</Link>
-                  <button onClick={() => scrollTo('faq')} className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">FAQ</button>
-                </div>
-              </div>
-              <div>
-                <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white mb-6">
-                  Company
-                </h4>
-                <div className="space-y-3">
-                  <Link to="/login" className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">Sign In</Link>
-                  <Link to="/register" className="block font-paragraph text-sm text-white/50 hover:text-white transition-colors">Book a Call</Link>
-                </div>
-              </div>
-            </div>
-          </div>
+              <div style={{ fontWeight: 600, fontSize: 26, letterSpacing: '-0.018em', lineHeight: 1.1, marginBottom: 6, color: tokens.ink }}>What pre-vetted means.</div>
+              <div style={{ fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: tokens.inkMute, marginBottom: 24 }}>700+ engineers reviewed · 20 in the network</div>
 
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="font-paragraph text-sm text-white/40">© 2026 ViraWorkx. All rights reserved.</p>
-            <div className="flex items-center gap-6">
-              <a href="/privacy" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Privacy</a>
-              <a href="/terms" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Terms</a>
-              <a href="mailto:support@viraworkx.ai" className="font-paragraph text-sm text-white/40 hover:text-white transition-colors">Contact</a>
+              {[
+                { num: '01', text: 'Technical assessment — 90-min live coding plus system design, scored against role-specific rubric.' },
+                { num: '02', text: 'Portfolio & code-sample review — real production code, not toy projects or interview prompts.' },
+                { num: '03', text: 'Communication screening — written and async-collaboration test, because remote-first work fails on this first.' },
+                { num: '04', text: 'Reference checks with two prior managers — verbal, structured, no email forms.' },
+              ].map((stage, i, arr) => (
+                <div key={stage.num} className="vwx-profile-row" style={{
+                  display: 'flex', justifyContent: 'space-between', padding: '14px 0',
+                  borderBottom: i < arr.length - 1 ? `1px solid ${tokens.paperLine}` : 'none', fontSize: 14, alignItems: 'flex-start', gap: 16,
+                }}>
+                  <span style={{ fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', color: tokens.inkMute, fontWeight: 500, paddingTop: 2, flexShrink: 0 }}>{stage.num}</span>
+                  <span style={{ color: tokens.ink, fontWeight: 450, textAlign: 'right', maxWidth: 320, lineHeight: 1.45 }}>{stage.text}</span>
+                </div>
+              ))}
+
+              <div style={{
+                marginTop: 22, padding: '16px 18px',
+                background: tokens.lavender, border: `1px solid ${tokens.lavenderLine}`,
+                borderRadius: 12,
+              }}>
+                <div style={{
+                  display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '12px 16px',
+                  alignItems: 'start', fontSize: 13, lineHeight: 1.5,
+                }}>
+                  <span style={{ fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', color: tokens.brandPurple, fontWeight: 500, paddingTop: 2 }}>Where</span>
+                  <span style={{ color: tokens.inkSoft }}>Engineers based in India, working US business hours (4–8 hours overlap with PT).</span>
+
+                  <span style={{ fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', color: tokens.brandPurple, fontWeight: 500, paddingTop: 2 }}>Trust</span>
+                  <span style={{ color: tokens.inkSoft }}>Talk to engineers we've already placed — references available on request.</span>
+
+                  <span style={{ fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', color: tokens.brandPurple, fontWeight: 500, paddingTop: 2 }}>Terms</span>
+                  <span style={{ color: tokens.inkSoft }}><strong style={{ color: tokens.ink, fontWeight: 600 }}>No lock-in. No minimum commitment.</strong> 1-week paid trial, replace within 48 hrs if it's not the right fit.</span>
+                </div>
+              </div>
+
+              <div style={{
+                marginTop: 20, paddingTop: 20, borderTop: `1px solid ${tokens.paperLine}`,
+                display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
+              }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 19, letterSpacing: '-0.015em', color: tokens.ink, lineHeight: 1.2 }}>Sample profiles on request</div>
+                  <div style={{ fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', color: tokens.inkMute, fontWeight: 500, marginTop: 4 }}>After a 30-min scoping call</div>
+                </div>
+                <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer" style={{
+                  fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase',
+                  color: tokens.brandPurple, borderBottom: '1px solid currentColor', paddingBottom: 2, fontWeight: 500,
+                }}>Book a call →</a>
+              </div>
             </div>
           </div>
         </div>
+      </section>
+
+      {/* ============ FOUNDER STORY — brand purple ============ */}
+      <section id="founder" className="vwx-founder-bio vwx-section-pad vwx-section-reveal" style={{
+        background: tokens.brandPurple, color: tokens.paper, padding: '88px 0', position: 'relative', zIndex: 2,
+      }}>
+        <div className="vwx-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
+          <div className="vwx-founder-block">
+            <div className="vwx-founder-portrait" style={{
+              position: 'relative', borderRadius: 20, overflow: 'hidden', aspectRatio: '4 / 5',
+              maxWidth: 420, boxShadow: '0 30px 60px -30px rgba(0, 0, 0, 0.4)',
+            }}>
+              <img className="vwx-founder-photo" src={FOUNDER_PHOTO} alt="Rahul Ramachandran, Founder of ViraWorkX" style={{
+                width: '100%', height: '100%', objectFit: 'cover', filter: 'contrast(1.02) saturate(0.95)',
+              }} />
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(180deg, transparent 60%, rgba(0, 0, 0, 0.3))', pointerEvents: 'none',
+              }}></div>
+              <div style={{
+                position: 'absolute', bottom: 20, left: 20, background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(8px)', padding: '10px 14px', borderRadius: 12,
+                fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: tokens.brandPurple, fontWeight: 500,
+              }}>Chennai · San Francisco</div>
+            </div>
+
+            <div>
+              <span style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.7)', marginBottom: 20, display: 'inline-block', fontWeight: 500 }}>Why I'm building this</span>
+              <h2 className="vwx-founder-bio-h2" style={{
+                fontWeight: 600, fontSize: 'clamp(32px, 4vw, 44px)', lineHeight: 1.08, letterSpacing: '-0.02em',
+                marginBottom: 28, color: tokens.paper,
+              }}>
+                The network{' '}
+                <em style={{ fontStyle: 'italic', fontWeight: 500, color: 'rgba(255, 255, 255, 0.85)' }}>I wish existed</em>{' '}
+                when I was on either side of the table.
+              </h2>
+
+              <p style={{ fontSize: 17, lineHeight: 1.65, color: 'rgba(255, 255, 255, 0.88)', marginBottom: 18 }}>
+                I spent 16 years scaling US-India operations — including taking one company from 20 to 2,500 employees. I've watched US founders burn $40K+ a month on average engineers. I've watched brilliant senior engineers get stuck in agency contracts that pay them peanuts.
+              </p>
+              <p style={{ fontSize: 17, lineHeight: 1.65, color: 'rgba(255, 255, 255, 0.88)', marginBottom: 18 }}>
+                ViraWorkX is the network I wish existed when I was on either side of that table. Senior engineers, paid fairly. Founders matched fast, billed honestly. No agency middlemen, no 6-week sourcing cycles, no résumé walls.
+              </p>
+              <p style={{ fontSize: 17, lineHeight: 1.65, color: 'rgba(255, 255, 255, 0.88)', marginBottom: 18 }}>
+                If you're a founder hiring, you talk to me. Not an SDR, not a recruiter. Me.
+              </p>
+
+              <div style={{
+                marginTop: 32, display: 'flex', alignItems: 'center', gap: 14,
+                paddingTop: 24, borderTop: '1px solid rgba(255, 255, 255, 0.18)',
+              }}>
+                <div>
+                  <div style={{ fontStyle: 'italic', fontWeight: 500, fontSize: 22, letterSpacing: '-0.01em', color: tokens.paper }}>Rahul Ramachandran</div>
+                  <div style={{ fontSize: 11.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.65)', fontWeight: 500 }}>Founder · ViraWorkX, Inc. · Texas</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ ROLES ============ */}
+      <section className="vwx-section-pad vwx-section-reveal" style={{ padding: '88px 0' }}>
+        <div className="vwx-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
+          <div className="vwx-section-header" style={{ maxWidth: 760, marginBottom: 48 }}>
+            <span style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: tokens.brandPurple, marginBottom: 20, display: 'inline-block', fontWeight: 500 }}>Roles we place</span>
+            <h2 className="vwx-section-title" style={{ fontWeight: 600, fontSize: 'clamp(34px, 4.5vw, 52px)', lineHeight: 1.05, letterSpacing: '-0.02em', color: tokens.ink, marginBottom: 20 }}>
+              Senior to staff engineers <Em>across the modern stack.</Em>
+            </h2>
+            <p style={{ fontSize: 18, lineHeight: 1.55, color: tokens.inkMute, maxWidth: 600 }}>All placements include a 1-week paid trial. Senior engineers at 30–50% below US market rate.</p>
+          </div>
+
+          <div className="vwx-roles-grid">
+            {[
+              { num: '01', title: 'Full-Stack Engineers', stack: 'React · Node.js · TypeScript · Python', meta: 'Senior to Staff · 5–10 yrs' },
+              { num: '02', title: 'Backend Engineers', stack: 'Go · Java · Python · Node.js · Postgres', meta: 'Mid to Staff · 4–10 yrs' },
+              { num: '03', title: 'Frontend Engineers', stack: 'React · Vue · Next.js · Tailwind', meta: 'Senior to Staff · 5–9 yrs' },
+              { num: '04', title: 'ML / AI Engineers', stack: 'PyTorch · LangChain · LLMs · RAG', meta: 'Senior to Staff · 4–8 yrs' },
+              { num: '05', title: 'App Developers', stack: 'React Native · Flutter · Swift · Kotlin', meta: 'Senior to Staff · 5–9 yrs' },
+              { num: '06', title: 'DevOps / SRE', stack: 'AWS · Kubernetes · Terraform · CI/CD', meta: 'Senior to Staff · 5–9 yrs' },
+            ].map((role) => (
+              <article key={role.num} className="vwx-role" style={{ background: tokens.paper, padding: '32px 28px' }}>
+                <div style={{ fontSize: 11, letterSpacing: '0.08em', color: tokens.brandPurple, marginBottom: 16, fontWeight: 600 }}>{role.num}</div>
+                <h3 style={{ fontWeight: 700, fontSize: 20, letterSpacing: '-0.018em', marginBottom: 10, color: tokens.ink }}>{role.title}</h3>
+                <p style={{ fontSize: 12.5, color: tokens.ink, lineHeight: 1.6, marginBottom: 16, fontWeight: 600 }}>{role.stack}</p>
+                <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: tokens.inkSoft, fontWeight: 600 }}>{role.meta}</div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ CALCULATOR — brand purple ============ */}
+      <CalculatorSection />
+
+      {/* ============ FAQ ============ */}
+      <section id="faq" className="vwx-section-pad vwx-section-reveal" style={{ background: tokens.softGray, borderTop: `1px solid ${tokens.paperLine}`, padding: '88px 0' }}>
+        <div className="vwx-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
+          <div className="vwx-section-header" style={{ maxWidth: 760, marginBottom: 48, textAlign: 'center', marginLeft: 'auto', marginRight: 'auto' }}>
+            <span style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: tokens.brandPurple, marginBottom: 20, display: 'inline-block', fontWeight: 500 }}>Frequently asked</span>
+            <h2 className="vwx-section-title" style={{ fontWeight: 600, fontSize: 'clamp(34px, 4.5vw, 52px)', lineHeight: 1.05, letterSpacing: '-0.02em', color: tokens.ink, marginBottom: 20 }}>
+              Honest answers to <Em>the questions you'd ask anyway.</Em>
+            </h2>
+          </div>
+
+          <div style={{ maxWidth: 880, margin: '0 auto' }}>
+            {[
+              { open: true, q: 'How quickly can I actually hire an engineer?', a: 'First match in 48 hours. Engineer onboarded and shipping within 5–7 business days, including a 1-week paid trial. Most founders we talk to have their first engineer in pull requests within two weeks of the kickoff call.' },
+              { open: true, q: 'How does the 1-week paid trial work?', a: "You pay the engineer's standard rate for one week of real work — a defined deliverable, not interview prompts. If the fit isn't there at the end of the week, we replace within 48 hours at no additional cost. You only commit beyond the trial if you want to." },
+              { open: false, q: "What if it's still not the right fit after the replacement?", a: "We replace as many times as it takes within the first 30 days. If after two replacements we still haven't found the right engineer for your role, we'll refund the engagement. We'd rather lose the deal than place someone you don't trust." },
+              { open: false, q: 'How do you actually vet engineers?', a: "Multi-stage: technical assessment (live coding + system design), portfolio and code-sample review, communication and async-collaboration screening, reference checks with two prior managers. We've vetted 700+ engineers and onboarded 20+ to the network. The bar is intentionally high." },
+              { open: false, q: 'Do you handle contracts and compliance?', a: 'Yes. Employment contracts, IP assignment agreements, NDAs, background checks, and engagement compliance — all handled by our team. You get a clean, US-jurisdiction MSA. The engineer gets paid through our platform on time, every time.' },
+              { open: false, q: 'Why work with you instead of a bigger staffing platform?', a: 'Three reasons. First, you talk to me, the founder, not an SDR. Every first call goes through me personally. Second, we focus narrowly on senior engineers for early-stage startups — not enterprise — which means faster matches, better culture fit, and a much smaller candidate pool to choose from. Third, honest economics: published rate bands, no opaque margin stack, no minimum commitments. The bigger platforms can\'t do any of those three. That\'s the whole pitch.' },
+            ].map((item, idx) => (
+              <details key={idx} className="vwx-faq" open={item.open} style={{ borderBottom: `1px solid ${tokens.paperLine}`, padding: '28px 0' }}>
+                <summary className="vwx-faq-summary" style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24,
+                  fontWeight: 600, fontSize: 20, letterSpacing: '-0.015em', color: tokens.ink,
+                }}>
+                  {item.q}
+                  <span className="vwx-faq-icon" style={{
+                    flexShrink: 0, width: 28, height: 28, border: `1px solid ${tokens.ink}`,
+                    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, color: tokens.ink,
+                  }}>+</span>
+                </summary>
+                <p style={{ marginTop: 18, color: tokens.inkMute, fontSize: 16, lineHeight: 1.65, maxWidth: 720 }}>{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ CTA — brand purple ============ */}
+      <section style={{ padding: '56px 0' }}>
+        <div className="vwx-cta-section" style={{
+          background: tokens.brandPurple, color: tokens.paper, borderRadius: 28, padding: '64px 48px',
+          margin: '0 32px', textAlign: 'center', position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(circle at 20% 30%, rgba(167, 139, 250, 0.2), transparent 50%), radial-gradient(circle at 80% 70%, rgba(167, 139, 250, 0.15), transparent 50%)',
+            pointerEvents: 'none',
+          }}></div>
+          <h2 style={{
+            fontWeight: 600, fontSize: 'clamp(36px, 5vw, 56px)', lineHeight: 1.05, letterSpacing: '-0.02em',
+            marginBottom: 18, maxWidth: 800, marginLeft: 'auto', marginRight: 'auto', color: tokens.paper,
+            position: 'relative', zIndex: 2,
+          }}>
+            Ready to <em style={{ fontStyle: 'italic', fontWeight: 500, color: 'rgba(255, 255, 255, 0.85)' }}>meet your next engineer?</em>
+          </h2>
+          <p style={{ fontSize: 17, color: 'rgba(255, 255, 255, 0.8)', maxWidth: 540, margin: '0 auto 28px', lineHeight: 1.55, position: 'relative', zIndex: 2 }}>
+            Book a 30-minute call. We'll scope your role, confirm fit, and send your first introductions within 48 hours.
+          </p>
+          <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer" className="vwx-cta-light" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10, background: tokens.paper, color: tokens.brandPurple,
+            padding: '16px 26px', borderRadius: 999, fontSize: 15, fontWeight: 600, position: 'relative', zIndex: 2,
+          }}>
+            Book a 30-min call with Rahul
+            <ArrowUpRight />
+          </a>
+        </div>
+      </section>
+
+      {/* ============ FOOTER ============ */}
+      <footer style={{ padding: '48px 0 32px', borderTop: `1px solid ${tokens.paperLine}`, marginTop: 56 }}>
+        <div className="vwx-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
+          <div className="vwx-footer-grid">
+            <div>
+              <a href="/" style={{ display: 'inline-block', marginBottom: 20 }}>
+                <img src={LOGO_FULL} alt="ViraWorkX" style={{ height: 56, maxWidth: 200, objectFit: 'contain', objectPosition: 'left' }} />
+              </a>
+              <p style={{ fontSize: 14, color: tokens.inkMute, lineHeight: 1.6, maxWidth: 320 }}>Pairing US founders with pre-vetted senior engineers. 48-hour matching. 1-week paid trial. Guaranteed replacement.</p>
+            </div>
+            {[
+              { title: 'Platform', links: [
+                { href: '#how', label: 'How It Works' },
+                { href: '#sample', label: 'Vetting Process' },
+                { href: '#founder', label: 'Why Us' },
+                { href: '#faq', label: 'FAQ' },
+              ]},
+              { title: 'For Talent', links: [
+                { href: '/talent', label: 'Apply to Network' },
+                { href: 'https://app.viraworkx.ai', label: 'Sign In' },
+              ]},
+              { title: 'Company', links: [
+                { href: CALENDLY_URL, label: 'Book a Call', external: true },
+                { href: 'mailto:rahul@viraworkx.ai', label: 'rahul@viraworkx.ai' },
+              ]},
+            ].map((col) => (
+              <div key={col.title}>
+                <h4 style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: tokens.inkMute, marginBottom: 16 }}>{col.title}</h4>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {col.links.map((link) => (
+                    <li key={link.label} style={{ marginBottom: 10 }}>
+                      <a className="vwx-footer-link" href={link.href} target={link.external ? '_blank' : undefined} rel={link.external ? 'noopener noreferrer' : undefined} style={{ color: tokens.inkSoft, fontSize: 14.5 }}>{link.label}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="vwx-footer-bottom" style={{
+            paddingTop: 32, borderTop: `1px solid ${tokens.paperLine}`,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            fontSize: 11.5, color: tokens.inkMute, letterSpacing: '0.04em', flexWrap: 'wrap', gap: 12, fontWeight: 500,
+          }}>
+            <span>© ViraWorkX, Inc. · Headquartered in Texas · Team in San Francisco &amp; Chennai</span>
+            <span>Beta · Onboarding our first cohort of founders</span>
+          </div>
+        </div>
       </footer>
+
     </div>
-  )
+  );
 }

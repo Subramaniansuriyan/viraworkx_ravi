@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   User, Mail, MapPin, Briefcase, Clock, Award, FileText, Video,
   Upload, Edit2, Plus, X, Check, AlertCircle, ExternalLink,
-  Linkedin, Github, Globe, Zap, ChevronRight, Star, Shield,
+  Linkedin, Github, Globe, ChevronRight, Star, Shield,
   Calendar, TrendingUp, Target, LogOut, ChevronDown
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
@@ -283,11 +283,8 @@ export default function CandidateProfile() {
       <header className="sticky top-0 z-50 w-full border-b border-gray-200/40 bg-white/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
-            <Link to="/dashboard" className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold font-heading text-primary">ViraWorkX</span>
+            <Link to="/dashboard" className="flex items-center">
+              <img src="/logo-lockup.png" alt="ViraWorkX" className="h-9 w-auto" />
             </Link>
 
             <nav className="flex items-center gap-6">
