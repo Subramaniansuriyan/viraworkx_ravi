@@ -235,7 +235,7 @@ const US_BASE = 130000;
 const US_TOTAL = US_BASE + (US_BASE * 0.20) + 4000 + 9000; // $169K
 
 const fmtK = (n) => '$' + Math.round(n / 1000) + 'K';
-const fmtFull = (n) => '$' + Math.round(n).toLocaleString();
+const fmtFull = (n) => '$' + Math.round(n).toLocaleString('en-US');
 
 const CalculatorSection = () => {
   const [tier, setTier] = useState('1');
