@@ -63,14 +63,10 @@ export default function JobList() {
       {/* Header */}
       <header className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="text-2xl font-bold text-primary-600">ViraWorkx</Link>
-            <div className="flex items-center gap-4">
-              <Link to="/login" className="text-gray-600 hover:text-gray-900">Log in</Link>
-              <Link to="/register" className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
-                Sign up
-              </Link>
-            </div>
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center shrink-0" aria-label="ViraWorkX home">
+              <img src="/logo-lockup.png" alt="ViraWorkX" className="h-9 w-auto" />
+            </Link>
           </div>
         </div>
       </header>

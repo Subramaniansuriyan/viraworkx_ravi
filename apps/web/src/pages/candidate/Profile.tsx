@@ -345,7 +345,7 @@ export default function CandidateProfile() {
                     <h1 className="text-2xl font-bold font-heading text-gray-900">
                       {profile.firstName} {profile.lastName}
                     </h1>
-                    <p className="text-gray-600 mt-1">
+                    <p className="mt-1 font-display text-lg text-gray-600 leading-snug">
                       {profile.headline || 'Add a professional headline'}
                     </p>
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">

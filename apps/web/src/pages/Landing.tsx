@@ -111,6 +111,25 @@ const CSS = `
   .vwx .vwx-nav-link { transition: color 0.15s; }
   .vwx .vwx-nav-link:hover { color: ${tokens.ink}; }
 
+  .vwx-nav-desktop-only { display: flex; align-items: center; gap: 30px; }
+  .vwx-nav-menu-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid rgba(24, 20, 31, 0.1);
+    background: ${tokens.paper};
+    color: ${tokens.ink};
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .vwx-nav-menu-btn:hover { background: ${tokens.softGray}; border-color: rgba(24, 20, 31, 0.14); }
+  .vwx-anchor-target { scroll-margin-top: 88px; }
+
   .vwx .vwx-step { transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease; }
   .vwx .vwx-step:hover { transform: translateY(-3px); box-shadow: 0 16px 36px -18px rgba(24, 20, 31, 0.12); background: ${tokens.lavender}; }
 
@@ -171,7 +190,8 @@ const CSS = `
     .vwx-hero-grid { grid-template-columns: 1fr; gap: 40px; }
   }
   @media (max-width: 880px) {
-    .vwx-nav-link-hide { display: none !important; }
+    .vwx-nav-desktop-only { display: none !important; }
+    .vwx-nav-menu-btn { display: inline-flex !important; }
     .vwx-steps { grid-template-columns: 1fr; }
     .vwx-sample-grid { grid-template-columns: 1fr; gap: 36px; }
     .vwx-founder-block { grid-template-columns: 1fr; gap: 40px; }
@@ -236,6 +256,13 @@ const US_TOTAL = US_BASE + (US_BASE * 0.20) + 4000 + 9000; // $169K
 
 const fmtK = (n) => '$' + Math.round(n / 1000) + 'K';
 const fmtFull = (n) => '$' + Math.round(n).toLocaleString('en-US');
+
+const LANDING_NAV_SECTIONS = [
+  { href: '#how', label: 'How It Works' },
+  { href: '#sample', label: 'How We Vet' },
+  { href: '#founder', label: 'Why Us' },
+  { href: '#faq', label: 'FAQ' },
+];
 
 const CalculatorSection = () => {
   const [tier, setTier] = useState('1');
@@ -380,6 +407,8 @@ const CalculatorSection = () => {
 // MAIN COMPONENT
 // ============================================================
 export default function Landing() {
+  const [navOpen, setNavOpen] = useState(false);
+
   // Inject the CSS once
   useEffect(() => {
     const id = 'vwx-styles';
@@ -394,6 +423,31 @@ export default function Landing() {
     };
   }, []);
 
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 881px)');
+    const onChange = () => {
+      if (mq.matches) setNavOpen(false);
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!navOpen) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setNavOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [navOpen]);
+
+  const navLinkStyle = { color: tokens.inkSoft, fontSize: 14, fontWeight: 450 };
+
   return (
     <div className="vwx" style={{ background: tokens.paper, color: tokens.ink, overflowX: 'hidden' }}>
 
@@ -405,15 +459,16 @@ export default function Landing() {
         background: 'rgba(255, 255, 255, 0.82)',
         borderBottom: '1px solid rgba(24, 20, 31, 0.06)',
       }}>
-        <div className="vwx-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72 }}>
+        <div className="vwx-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72, position: 'relative' }}>
           <a href="/" aria-label="ViraWorkX home" style={{ display: 'flex', alignItems: 'center' }}>
             <img className="vwx-logo-img" src={LOGO_LOCKUP} alt="ViraWorkX" style={{ height: 36, width: 'auto', display: 'block' }} />
           </a>
-          <div style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
-            <a href="#how" className="vwx-nav-link vwx-nav-link-hide" style={{ color: tokens.inkSoft, fontSize: 14, fontWeight: 450 }}>How It Works</a>
-            <a href="#sample" className="vwx-nav-link vwx-nav-link-hide" style={{ color: tokens.inkSoft, fontSize: 14, fontWeight: 450 }}>How We Vet</a>
-            <a href="#founder" className="vwx-nav-link vwx-nav-link-hide" style={{ color: tokens.inkSoft, fontSize: 14, fontWeight: 450 }}>Why Us</a>
-            <a href="#faq" className="vwx-nav-link vwx-nav-link-hide" style={{ color: tokens.inkSoft, fontSize: 14, fontWeight: 450 }}>FAQ</a>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div className="vwx-nav-desktop-only">
+              {LANDING_NAV_SECTIONS.map(({ href, label }) => (
+                <a key={href} href={href} className="vwx-nav-link" style={navLinkStyle}>{label}</a>
+              ))}
+            </div>
             <a href="/login" className="vwx-nav-cta" style={{
               background: tokens.brandPurple, color: tokens.paper, padding: '11px 22px', borderRadius: 999, fontSize: 14, fontWeight: 500,
             }}>
@@ -422,8 +477,74 @@ export default function Landing() {
             <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer" className="vwx-nav-cta" style={{
               background: tokens.ink, color: tokens.paper, padding: '11px 22px', borderRadius: 999, fontSize: 14, fontWeight: 500,
             }}>Book a Call</a>
+            <button
+              type="button"
+              className="vwx-nav-menu-btn"
+              aria-expanded={navOpen}
+              aria-controls="vwx-nav-mobile-panel"
+              aria-label={navOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setNavOpen((o) => !o)}
+            >
+              {navOpen ? (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
+        {navOpen && (
+          <>
+            <div
+              role="presentation"
+              onClick={() => setNavOpen(false)}
+              style={{
+                position: 'fixed',
+                top: 72,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(24, 20, 31, 0.35)',
+                zIndex: 49,
+              }}
+            />
+            <div
+              id="vwx-nav-mobile-panel"
+              style={{
+                position: 'fixed',
+                top: 72,
+                left: 0,
+                right: 0,
+                zIndex: 50,
+                background: 'rgba(255, 255, 255, 0.98)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                borderBottom: '1px solid rgba(24, 20, 31, 0.08)',
+                padding: '12px 24px 20px',
+                boxShadow: '0 12px 40px -12px rgba(24, 20, 31, 0.12)',
+              }}
+            >
+              <ul aria-label="Page sections" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                  {LANDING_NAV_SECTIONS.map(({ href, label }) => (
+                    <li key={href} style={{ borderBottom: `1px solid ${tokens.paperLine}` }}>
+                      <a
+                        href={href}
+                        className="vwx-nav-link"
+                        style={{ ...navLinkStyle, display: 'block', padding: '16px 4px', fontSize: 16 }}
+                        onClick={() => setNavOpen(false)}
+                      >
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          </>
+        )}
       </nav>
 
       {/* ============ HERO ============ */}
@@ -529,7 +650,7 @@ export default function Landing() {
           <div className="vwx-section-header" style={{ maxWidth: 760, marginBottom: 48 }}>
             <span style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: tokens.brandPurple, marginBottom: 20, display: 'inline-block', fontWeight: 500 }}>How it works</span>
             <h2 className="vwx-section-title" style={{ fontWeight: 600, fontSize: 'clamp(34px, 4.5vw, 52px)', lineHeight: 1.05, letterSpacing: '-0.02em', color: tokens.ink, marginBottom: 20 }}>
-              Brief to deployed engineer in <Em>under two weeks.</Em>
+              Get engineers deployed <Em>within two weeks</Em>
             </h2>
             <p style={{ fontSize: 18, lineHeight: 1.55, color: tokens.inkMute, maxWidth: 600 }}>A straightforward process — faster than most agencies can schedule a kickoff call.</p>
           </div>
@@ -554,7 +675,7 @@ export default function Landing() {
       </section>
 
       {/* ============ SAMPLE PROFILE — brand purple ============ */}
-      <section id="sample" className="vwx-section-reveal" style={{ padding: '0 0 88px' }}>
+      <section id="sample" className="vwx-anchor-target vwx-section-reveal" style={{ padding: '0 0 88px' }}>
         <div className="vwx-sample-section" style={{
           background: tokens.brandPurple, color: tokens.paper, borderRadius: 28,
           padding: '56px 48px', margin: '0 32px', position: 'relative', overflow: 'hidden',
@@ -694,7 +815,7 @@ export default function Landing() {
               }}>
                 <div>
                   <div style={{ fontStyle: 'italic', fontWeight: 500, fontSize: 22, letterSpacing: '-0.01em', color: tokens.paper }}>Rahul Ramachandran</div>
-                  <div style={{ fontSize: 11.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.65)', fontWeight: 500 }}>Founder · ViraWorkX, Inc. · Texas</div>
+                  <div style={{ fontSize: 11.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.65)', fontWeight: 500 }}>Founder · ViraWorkX, Inc.</div>
                 </div>
               </div>
             </div>
@@ -737,7 +858,7 @@ export default function Landing() {
       <CalculatorSection />
 
       {/* ============ FAQ ============ */}
-      <section id="faq" className="vwx-section-pad vwx-section-reveal" style={{ background: tokens.softGray, borderTop: `1px solid ${tokens.paperLine}`, padding: '88px 0' }}>
+      <section id="faq" className="vwx-anchor-target vwx-section-pad vwx-section-reveal" style={{ background: tokens.softGray, borderTop: `1px solid ${tokens.paperLine}`, padding: '88px 0' }}>
         <div className="vwx-container" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
           <div className="vwx-section-header" style={{ maxWidth: 760, marginBottom: 48, textAlign: 'center', marginLeft: 'auto', marginRight: 'auto' }}>
             <span style={{ fontSize: 11.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: tokens.brandPurple, marginBottom: 20, display: 'inline-block', fontWeight: 500 }}>Frequently asked</span>
@@ -824,7 +945,7 @@ export default function Landing() {
               ]},
               { title: 'For Talent', links: [
                 { href: '/talent', label: 'Apply to Network' },
-                { href: 'https://app.viraworkx.ai', label: 'Sign In' },
+                { href: '/login', label: 'Sign In' },
               ]},
               { title: 'Company', links: [
                 { href: CALENDLY_URL, label: 'Book a Call', external: true },
