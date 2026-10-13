@@ -13,6 +13,7 @@ coverage/
 
 # GCP deployment secrets
 infrastructure/gcp/.env.gcp
+infrastructure/gcp/.env.gcp.prod
 
 # Sensitive data exports — never commit
 scripts/*.csv
